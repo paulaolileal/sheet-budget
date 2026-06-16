@@ -204,7 +204,7 @@ export function TransactionsPage() {
             ))}
           </thead>
           <tbody>
-            {isLoading || isGenerating ? (
+            {isLoading || (isGenerating && filtered.length === 0) ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
                   {columns.map((_, j) => (

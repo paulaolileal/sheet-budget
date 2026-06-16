@@ -125,9 +125,10 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   return txs.some(
     (t) =>
       t.competencia === competencia &&
+      t.status !== "CANCELADO" &&
       (
         (t.template_id != null && t.template_id === tpl.template_id) ||
-        (t.descricao === tpl.nome && t.tipo_lancamento === "RECORRENTE")
+        t.descricao === tpl.nome
       ),
   );
 }
@@ -143,9 +144,13 @@ export function useAutoGenerateRecurring() {
   const competencia = useUiStore((s) => s.competencia);
   const qc = useQueryClient();
   const isRunning = useRef(false);
+  // Tracks the last competencia we already evaluated to prevent re-running after invalidateQueries
+  const lastEvaluatedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!templates || !txs || isRunning.current) return;
+    if (!templates || !txs) return;
+    if (isRunning.current) return;
+    if (lastEvaluatedFor.current === competencia) return;
 
     const missing = templates.filter((tpl) => {
       if (!tpl.ativo) return false;
@@ -153,6 +158,9 @@ export function useAutoGenerateRecurring() {
       if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
       return !alreadyExists(txs, tpl, competencia);
     });
+
+    // Mark evaluated regardless of outcome so txs changes don't re-trigger
+    lastEvaluatedFor.current = competencia;
 
     if (missing.length === 0) return;
 
