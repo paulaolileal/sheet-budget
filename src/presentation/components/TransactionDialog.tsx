@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -94,6 +94,24 @@ export function TransactionDialog({
         parcelas: 1,
       },
     });
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        descricao: transaction?.descricao ?? "",
+        competencia: transaction?.competencia ?? competencia,
+        categoria_id: transaction?.categoria_id ?? "",
+        payment_account_id: transaction?.payment_account_id ?? "",
+        valor_previsto: transaction?.valor_previsto ?? 0,
+        valor_final: transaction?.valor_final ?? undefined,
+        status: transaction?.status ?? "PLANEJADO",
+        tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
+        considerar_resumo: transaction?.considerar_resumo ?? true,
+        parcelas: 1,
+      });
+      setConfirmDelete(false);
+    }
+  }, [open, transaction, competencia, reset]);
 
   const tipo = watch("tipo_lancamento");
   const status = watch("status");
