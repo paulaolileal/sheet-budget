@@ -5,6 +5,7 @@ import type { Transaction, RecurrenceTemplate } from "@/domain/types";
 import { transactionInputSchema, type TransactionInput } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaLabel } from "@/utils/format";
+import { transactionId } from "@/lib/idgen";
 import { toast } from "sonner";
 
 const repo = () => getRepository();
@@ -124,14 +125,20 @@ function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCom
 }
 
 function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia: string): boolean {
-  return txs.some((t) => t.competencia === competencia && t.status !== "CANCELADO" && matchesTemplate(t, tpl));
+  const expectedId = transactionId(competencia, tpl.nome);
+  return txs.some(
+    (t) =>
+      t.competencia === competencia &&
+      t.status !== "CANCELADO" &&
+      (t.transaction_id === expectedId || matchesTemplate(t, tpl)),
+  );
 }
 
 export function useAutoGenerateRecurring() {
   const competencia = useUiStore((s) => s.competencia);
   const qc = useQueryClient();
   const isRunning = useRef(false);
-  // Tracks competencias already evaluated in this session to prevent re-processing
+  // Each competencia is evaluated exactly once per session
   const processed = useRef(new Set<string>());
 
   useEffect(() => {
@@ -141,10 +148,10 @@ export function useAutoGenerateRecurring() {
 
     void (async () => {
       try {
-        // Always fetch fresh data before the de-para to avoid stale-cache false negatives
+        // Bypass TanStack Query cache entirely — read directly from source
         const [txs, templates] = await Promise.all([
-          qc.fetchQuery({ queryKey: qk.transactions, queryFn: () => repo().getTransactions() }),
-          qc.fetchQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates() }),
+          repo().getTransactions(),
+          repo().getTemplates(),
         ]);
 
         const missing = templates.filter((tpl) => {
@@ -154,7 +161,7 @@ export function useAutoGenerateRecurring() {
           return !alreadyExists(txs, tpl, competencia);
         });
 
-        // Mark as processed after successful fresh fetch (not on API error)
+        // Mark evaluated after a successful source fetch (API errors are retriable)
         processed.current.add(competencia);
 
         if (missing.length === 0) return;
@@ -180,7 +187,8 @@ export function useAutoGenerateRecurring() {
           })),
         );
 
-        qc.setQueryData<Transaction[]>(qk.transactions, (old) => [...(old ?? []), ...created]);
+        // Invalidate so all components (parceladas, recorrentes, etc.) reload from source
+        await qc.invalidateQueries({ queryKey: qk.transactions });
         toast.success(`${created.length} transações recorrentes criadas para ${monthLabel}`, { id: "auto-gen" });
       } catch {
         toast.error("Erro ao gerar transações recorrentes", { id: "auto-gen" });
