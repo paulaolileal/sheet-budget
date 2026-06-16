@@ -134,7 +134,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
   async createTransaction(t: Omit<Transaction, "transaction_id"> & { transaction_id?: string }) {
     const tx: Transaction = {
       ...t,
-      transaction_id: t.transaction_id ?? `tx-${Date.now()}`,
+      transaction_id:
+        t.transaction_id ??
+        `tx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
     };
     await this.request(
       `/values/${SHEETS.transactions}!A:M:append?valueInputOption=USER_ENTERED`,

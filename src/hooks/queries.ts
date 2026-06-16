@@ -107,6 +107,31 @@ export function useMarkGroupPaid() {
   });
 }
 
+function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCompetencia: string): number {
+  const lastTx = txs
+    .filter(
+      (t) =>
+        t.competencia < beforeCompetencia &&
+        (
+          (t.template_id != null && t.template_id === tpl.template_id) ||
+          (t.descricao === tpl.nome && t.tipo_lancamento === "RECORRENTE")
+        ),
+    )
+    .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
+  return lastTx?.valor_previsto ?? tpl.valor_padrao ?? 0;
+}
+
+function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia: string): boolean {
+  return txs.some(
+    (t) =>
+      t.competencia === competencia &&
+      (
+        (t.template_id != null && t.template_id === tpl.template_id) ||
+        (t.descricao === tpl.nome && t.tipo_lancamento === "RECORRENTE")
+      ),
+  );
+}
+
 /**
  * Silently generates missing recurring transactions for the active competencia.
  * Runs whenever competencia, templates, or transactions change.
@@ -126,22 +151,24 @@ export function useAutoGenerateRecurring() {
       if (!tpl.ativo) return false;
       if (tpl.primeira_competencia > competencia) return false;
       if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
-      return !txs.some((t) => t.template_id === tpl.template_id && t.competencia === competencia);
+      return !alreadyExists(txs, tpl, competencia);
     });
 
     if (missing.length === 0) return;
 
     isRunning.current = true;
-    (async () => {
+    useUiStore.getState().setGenerating(true);
+
+    void (async () => {
       try {
         for (const tpl of missing) {
           await repo().createTransaction({
             competencia,
             descricao: tpl.nome,
             categoria_id: tpl.categoria_id,
-            valor_previsto: tpl.valor_padrao ?? 0,
+            valor_previsto: resolveLastValue(txs, tpl, competencia),
             valor_final: null,
-            status: "PLANEJADO",
+            status: "PENDENTE",
             considerar_resumo: tpl.considerar_resumo,
             payment_account_id: tpl.payment_account_id,
             payment_group_id: null,
@@ -150,9 +177,10 @@ export function useAutoGenerateRecurring() {
             template_id: tpl.template_id,
           });
         }
-        qc.invalidateQueries({ queryKey: qk.transactions });
       } finally {
         isRunning.current = false;
+        useUiStore.getState().setGenerating(false);
+        await qc.invalidateQueries({ queryKey: qk.transactions });
       }
     })();
   }, [templates, txs, competencia, qc]);

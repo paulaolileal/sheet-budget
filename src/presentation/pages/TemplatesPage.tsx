@@ -54,7 +54,7 @@ export function TemplatesPage() {
           categoria_id: tpl.categoria_id,
           valor_previsto: tpl.valor_padrao ?? 0,
           valor_final: null,
-          status: "PLANEJADO",
+          status: "PENDENTE",
           considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
           payment_group_id: null,

@@ -48,6 +48,7 @@ const STATUS_TONES: Record<TransactionStatus, string> = {
 
 export function TransactionsPage() {
   const competencia = useUiStore((s) => s.competencia);
+  const isGenerating = useUiStore((s) => s.isGenerating);
   const { data: txs, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
@@ -203,7 +204,7 @@ export function TransactionsPage() {
             ))}
           </thead>
           <tbody>
-            {isLoading ? (
+            {isLoading || isGenerating ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
                   {columns.map((_, j) => (
