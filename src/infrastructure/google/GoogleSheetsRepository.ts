@@ -29,25 +29,9 @@ import { transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
-const MONTH_MAP: Record<string, string> = {
-  janeiro: "01", fevereiro: "02", março: "03", abril: "04",
-  maio: "05", junho: "06", julho: "07", agosto: "08",
-  setembro: "09", outubro: "10", novembro: "11", dezembro: "12",
-};
-
-function parseCompetencia(raw: string): string {
-  if (/^\d{4}-\d{2}$/.test(raw)) return raw;
-  const m = raw.toLowerCase().match(/^(\w+)\s+de\s+(\d{4})$/);
-  if (m && MONTH_MAP[m[1]]) return `${m[2]}-${MONTH_MAP[m[1]]}`;
-  return raw;
-}
-
 function parseCurrency(raw: string): number {
-  const clean = raw.replace(/R\$\s*/g, "").trim();
-  if (clean.includes(",")) {
-    return Number(clean.replace(/\./g, "").replace(",", ".")) || 0;
-  }
-  return Number(clean) || 0;
+  // Handles "20,9" (BR decimal) and plain "20.9"
+  return Number(raw.trim().replace(/\./g, "").replace(",", ".")) || 0;
 }
 
 const SHEETS = {
@@ -121,7 +105,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     return raw.map((r) => ({
       transaction_id: r.transaction_id,
       template_id: r.template_id || null,
-      competencia: parseCompetencia(r.competencia),
+      competencia: r.competencia,
       descricao: r.descricao,
       categoria_id: r.categoria_id,
       valor_previsto: parseCurrency(r.valor_previsto),
@@ -214,8 +198,8 @@ export class GoogleSheetsRepository implements FinanceRepository {
       payment_account_id: r.payment_account_id || null,
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       ativo: String(r.ativo).toUpperCase() === "TRUE",
-      primeira_competencia: parseCompetencia(r.primeira_competencia),
-      ultima_competencia: r.ultima_competencia ? parseCompetencia(r.ultima_competencia) : undefined,
+      primeira_competencia: r.primeira_competencia,
+      ultima_competencia: r.ultima_competencia || undefined,
       valor_padrao: r.valor_padrao ? parseCurrency(r.valor_padrao) : undefined,
     }));
   }
@@ -253,7 +237,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       payment_group_id: r.payment_group_id,
       nome: r.nome,
       payment_account_id: r.payment_account_id,
-      competencia: parseCompetencia(r.competencia),
+      competencia: r.competencia,
       status: (r.status as PaymentGroup["status"]) ?? "ABERTO",
     }));
   }
