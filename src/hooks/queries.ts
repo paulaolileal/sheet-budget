@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
@@ -104,4 +105,55 @@ export function useMarkGroupPaid() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+}
+
+/**
+ * Silently generates missing recurring transactions for the active competencia.
+ * Runs whenever competencia, templates, or transactions change.
+ * Respects ultima_competencia as an inclusive end date.
+ */
+export function useAutoGenerateRecurring() {
+  const { data: templates } = useTemplates();
+  const { data: txs } = useTransactions();
+  const competencia = useUiStore((s) => s.competencia);
+  const qc = useQueryClient();
+  const isRunning = useRef(false);
+
+  useEffect(() => {
+    if (!templates || !txs || isRunning.current) return;
+
+    const missing = templates.filter((tpl) => {
+      if (!tpl.ativo) return false;
+      if (tpl.primeira_competencia > competencia) return false;
+      if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
+      return !txs.some((t) => t.template_id === tpl.template_id && t.competencia === competencia);
+    });
+
+    if (missing.length === 0) return;
+
+    isRunning.current = true;
+    (async () => {
+      try {
+        for (const tpl of missing) {
+          await repo().createTransaction({
+            competencia,
+            descricao: tpl.nome,
+            categoria_id: tpl.categoria_id,
+            valor_previsto: tpl.valor_padrao ?? 0,
+            valor_final: null,
+            status: "PLANEJADO",
+            considerar_resumo: tpl.considerar_resumo,
+            payment_account_id: tpl.payment_account_id,
+            payment_group_id: null,
+            tipo_lancamento: "RECORRENTE",
+            origem: `template:${tpl.template_id}`,
+            template_id: tpl.template_id,
+          });
+        }
+        qc.invalidateQueries({ queryKey: qk.transactions });
+      } finally {
+        isRunning.current = false;
+      }
+    })();
+  }, [templates, txs, competencia, qc]);
 }

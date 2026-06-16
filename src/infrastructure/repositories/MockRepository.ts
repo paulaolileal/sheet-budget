@@ -54,6 +54,8 @@ async function loadFromSeed(): Promise<MockState> {
     considerar_resumo: parseBool(r.considerar_resumo),
     ativo: parseBool(r.ativo),
     primeira_competencia: r.primeira_competencia,
+    ultima_competencia: r.ultima_competencia || undefined,
+    valor_padrao: r.valor_padrao ? parseBRNumber(r.valor_padrao) : undefined,
   }));
 
   const accounts: Account[] = accRaw.map((r) => ({

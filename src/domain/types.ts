@@ -47,6 +47,8 @@ export interface RecurrenceTemplate {
   considerar_resumo: boolean;
   ativo: boolean;
   primeira_competencia: Competencia;
+  /** Inclusive end month. If absent, the recurrence runs indefinitely. */
+  ultima_competencia?: Competencia;
   valor_padrao?: number;
 }
 

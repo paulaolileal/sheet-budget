@@ -181,6 +181,8 @@ export class GoogleSheetsRepository implements FinanceRepository {
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       ativo: String(r.ativo).toUpperCase() === "TRUE",
       primeira_competencia: r.primeira_competencia,
+      ultima_competencia: r.ultima_competencia || undefined,
+      valor_padrao: r.valor_padrao ? Number(String(r.valor_padrao).replace(",", ".")) : undefined,
     }));
   }
 
@@ -193,16 +195,18 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.considerar_resumo ? "TRUE" : "FALSE",
       t.ativo ? "TRUE" : "FALSE",
       t.primeira_competencia,
+      t.ultima_competencia ?? "",
+      t.valor_padrao ?? "",
     ];
     try {
       const idx = await this.findRowIndex(SHEETS.templates, "template_id", t.template_id);
       await this.request(
-        `/values/${SHEETS.templates}!A${idx}:G${idx}?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A${idx}:I${idx}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
       await this.request(
-        `/values/${SHEETS.templates}!A:G:append?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A:I:append?valueInputOption=USER_ENTERED`,
         { method: "POST", body: JSON.stringify({ values: [row] }) },
       );
     }

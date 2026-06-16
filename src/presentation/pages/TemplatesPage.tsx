@@ -13,7 +13,7 @@ import {
   useCreateTransaction,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
-import { competenciaLabel, currentCompetencia } from "@/utils/format";
+import { competenciaLabel } from "@/utils/format";
 import { Play, Repeat } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,28 +34,25 @@ export function TemplatesPage() {
     !filter || t.nome.toLowerCase().includes(filter.toLowerCase()),
   );
 
-  /** Para cada template ativo cuja primeira_competencia <= competencia atual,
-   *  gera o lançamento se não existir nessa competência. */
   async function gerarMes() {
     if (!templates || !txs) return;
     setRunning(true);
     let criados = 0;
     try {
       const target = competencia;
-      const existing = new Set(
-        txs.filter((t) => t.competencia === target).map((t) => `${t.template_id ?? ""}|${t.descricao}`),
+      const existingKeys = new Set(
+        txs.filter((t) => t.competencia === target && t.template_id).map((t) => t.template_id!),
       );
       for (const tpl of templates) {
         if (!tpl.ativo) continue;
         if (tpl.primeira_competencia > target) continue;
-        const key = `${tpl.template_id}|${tpl.nome}`;
-        if (existing.has(key)) continue;
-        const sample = txs.find((t) => t.template_id === tpl.template_id);
+        if (tpl.ultima_competencia && target > tpl.ultima_competencia) continue;
+        if (existingKeys.has(tpl.template_id)) continue;
         await create.mutateAsync({
           competencia: target,
           descricao: tpl.nome,
           categoria_id: tpl.categoria_id,
-          valor_previsto: sample?.valor_previsto ?? 0,
+          valor_previsto: tpl.valor_padrao ?? 0,
           valor_final: null,
           status: "PLANEJADO",
           considerar_resumo: tpl.considerar_resumo,
@@ -67,7 +64,8 @@ export function TemplatesPage() {
         });
         criados++;
       }
-      toast.success(`${criados} lançamento(s) gerados para ${competenciaLabel(target)}`);
+      if (criados > 0) toast.success(`${criados} lançamento(s) gerados para ${competenciaLabel(target)}`);
+      else toast.info(`Todos os templates já estão gerados para ${competenciaLabel(target)}`);
     } finally {
       setRunning(false);
     }
@@ -108,18 +106,18 @@ export function TemplatesPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-xs text-muted-foreground">
-                  Desde {competenciaLabel(t.primeira_competencia)} · {t.considerar_resumo ? "no resumo" : "fora do resumo"}
+                  Desde {competenciaLabel(t.primeira_competencia)}
+                  {t.ultima_competencia && ` até ${competenciaLabel(t.ultima_competencia)}`}
+                  {" · "}{t.considerar_resumo ? "no resumo" : "fora do resumo"}
+                  {t.valor_padrao != null && ` · R$ ${t.valor_padrao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
                 </CardContent>
               </Card>
             ))}
       </div>
 
       <p className="text-xs text-muted-foreground mt-6">
-        Dica: ao abrir um novo mês, use o botão acima para materializar todos os templates ativos.
-        Lançamentos existentes nunca são duplicados.
+        Lançamentos são gerados automaticamente ao entrar em um novo mês. Use o botão acima para forçar a geração manualmente.
       </p>
-      {/* gambi para silenciar warning de variável usada apenas em mensagem */}
-      <span className="hidden">{currentCompetencia()}</span>
     </div>
   );
 }

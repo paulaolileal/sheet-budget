@@ -53,6 +53,7 @@ export const templateSchema = z.object({
   considerar_resumo: z.boolean(),
   ativo: z.boolean(),
   primeira_competencia: competenciaSchema,
+  ultima_competencia: competenciaSchema.optional(),
   valor_padrao: z.number().nonnegative().optional(),
 });
 
