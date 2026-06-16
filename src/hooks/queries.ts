@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
@@ -134,69 +133,59 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   );
 }
 
-// Module-level: survives React StrictMode double-invocations and AppShell remounts.
-// useRef would reset on every unmount/remount, causing duplicate batch creation.
-let _autoGenRunning = false;
-const _autoGenProcessed = new Set<string>();
-
-export function useAutoGenerateRecurring() {
-  const competencia = useUiStore((s) => s.competencia);
+export function useGenerateRecurring() {
   const qc = useQueryClient();
 
-  useEffect(() => {
-    if (_autoGenRunning) return;
-    if (_autoGenProcessed.has(competencia)) return;
-    _autoGenRunning = true;
+  return useMutation({
+    mutationFn: async () => {
+      const competencia = useUiStore.getState().competencia;
+      const [txs, templates] = await Promise.all([
+        repo().getTransactions(),
+        repo().getTemplates(),
+      ]);
 
-    void (async () => {
-      try {
-        const [txs, templates] = await Promise.all([
-          repo().getTransactions(),
-          repo().getTemplates(),
-        ]);
+      const missing = templates.filter((tpl) => {
+        if (!tpl.ativo) return false;
+        if (tpl.primeira_competencia > competencia) return false;
+        if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
+        return !alreadyExists(txs, tpl, competencia);
+      });
 
-        const missing = templates.filter((tpl) => {
-          if (!tpl.ativo) return false;
-          if (tpl.primeira_competencia > competencia) return false;
-          if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
-          return !alreadyExists(txs, tpl, competencia);
-        });
+      if (missing.length === 0) return { count: 0, competencia };
 
-        // Mark as processed only after a successful source read (API errors stay retryable)
-        _autoGenProcessed.add(competencia);
+      const monthLabel = competenciaLabel(competencia);
+      toast.loading(`Criando recorrências para ${monthLabel}...`, { id: "gen-recurring" });
 
-        if (missing.length === 0) return;
+      const created = await repo().createTransactionsBatch(
+        missing.map((tpl) => ({
+          competencia,
+          descricao: tpl.nome,
+          categoria_id: tpl.categoria_id,
+          valor_previsto: resolveLastValue(txs, tpl, competencia),
+          valor_final: null,
+          status: "PENDENTE" as const,
+          considerar_resumo: tpl.considerar_resumo,
+          payment_account_id: tpl.payment_account_id,
+          payment_group_id: null,
+          tipo_lancamento: "RECORRENTE" as const,
+          origem: `template:${tpl.template_id}`,
+          template_id: tpl.template_id,
+        })),
+      );
 
-        const monthLabel = competenciaLabel(competencia);
-        toast.loading(`Criando transações recorrentes para ${monthLabel}...`, { id: "auto-gen" });
-        useUiStore.getState().setGenerating(true);
-
-        const created = await repo().createTransactionsBatch(
-          missing.map((tpl) => ({
-            competencia,
-            descricao: tpl.nome,
-            categoria_id: tpl.categoria_id,
-            valor_previsto: resolveLastValue(txs, tpl, competencia),
-            valor_final: null,
-            status: "PENDENTE" as const,
-            considerar_resumo: tpl.considerar_resumo,
-            payment_account_id: tpl.payment_account_id,
-            payment_group_id: null,
-            tipo_lancamento: "RECORRENTE" as const,
-            origem: `template:${tpl.template_id}`,
-            template_id: tpl.template_id,
-          })),
-        );
-
-        await qc.invalidateQueries({ queryKey: qk.transactions });
-        toast.success(`${created.length} transações recorrentes criadas para ${monthLabel}`, { id: "auto-gen" });
-      } catch (err) {
-        console.error("[AutoGenRecurring]", err);
-        toast.error("Erro ao gerar transações recorrentes", { id: "auto-gen" });
-      } finally {
-        _autoGenRunning = false;
-        useUiStore.getState().setGenerating(false);
+      return { count: created.length, competencia };
+    },
+    onSuccess: async ({ count, competencia }) => {
+      await qc.invalidateQueries({ queryKey: qk.transactions });
+      const monthLabel = competenciaLabel(competencia);
+      if (count === 0) {
+        toast.info(`Nenhuma recorrência pendente para ${monthLabel}`, { id: "gen-recurring" });
+      } else {
+        toast.success(`${count} recorrências criadas para ${monthLabel}`, { id: "gen-recurring" });
       }
-    })();
-  }, [competencia, qc]);
+    },
+    onError: (e: Error) => {
+      toast.error(e.message, { id: "gen-recurring" });
+    },
+  });
 }

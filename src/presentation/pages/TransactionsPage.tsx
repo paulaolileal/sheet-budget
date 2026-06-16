@@ -8,7 +8,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import { Search, Plus, ArrowUpDown } from "lucide-react";
+import { Search, Plus, ArrowUpDown, Repeat, RefreshCw } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAccounts,
   useCategories,
+  useGenerateRecurring,
   useTransactions,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
@@ -48,8 +49,8 @@ const STATUS_TONES: Record<TransactionStatus, string> = {
 
 export function TransactionsPage() {
   const competencia = useUiStore((s) => s.competencia);
-  const isGenerating = useUiStore((s) => s.isGenerating);
   const { data: txs, isLoading } = useTransactions();
+  const { mutate: generateRecurring, isPending: isGenerating } = useGenerateRecurring();
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
 
@@ -156,6 +157,14 @@ export function TransactionsPage() {
         actions={
           <div className="flex items-center gap-2">
             <CompetenciaSelector />
+            <Button variant="outline" onClick={() => generateRecurring()} disabled={isGenerating}>
+              {isGenerating ? (
+                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Repeat className="h-4 w-4 mr-1" />
+              )}
+              Recorrências
+            </Button>
             <Button onClick={() => setCreating(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Novo

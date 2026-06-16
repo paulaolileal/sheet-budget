@@ -8,8 +8,6 @@ interface UiState {
   setCompetencia: (c: string) => void;
   sync: SyncState;
   setSync: (s: SyncState) => void;
-  isGenerating: boolean;
-  setGenerating: (v: boolean) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -17,6 +15,4 @@ export const useUiStore = create<UiState>((set) => ({
   setCompetencia: (competencia) => set({ competencia }),
   sync: "idle",
   setSync: (sync) => set({ sync }),
-  isGenerating: false,
-  setGenerating: (isGenerating) => set({ isGenerating }),
 }));

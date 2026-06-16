@@ -18,8 +18,6 @@ import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import { config } from "@/services/config";
 import { clearAccessToken } from "@/services/googleAuth";
-import { useAutoGenerateRecurring } from "@/hooks/queries";
-
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/lancamentos", label: "Lançamentos", icon: Receipt },
@@ -55,7 +53,6 @@ export function AppShell() {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   const { user, clearUser } = useAuthStore();
-  useAutoGenerateRecurring();
 
   function handleLogout() {
     clearAccessToken();
