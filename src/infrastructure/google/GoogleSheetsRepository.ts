@@ -29,6 +29,27 @@ import { transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
+const MONTH_MAP: Record<string, string> = {
+  janeiro: "01", fevereiro: "02", março: "03", abril: "04",
+  maio: "05", junho: "06", julho: "07", agosto: "08",
+  setembro: "09", outubro: "10", novembro: "11", dezembro: "12",
+};
+
+function parseCompetencia(raw: string): string {
+  if (/^\d{4}-\d{2}$/.test(raw)) return raw;
+  const m = raw.toLowerCase().match(/^(\w+)\s+de\s+(\d{4})$/);
+  if (m && MONTH_MAP[m[1]]) return `${m[2]}-${MONTH_MAP[m[1]]}`;
+  return raw;
+}
+
+function parseCurrency(raw: string): number {
+  const clean = raw.replace(/R\$\s*/g, "").trim();
+  if (clean.includes(",")) {
+    return Number(clean.replace(/\./g, "").replace(",", ".")) || 0;
+  }
+  return Number(clean) || 0;
+}
+
 const SHEETS = {
   transactions: "transactions",
   templates: "recurrence_templates",
@@ -100,11 +121,11 @@ export class GoogleSheetsRepository implements FinanceRepository {
     return raw.map((r) => ({
       transaction_id: r.transaction_id,
       template_id: r.template_id || null,
-      competencia: r.competencia,
+      competencia: parseCompetencia(r.competencia),
       descricao: r.descricao,
       categoria_id: r.categoria_id,
-      valor_previsto: Number(String(r.valor_previsto).replace(",", ".")) || 0,
-      valor_final: r.valor_final ? Number(String(r.valor_final).replace(",", ".")) : null,
+      valor_previsto: parseCurrency(r.valor_previsto),
+      valor_final: r.valor_final ? parseCurrency(r.valor_final) : null,
       status: r.status as Transaction["status"],
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       payment_account_id: r.payment_account_id || null,
@@ -193,9 +214,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
       payment_account_id: r.payment_account_id || null,
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       ativo: String(r.ativo).toUpperCase() === "TRUE",
-      primeira_competencia: r.primeira_competencia,
-      ultima_competencia: r.ultima_competencia || undefined,
-      valor_padrao: r.valor_padrao ? Number(String(r.valor_padrao).replace(",", ".")) : undefined,
+      primeira_competencia: parseCompetencia(r.primeira_competencia),
+      ultima_competencia: r.ultima_competencia ? parseCompetencia(r.ultima_competencia) : undefined,
+      valor_padrao: r.valor_padrao ? parseCurrency(r.valor_padrao) : undefined,
     }));
   }
 
@@ -232,7 +253,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       payment_group_id: r.payment_group_id,
       nome: r.nome,
       payment_account_id: r.payment_account_id,
-      competencia: r.competencia,
+      competencia: parseCompetencia(r.competencia),
       status: (r.status as PaymentGroup["status"]) ?? "ABERTO",
     }));
   }
