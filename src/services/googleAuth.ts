@@ -1,11 +1,10 @@
-/**
- * Wrapper sobre Google Identity Services (gsi/client).
- *
- * Carrega o script sob demanda e expõe `requestAccessToken()`.
- * O token NUNCA é persistido em localStorage — vive em memória nesta closure.
- */
-
 import { config } from "./config";
+
+export interface UserInfo {
+  name: string;
+  email: string;
+  picture: string;
+}
 
 let accessToken: string | null = null;
 let expiresAt = 0;
@@ -43,6 +42,14 @@ function loadGsi(): Promise<void> {
   return scriptPromise;
 }
 
+async function fetchUserInfo(token: string): Promise<UserInfo> {
+  const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Falha ao obter dados do usuário Google");
+  return res.json() as Promise<UserInfo>;
+}
+
 export function getAccessToken(): string | null {
   if (!accessToken) return null;
   if (Date.now() >= expiresAt) {
@@ -57,15 +64,15 @@ export function clearAccessToken() {
   expiresAt = 0;
 }
 
-export async function signIn(): Promise<string> {
+export async function signIn(): Promise<UserInfo> {
   if (!config.googleClientId) {
     throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
   }
   await loadGsi();
-  return new Promise<string>((resolve, reject) => {
+  const token = await new Promise<string>((resolve, reject) => {
     const tokenClient = window.google!.accounts.oauth2.initTokenClient({
       client_id: config.googleClientId!,
-      scope: config.scopes,
+      scope: `${config.scopes} openid email profile`,
       callback: (resp) => {
         if (resp.error || !resp.access_token) {
           return reject(new Error(resp.error ?? "Login cancelado"));
@@ -77,4 +84,5 @@ export async function signIn(): Promise<string> {
     });
     tokenClient.requestAccessToken({ prompt: "" });
   });
+  return fetchUserInfo(token);
 }
