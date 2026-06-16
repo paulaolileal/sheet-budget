@@ -4,6 +4,7 @@ import { getRepository } from "@/application/repositoryProvider";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
 import { transactionInputSchema, type TransactionInput } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
+import { competenciaLabel } from "@/utils/format";
 import { toast } from "sonner";
 
 const repo = () => getRepository();
@@ -133,63 +134,60 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   );
 }
 
-/**
- * Silently generates missing recurring transactions for the active competencia.
- * Runs whenever competencia, templates, or transactions change.
- * Respects ultima_competencia as an inclusive end date.
- */
 export function useAutoGenerateRecurring() {
-  const { data: templates } = useTemplates();
-  const { data: txs } = useTransactions();
   const competencia = useUiStore((s) => s.competencia);
   const qc = useQueryClient();
   const isRunning = useRef(false);
-  // Tracks the last competencia we already evaluated to prevent re-running after invalidateQueries
-  const lastEvaluatedFor = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!templates || !txs) return;
     if (isRunning.current) return;
-    if (lastEvaluatedFor.current === competencia) return;
-
-    const missing = templates.filter((tpl) => {
-      if (!tpl.ativo) return false;
-      if (tpl.primeira_competencia > competencia) return false;
-      if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
-      return !alreadyExists(txs, tpl, competencia);
-    });
-
-    // Mark evaluated regardless of outcome so txs changes don't re-trigger
-    lastEvaluatedFor.current = competencia;
-
-    if (missing.length === 0) return;
-
     isRunning.current = true;
-    useUiStore.getState().setGenerating(true);
 
     void (async () => {
       try {
-        await repo().createTransactionsBatch(
+        const [txs, templates] = await Promise.all([
+          qc.fetchQuery({ queryKey: qk.transactions, queryFn: () => repo().getTransactions() }),
+          qc.fetchQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates() }),
+        ]);
+
+        const missing = templates.filter((tpl) => {
+          if (!tpl.ativo) return false;
+          if (tpl.primeira_competencia > competencia) return false;
+          if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
+          return !alreadyExists(txs, tpl, competencia);
+        });
+
+        if (missing.length === 0) return;
+
+        const monthLabel = competenciaLabel(competencia);
+        toast.loading(`Criando transações recorrentes para ${monthLabel}...`, { id: "auto-gen" });
+        useUiStore.getState().setGenerating(true);
+
+        const created = await repo().createTransactionsBatch(
           missing.map((tpl) => ({
             competencia,
             descricao: tpl.nome,
             categoria_id: tpl.categoria_id,
             valor_previsto: resolveLastValue(txs, tpl, competencia),
             valor_final: null,
-            status: "PENDENTE",
+            status: "PENDENTE" as const,
             considerar_resumo: tpl.considerar_resumo,
             payment_account_id: tpl.payment_account_id,
             payment_group_id: null,
-            tipo_lancamento: "RECORRENTE",
+            tipo_lancamento: "RECORRENTE" as const,
             origem: `template:${tpl.template_id}`,
             template_id: tpl.template_id,
           })),
         );
+
+        qc.setQueryData<Transaction[]>(qk.transactions, (old) => [...(old ?? []), ...created]);
+        toast.success(`${created.length} transações recorrentes criadas para ${monthLabel}`, { id: "auto-gen" });
+      } catch {
+        toast.error("Erro ao gerar transações recorrentes", { id: "auto-gen" });
       } finally {
         isRunning.current = false;
         useUiStore.getState().setGenerating(false);
-        await qc.invalidateQueries({ queryKey: qk.transactions });
       }
     })();
-  }, [templates, txs, competencia, qc]);
+  }, [competencia, qc]);
 }
