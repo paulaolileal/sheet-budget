@@ -108,43 +108,40 @@ export function useMarkGroupPaid() {
   });
 }
 
+function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
+  return (
+    (t.template_id != null && t.template_id === tpl.template_id) ||
+    t.origem === `template:${tpl.template_id}` ||
+    t.descricao === tpl.nome
+  );
+}
+
 function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCompetencia: string): number {
   const lastTx = txs
-    .filter(
-      (t) =>
-        t.competencia < beforeCompetencia &&
-        (
-          (t.template_id != null && t.template_id === tpl.template_id) ||
-          (t.descricao === tpl.nome && t.tipo_lancamento === "RECORRENTE")
-        ),
-    )
+    .filter((t) => t.competencia < beforeCompetencia && t.status !== "CANCELADO" && matchesTemplate(t, tpl))
     .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
   return lastTx?.valor_previsto ?? tpl.valor_padrao ?? 0;
 }
 
 function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia: string): boolean {
-  return txs.some(
-    (t) =>
-      t.competencia === competencia &&
-      t.status !== "CANCELADO" &&
-      (
-        (t.template_id != null && t.template_id === tpl.template_id) ||
-        t.descricao === tpl.nome
-      ),
-  );
+  return txs.some((t) => t.competencia === competencia && t.status !== "CANCELADO" && matchesTemplate(t, tpl));
 }
 
 export function useAutoGenerateRecurring() {
   const competencia = useUiStore((s) => s.competencia);
   const qc = useQueryClient();
   const isRunning = useRef(false);
+  // Tracks competencias already evaluated in this session to prevent re-processing
+  const processed = useRef(new Set<string>());
 
   useEffect(() => {
     if (isRunning.current) return;
+    if (processed.current.has(competencia)) return;
     isRunning.current = true;
 
     void (async () => {
       try {
+        // Always fetch fresh data before the de-para to avoid stale-cache false negatives
         const [txs, templates] = await Promise.all([
           qc.fetchQuery({ queryKey: qk.transactions, queryFn: () => repo().getTransactions() }),
           qc.fetchQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates() }),
@@ -156,6 +153,9 @@ export function useAutoGenerateRecurring() {
           if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
           return !alreadyExists(txs, tpl, competencia);
         });
+
+        // Mark as processed after successful fresh fetch (not on API error)
+        processed.current.add(competencia);
 
         if (missing.length === 0) return;
 
