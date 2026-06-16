@@ -161,8 +161,8 @@ export function useAutoGenerateRecurring() {
 
     void (async () => {
       try {
-        for (const tpl of missing) {
-          await repo().createTransaction({
+        await repo().createTransactionsBatch(
+          missing.map((tpl) => ({
             competencia,
             descricao: tpl.nome,
             categoria_id: tpl.categoria_id,
@@ -175,8 +175,8 @@ export function useAutoGenerateRecurring() {
             tipo_lancamento: "RECORRENTE",
             origem: `template:${tpl.template_id}`,
             template_id: tpl.template_id,
-          });
-        }
+          })),
+        );
       } finally {
         isRunning.current = false;
         useUiStore.getState().setGenerating(false);

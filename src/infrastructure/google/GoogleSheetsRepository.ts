@@ -144,6 +144,18 @@ export class GoogleSheetsRepository implements FinanceRepository {
     return tx;
   }
 
+  async createTransactionsBatch(ts: (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[]) {
+    const created: Transaction[] = ts.map((t) => ({
+      ...t,
+      transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
+    }));
+    await this.request(
+      `/values/${SHEETS.transactions}!A:M:append?valueInputOption=USER_ENTERED`,
+      { method: "POST", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
+    );
+    return created;
+  }
+
   private async findRowIndex(sheet: string, idColumn: string, id: string): Promise<number> {
     const rows = await this.getValues(sheet);
     const headerIdx = rows[0]?.indexOf(idColumn) ?? -1;

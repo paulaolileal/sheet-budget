@@ -14,6 +14,7 @@ export interface FinanceRepository {
   // transactions
   getTransactions(): Promise<Transaction[]>;
   createTransaction(t: Omit<Transaction, "transaction_id"> & { transaction_id?: string }): Promise<Transaction>;
+  createTransactionsBatch(ts: (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[]): Promise<Transaction[]>;
   updateTransaction(id: string, patch: Partial<Transaction>): Promise<Transaction>;
   deleteTransaction(id: string): Promise<void>;
 

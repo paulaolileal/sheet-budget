@@ -134,6 +134,16 @@ export class MockRepository implements FinanceRepository {
     persist(state);
     return tx;
   }
+  async createTransactionsBatch(ts: (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[]) {
+    const state = await getState();
+    const created: Transaction[] = ts.map((t) => ({
+      ...t,
+      transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
+    }));
+    state.transactions = [...state.transactions, ...created];
+    persist(state);
+    return created;
+  }
   async updateTransaction(id: string, patch: Partial<Transaction>) {
     const state = await getState();
     let updated: Transaction | undefined;
