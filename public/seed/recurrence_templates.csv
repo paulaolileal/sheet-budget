@@ -1,0 +1,63 @@
+template_id,nome,categoria_id,payment_account_id,considerar_resumo,ativo,primeira_competencia
+tpl-netflix,Netflix,cat-streamings,acc-credito,FALSE,TRUE,2024-07
+tpl-meli,Meli+,cat-netflix,acc-credito,FALSE,TRUE,2024-07
+tpl-crunchyroll,Crunchyroll,cat-meli,acc-credito,FALSE,TRUE,2024-07
+tpl-jus-brasil,Jus Brasil,cat-crunchyroll,acc-credito,FALSE,TRUE,2024-08
+tpl-apartamento,Apartamento,cat-jus-brasil,acc-debito-automatico,TRUE,TRUE,2024-07
+tpl-seguro-residencial,Seguro residêncial,cat-apartamento,acc-credito,FALSE,TRUE,2024-07
+tpl-carro,Carro,cat-seguro-residencial,acc-boleto,TRUE,TRUE,2024-07
+tpl-fies,FIES,cat-carro,acc-pix,TRUE,TRUE,2024-07
+tpl-moveis-planejados,Móveis planejados,cat-fies,acc-pix,TRUE,TRUE,2024-07
+tpl-salario-de-mae,Salário de mãe,cat-moveis-planejados,acc-pix,TRUE,TRUE,2024-07
+tpl-academia,Academia,cat-salario-de-mae,acc-credito,FALSE,TRUE,2024-07
+tpl-seguro-do-carro,Seguro do carro,cat-academia,acc-credito,FALSE,TRUE,2024-07
+tpl-hormonios,Hormônios,cat-seguro-do-carro,acc-credito,FALSE,TRUE,2024-07
+tpl-internet,Internet,cat-hormonios,acc-boleto,TRUE,TRUE,2024-08
+tpl-condominio,Condôminio,cat-internet,acc-boleto,TRUE,TRUE,2024-08
+tpl-cemig-metha,CEMIG/Metha,cat-condominio,acc-debito-automatico,TRUE,TRUE,2024-10
+tpl-viagem-para-caldas-novas,Viagem para Caldas Novas,cat-cemig-metha,acc-pix,TRUE,TRUE,2024-09
+tpl-remedios-pos-operatorio,Remédios pós operatório,cat-viagem-para-caldas-novas,acc-credito,TRUE,TRUE,2024-08
+tpl-material-de-construcao-1,Material de construção (1),cat-remedios-pos-operatorio,acc-credito,TRUE,TRUE,2024-08
+tpl-material-de-construcao-2,Material de construção (2),cat-material-de-construcao-1,acc-credito,TRUE,TRUE,2024-08
+tpl-material-de-construcao-3,Material de construção (3),cat-material-de-construcao-2,acc-credito,TRUE,TRUE,2024-08
+tpl-rebaixamento-com-iluminacao,Rebaixamento com iluminação,cat-material-de-construcao-3,acc-credito,TRUE,TRUE,2024-09
+tpl-interruptores,Interruptores,cat-rebaixamento-com-iluminacao,acc-credito,TRUE,TRUE,2024-08
+tpl-fechadura-eletronica,Fechadura eletronica,cat-interruptores,acc-credito,TRUE,TRUE,2024-08
+tpl-presentes,Presentes,cat-fechadura-eletronica,acc-credito,TRUE,TRUE,2024-08
+tpl-iogurtes,Iogurtes,cat-presentes,acc-credito,TRUE,TRUE,2024-08
+tpl-passagem-de-aviao,Passagem de aviao,cat-iogurtes,acc-credito,TRUE,TRUE,2024-07
+tpl-cuba-e-ralo-clique,Cuba e ralo clique,cat-passagem-de-aviao,acc-credito,TRUE,TRUE,2024-08
+tpl-tapete,Tapete,cat-cuba-e-ralo-clique,acc-credito,TRUE,TRUE,2024-08
+tpl-panelas,Panelas,cat-tapete,acc-credito,TRUE,TRUE,2024-08
+tpl-ar-condicionado,Ar condicionado,cat-panelas,acc-credito,TRUE,TRUE,2024-08
+tpl-luminaria-e-assento-sanitario,Luminária e assento sanitário,cat-ar-condicionado,acc-credito,TRUE,TRUE,2024-09
+tpl-forno,Forno,cat-luminaria-e-assento-sanitario,acc-credito,TRUE,TRUE,2024-09
+tpl-potes-e-borrifadores,Potes e borrifadores,cat-forno,acc-credito,TRUE,TRUE,2024-10
+tpl-viagem-para-sao-paulo,Viagem para São Paulo,cat-potes-e-borrifadores,acc-credito,TRUE,TRUE,2024-12
+tpl-tratamento-estetico,Tratamento estético,cat-viagem-para-sao-paulo,acc-credito,FALSE,TRUE,2025-01
+tpl-aparelho-para-inflamacao-na-articulacao,Aparelho para inflamação na articulação,cat-tratamento-estetico,acc-credito,FALSE,TRUE,2025-03
+tpl-tratamento-paozin-1,Tratamento Pãozin (1),cat-aparelho-para-inflamacao-na-articulacao,acc-credito,FALSE,TRUE,2025-10
+tpl-tratamento-paozin-2,Tratamento Pãozin (2),cat-tratamento-paozin-1,acc-credito,FALSE,TRUE,2025-10
+tpl-tratamento-paozin-3,Tratamento Pãozin (3),cat-tratamento-paozin-2,acc-credito,FALSE,TRUE,2025-10
+tpl-mouse-vertical,Mouse vertical,cat-tratamento-paozin-3,acc-credito,FALSE,TRUE,2025-11
+tpl-ventilador,Ventilador,cat-mouse-vertical,acc-credito,FALSE,TRUE,2025-11
+tpl-monitor-secundario,Monitor secundário,cat-ventilador,acc-credito,FALSE,TRUE,2025-11
+tpl-leque-de-direcao-carro,Leque de direção (carro),cat-monitor-secundario,acc-credito,FALSE,TRUE,2026-01
+tpl-caixa-termica,Caixa térmica,cat-leque-de-direcao-carro,acc-credito,FALSE,TRUE,2026-01
+tpl-fonte-carregadora,Fonte carregadora,cat-caixa-termica,acc-credito,FALSE,TRUE,2026-01
+tpl-kit-depilador,Kit depilador,cat-fonte-carregadora,acc-credito,FALSE,TRUE,2025-12
+tpl-roupas-do-reveilon,Roupas do reveilon,cat-kit-depilador,acc-credito,FALSE,TRUE,2025-12
+tpl-2x-kvm,2x KVM,cat-roupas-do-reveilon,acc-credito,FALSE,TRUE,2025-12
+tpl-perfume-sanduicheira-vaporizador-limpa-telas-paleta-de-sombra,"Perfume, sanduicheira, vaporizador, limpa telas, paleta de sombra",cat-2x-kvm,acc-credito,FALSE,TRUE,2026-02
+tpl-jaquetas-de-inverno,Jaquetas de inverno,cat-perfume-sanduicheira-vaporizador-limpa-telas-paleta-de-sombra,acc-credito,FALSE,TRUE,2026-04
+tpl-ingles,Inglês,cat-jaquetas-de-inverno,acc-credito,FALSE,TRUE,2026-02
+tpl-amazon,Amazon,cat-ingles,acc-credito,FALSE,TRUE,2026-03
+tpl-cronograma-capilar,Cronograma capilar,cat-amazon,acc-credito,FALSE,TRUE,2026-03
+tpl-posteres,Posteres,cat-cronograma-capilar,acc-credito,FALSE,TRUE,2026-04
+tpl-presente-de-aniversario-de-mae,Presente de aniversário de mãe,cat-posteres,acc-credito,FALSE,TRUE,2026-04
+tpl-papel-de-parede-liquido,Papel de parede liquido,cat-presente-de-aniversario-de-mae,acc-credito,FALSE,TRUE,2026-04
+tpl-lixeiras-automaticas,Lixeiras automáticas,cat-papel-de-parede-liquido,acc-credito,FALSE,TRUE,2026-04
+tpl-nicho-dos-gatos-e-teclado,Nicho dos gatos e teclado,cat-lixeiras-automaticas,acc-credito,FALSE,TRUE,2026-06
+tpl-rimuru-de-pelucia-roupa-para-os-gatos,Rimuru de pelucia + roupa para os gatos,cat-nicho-dos-gatos-e-teclado,acc-credito,FALSE,TRUE,2026-06
+tpl-desodorantes-lightnovel-skin-care,"Desodorantes, lightnovel, skin care",cat-rimuru-de-pelucia-roupa-para-os-gatos,acc-credito,FALSE,TRUE,2026-06
+tpl-headset-e-shock-mount,Headset e shock mount,cat-desodorantes-lightnovel-skin-care,acc-credito,FALSE,TRUE,2026-06
