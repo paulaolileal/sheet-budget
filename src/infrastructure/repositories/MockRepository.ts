@@ -7,6 +7,7 @@ import type {
   Transaction,
 } from "@/domain/types";
 import { emptyToNull, loadCsv, parseBool, parseBRNumber } from "../csv";
+import { transactionId } from "@/lib/idgen";
 
 const STORAGE_KEY = "finapp:mock-state:v1";
 
@@ -125,7 +126,10 @@ export class MockRepository implements FinanceRepository {
   }
   async createTransaction(t: Omit<Transaction, "transaction_id"> & { transaction_id?: string }) {
     const state = await getState();
-    const tx: Transaction = { ...t, transaction_id: t.transaction_id ?? nextId("tx") };
+    const tx: Transaction = {
+      ...t,
+      transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
+    };
     state.transactions = [...state.transactions, tx];
     persist(state);
     return tx;

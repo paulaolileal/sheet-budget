@@ -25,6 +25,7 @@ import type {
   RecurrenceTemplate,
   Transaction,
 } from "@/domain/types";
+import { transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
@@ -134,9 +135,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
   async createTransaction(t: Omit<Transaction, "transaction_id"> & { transaction_id?: string }) {
     const tx: Transaction = {
       ...t,
-      transaction_id:
-        t.transaction_id ??
-        `tx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     };
     await this.request(
       `/values/${SHEETS.transactions}!A:M:append?valueInputOption=USER_ENTERED`,
