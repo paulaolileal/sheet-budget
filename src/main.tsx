@@ -17,7 +17,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.VITE_BASE_PATH ?? "/"}>
           <App />
           <Toaster richColors position="top-right" />
         </BrowserRouter>

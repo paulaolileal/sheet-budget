@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "../theme/ThemeProvider";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
-import { config } from "@/services/config";
 import { clearAccessToken } from "@/services/googleAuth";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
@@ -68,9 +67,7 @@ export function AppShell() {
             lealtek
           </div>
           <div className="text-sm font-bold tracking-tight mt-0.5">Budget</div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">
-            {config.useMock ? "Modo local (mock)" : "Google Sheets"}
-          </div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">Google Sheets</div>
         </div>
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -93,7 +90,7 @@ export function AppShell() {
           ))}
         </nav>
         <div className="border-t">
-          {user && !config.useMock && (
+          {user && (
             <div className="flex items-center gap-2 px-3 py-3 border-b">
               <img
                 src={user.picture}

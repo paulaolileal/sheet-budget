@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { config } from "@/services/config";
 import { signIn, getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
 
@@ -23,7 +22,6 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (config.useMock) return <Navigate to="/" replace />;
   if (user && getAccessToken()) return <Navigate to="/" replace />;
 
   async function handleSignIn() {

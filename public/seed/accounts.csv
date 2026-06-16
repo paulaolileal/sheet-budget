@@ -1,5 +1,0 @@
-account_id,nome,tipo
-acc-credito,Crédito,CARTAO
-acc-debito-automatico,Débito automático,CONTA
-acc-boleto,Boleto,CONTA
-acc-pix,PIX,CONTA

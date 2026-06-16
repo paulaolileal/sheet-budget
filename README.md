@@ -36,8 +36,8 @@ O `repositoryProvider` decide em runtime entre `MockRepository` e `GoogleSheetsR
 ## Rodando localmente
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Sem variáveis de ambiente o app sobe em **modo mock** com os CSVs em `public/seed/`
