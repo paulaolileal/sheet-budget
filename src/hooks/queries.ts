@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
@@ -134,21 +134,22 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   );
 }
 
+// Module-level: survives React StrictMode double-invocations and AppShell remounts.
+// useRef would reset on every unmount/remount, causing duplicate batch creation.
+let _autoGenRunning = false;
+const _autoGenProcessed = new Set<string>();
+
 export function useAutoGenerateRecurring() {
   const competencia = useUiStore((s) => s.competencia);
   const qc = useQueryClient();
-  const isRunning = useRef(false);
-  // Each competencia is evaluated exactly once per session
-  const processed = useRef(new Set<string>());
 
   useEffect(() => {
-    if (isRunning.current) return;
-    if (processed.current.has(competencia)) return;
-    isRunning.current = true;
+    if (_autoGenRunning) return;
+    if (_autoGenProcessed.has(competencia)) return;
+    _autoGenRunning = true;
 
     void (async () => {
       try {
-        // Bypass TanStack Query cache entirely — read directly from source
         const [txs, templates] = await Promise.all([
           repo().getTransactions(),
           repo().getTemplates(),
@@ -161,8 +162,8 @@ export function useAutoGenerateRecurring() {
           return !alreadyExists(txs, tpl, competencia);
         });
 
-        // Mark evaluated after a successful source fetch (API errors are retriable)
-        processed.current.add(competencia);
+        // Mark as processed only after a successful source read (API errors stay retryable)
+        _autoGenProcessed.add(competencia);
 
         if (missing.length === 0) return;
 
@@ -187,13 +188,13 @@ export function useAutoGenerateRecurring() {
           })),
         );
 
-        // Invalidate so all components (parceladas, recorrentes, etc.) reload from source
         await qc.invalidateQueries({ queryKey: qk.transactions });
         toast.success(`${created.length} transações recorrentes criadas para ${monthLabel}`, { id: "auto-gen" });
-      } catch {
+      } catch (err) {
+        console.error("[AutoGenRecurring]", err);
         toast.error("Erro ao gerar transações recorrentes", { id: "auto-gen" });
       } finally {
-        isRunning.current = false;
+        _autoGenRunning = false;
         useUiStore.getState().setGenerating(false);
       }
     })();
