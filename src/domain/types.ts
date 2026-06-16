@@ -1,0 +1,70 @@
+/**
+ * Tipos de domínio. Não dependem de UI nem de infraestrutura.
+ */
+
+export type Competencia = string; // formato YYYY-MM
+
+export const TRANSACTION_STATUS = [
+  "PLANEJADO",
+  "AGENDADO",
+  "PENDENTE",
+  "PAGO",
+  "CANCELADO",
+  "IGNORADO",
+] as const;
+export type TransactionStatus = (typeof TRANSACTION_STATUS)[number];
+
+export const TIPO_LANCAMENTO = ["RECORRENTE", "PARCELADO", "MANUAL"] as const;
+export type TipoLancamento = (typeof TIPO_LANCAMENTO)[number];
+
+export const ACCOUNT_TIPO = ["CONTA", "CARTAO", "CARTEIRA"] as const;
+export type AccountTipo = (typeof ACCOUNT_TIPO)[number];
+
+export const PAYMENT_GROUP_STATUS = ["ABERTO", "PAGO"] as const;
+export type PaymentGroupStatus = (typeof PAYMENT_GROUP_STATUS)[number];
+
+export interface Transaction {
+  transaction_id: string;
+  template_id: string | null;
+  competencia: Competencia;
+  descricao: string;
+  categoria_id: string;
+  valor_previsto: number;
+  valor_final: number | null;
+  status: TransactionStatus;
+  considerar_resumo: boolean;
+  payment_account_id: string | null;
+  payment_group_id: string | null;
+  tipo_lancamento: TipoLancamento;
+  origem: string;
+}
+
+export interface RecurrenceTemplate {
+  template_id: string;
+  nome: string;
+  categoria_id: string;
+  payment_account_id: string | null;
+  considerar_resumo: boolean;
+  ativo: boolean;
+  primeira_competencia: Competencia;
+  valor_padrao?: number;
+}
+
+export interface Category {
+  category_id: string;
+  nome: string;
+}
+
+export interface Account {
+  account_id: string;
+  nome: string;
+  tipo: AccountTipo;
+}
+
+export interface PaymentGroup {
+  payment_group_id: string;
+  nome: string;
+  payment_account_id: string;
+  competencia: Competencia;
+  status: PaymentGroupStatus;
+}
