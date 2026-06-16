@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
-import type { Transaction } from "@/domain/types";
+import type { Transaction, RecurrenceTemplate } from "@/domain/types";
 import { transactionInputSchema, type TransactionInput } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
 import { toast } from "sonner";
@@ -50,12 +50,22 @@ export function useCreateTransaction() {
     mutationFn: async (input: TransactionInput) => {
       const parsed = transactionInputSchema.parse(input);
       return withSync(() =>
-        repo().createTransaction(parsed as Omit<Transaction, "transaction_id">),
+        repo().createTransaction(parsed as Omit<Transaction, "transaction_id"> & { transaction_id?: string }),
       );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.transactions });
-      toast.success("Lançamento criado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCreateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (t: RecurrenceTemplate) => withSync(() => repo().saveTemplate(t)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.templates });
     },
     onError: (e: Error) => toast.error(e.message),
   });
