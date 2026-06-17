@@ -5,11 +5,10 @@ import {
   Repeat,
   RefreshCw,
   CalendarCheck,
-  CheckCircle2,
-  EyeOff,
-  Pencil,
   ChevronRight,
   ChevronDown,
+  MoreHorizontal,
+  Pencil,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -23,6 +22,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -51,7 +58,7 @@ const STATUS_TONES: Record<TransactionStatus, string> = {
   AGENDADO: "bg-[color:var(--color-chart-1)]/15 text-[color:var(--color-chart-1)]",
   PENDENTE: "bg-[color:var(--color-warning)]/20 text-[color:var(--color-warning)]",
   PAGO: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
-  ADIANTADO: "bg-[color:var(--color-chart-2)]/15 text-[color:var(--color-chart-2)]",
+  ADIANTADO: "bg-purple-500/15 text-purple-500",
   CANCELADO: "bg-destructive/10 text-destructive line-through",
   IGNORADO: "bg-muted text-muted-foreground opacity-60",
 };
@@ -71,6 +78,28 @@ const TIPO_ORDER: Record<TipoLancamento, number> = {
   PARCELADO: 1,
   MANUAL: 2,
 };
+
+const ACTIONABLE_STATUSES: TransactionStatus[] = [
+  "PENDENTE",
+  "AGENDADO",
+  "PLANEJADO",
+  "PAGO",
+  "ADIANTADO",
+  "IGNORADO",
+  "CANCELADO",
+];
+
+// Palette for category group header rows — full class strings for Tailwind JIT
+const CAT_PALETTE = [
+  "border-l-blue-400 bg-blue-500/10",
+  "border-l-violet-400 bg-violet-500/10",
+  "border-l-orange-400 bg-orange-500/10",
+  "border-l-emerald-400 bg-emerald-500/10",
+  "border-l-pink-400 bg-pink-500/10",
+  "border-l-cyan-400 bg-cyan-500/10",
+  "border-l-amber-400 bg-amber-500/10",
+  "border-l-rose-400 bg-rose-500/10",
+] as const;
 
 const COL_COUNT = 6;
 
@@ -119,7 +148,9 @@ export function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // IDs of all-settled categories that the user manually expanded
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  // IDs of settled transactions that the user manually expanded (show full row)
   const [expandedTxs, setExpandedTxs] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -235,22 +266,12 @@ export function TransactionsPage() {
     };
   }, [filtered]);
 
-  function handlePay(e: React.MouseEvent, tx: Transaction) {
-    e.stopPropagation();
-    updateTransaction({
-      id: tx.transaction_id,
-      patch: { status: "PAGO", valor_final: tx.valor_final ?? tx.valor_previsto },
-    });
-  }
-
-  function handleIgnore(e: React.MouseEvent, tx: Transaction) {
-    e.stopPropagation();
-    updateTransaction({ id: tx.transaction_id, patch: { status: "IGNORADO" } });
-  }
-
-  function handleEdit(e: React.MouseEvent, tx: Transaction) {
-    e.stopPropagation();
-    setEditing(tx);
+  function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
+    const patch: Partial<Transaction> = { status: newStatus };
+    if (newStatus === "PAGO") {
+      patch.valor_final = tx.valor_final ?? tx.valor_previsto;
+    }
+    updateTransaction({ id: tx.transaction_id, patch });
   }
 
   const today = currentCompetencia();
@@ -299,7 +320,7 @@ export function TransactionsPage() {
           <>
             <div className="h-4 w-px bg-border" />
             <span className="text-muted-foreground">Adiantado</span>
-            <span className="font-semibold tabular-nums text-[color:var(--color-chart-2)]">
+            <span className="font-semibold tabular-nums text-purple-500">
               {brl(globalAdiantado)}
             </span>
           </>
@@ -386,7 +407,7 @@ export function TransactionsPage() {
               <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-28">
                 Status
               </th>
-              <th className="px-4 py-2.5 w-24" />
+              <th className="px-4 py-2.5 w-14" />
             </tr>
           </thead>
           <tbody>
@@ -410,18 +431,21 @@ export function TransactionsPage() {
                 </td>
               </tr>
             ) : (
-              grouped.map((group) => {
+              grouped.map((group, idx) => {
                 const catCollapsed = group.allSettled && !expandedCats.has(group.categoria_id);
                 const CatChevron = catCollapsed ? ChevronRight : ChevronDown;
                 const settledCount = group.transactions.filter(isSettled).length;
+                const paletteClass = CAT_PALETTE[idx % CAT_PALETTE.length];
 
                 return (
                   <Fragment key={group.categoria_id}>
+                    {/* Category group header */}
                     <tr
                       className={cn(
-                        "bg-muted/60 border-b border-t",
+                        "border-b border-t border-l-4",
+                        paletteClass,
                         group.allSettled &&
-                          "cursor-pointer hover:bg-muted/80 transition-colors select-none",
+                          "cursor-pointer hover:brightness-95 transition-all select-none",
                       )}
                       onClick={group.allSettled ? () => toggleCat(group.categoria_id) : undefined}
                     >
@@ -466,19 +490,19 @@ export function TransactionsPage() {
                       </td>
                     </tr>
 
+                    {/* Transaction rows */}
                     {!catCollapsed &&
                       group.transactions.map((tx) => {
                         const parcela = parseParcela(tx.descricao, tx.tipo_lancamento);
                         const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
                         const settled = isSettled(tx);
-                        const txCollapsed = settled && !expandedTxs.has(tx.transaction_id);
-                        const isPaid = tx.status === "PAGO";
-                        const isAdiantado = tx.status === "ADIANTADO";
+                        // txExpanded = user manually opened a settled row; we can re-collapse on click
+                        const txExpanded = expandedTxs.has(tx.transaction_id);
+                        const txCollapsed = settled && !txExpanded;
                         const isIgnored = tx.status === "IGNORADO";
                         const isCancelled = tx.status === "CANCELADO";
-                        const canPay = !isPaid && !isAdiantado && !isCancelled;
-                        const canIgnore = !isIgnored && !isCancelled && !isPaid && !isAdiantado;
 
+                        // Thin collapsed row for settled transactions
                         if (txCollapsed) {
                           return (
                             <tr
@@ -515,6 +539,11 @@ export function TransactionsPage() {
                           );
                         }
 
+                        // Full row — settled+expanded rows collapse on click; others open edit
+                        const rowClick = settled && txExpanded
+                          ? () => toggleTx(tx.transaction_id)
+                          : () => setEditing(tx);
+
                         return (
                           <tr
                             key={tx.transaction_id}
@@ -522,7 +551,7 @@ export function TransactionsPage() {
                               "border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer",
                               (isIgnored || isCancelled) && "opacity-50",
                             )}
-                            onClick={() => setEditing(tx)}
+                            onClick={rowClick}
                           >
                             <td className="px-4 py-2.5 font-medium">{descricao}</td>
                             <td className="px-4 py-2.5 text-muted-foreground text-xs">
@@ -546,39 +575,57 @@ export function TransactionsPage() {
                               </Badge>
                             </td>
                             <td className="px-4 py-2.5">
-                              <div className="flex items-center justify-end gap-1">
-                                {canPay && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7 text-[color:var(--color-success)] hover:text-[color:var(--color-success)] hover:bg-[color:var(--color-success)]/10"
-                                    title="Marcar como pago"
-                                    onClick={(e) => handlePay(e, tx)}
+                                    className="h-7 w-7"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    <CheckCircle2 className="h-4 w-4" />
+                                    <MoreHorizontal className="h-4 w-4" />
                                   </Button>
-                                )}
-                                {canIgnore && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7 text-muted-foreground hover:text-muted-foreground hover:bg-muted"
-                                    title="Ignorar"
-                                    onClick={(e) => handleIgnore(e, tx)}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuLabel className="text-xs py-1">
+                                    Alterar status
+                                  </DropdownMenuLabel>
+                                  <DropdownMenuSeparator />
+                                  {ACTIONABLE_STATUSES.filter((s) => s !== tx.status).map(
+                                    (status) => (
+                                      <DropdownMenuItem
+                                        key={status}
+                                        className="text-xs gap-2 cursor-pointer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleStatusChange(tx, status);
+                                        }}
+                                      >
+                                        <Badge
+                                          variant="outline"
+                                          className={cn(
+                                            "font-normal border-0 text-xs",
+                                            STATUS_TONES[status],
+                                          )}
+                                        >
+                                          {status}
+                                        </Badge>
+                                      </DropdownMenuItem>
+                                    ),
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-xs gap-2 cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditing(tx);
+                                    }}
                                   >
-                                    <EyeOff className="h-4 w-4" />
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-muted-foreground"
-                                  title="Editar"
-                                  onClick={(e) => handleEdit(e, tx)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                              </div>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </td>
                           </tr>
                         );
