@@ -142,7 +142,9 @@ export function CardsPage() {
           payment_account_id: accountId,
           competencia: comp,
           nome: `Fatura ${account?.nome ?? accountId} ${comp}`,
-          isPaid: txList.every((t) => t.status === "PAGO"),
+          isPaid: txList.every(
+            (t) => t.status === "PAGO" || t.status === "ADIANTADO" || t.status === "IGNORADO",
+          ),
           total: txList.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
           transactions: txList,
         };
@@ -289,10 +291,50 @@ export function CardsPage() {
           <DialogHeader>
             <DialogTitle>Confirmar pagamento</DialogTitle>
             <DialogDescription>
-              {confirming &&
-                `Marcar "${confirming.nome}" como paga? Todas as transações vinculadas ficarão com status PAGO.`}
+              As transações abaixo serão marcadas como <strong>PAGO</strong>. Itens com status
+              ADIANTADO ou IGNORADO não serão alterados.
             </DialogDescription>
           </DialogHeader>
+          {confirming && (() => {
+            const toChange = confirming.transactions.filter(
+              (t) => t.status !== "ADIANTADO" && t.status !== "IGNORADO",
+            );
+            return toChange.length === 0 ? (
+              <p className="text-sm text-muted-foreground px-1">
+                Nenhuma transação será alterada.
+              </p>
+            ) : (
+              <div className="max-h-[240px] overflow-auto border rounded-md">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Descrição</th>
+                      <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Valor</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Status atual</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {toChange.map((t) => (
+                      <tr key={t.transaction_id} className="border-t">
+                        <td className="px-3 py-2">
+                          {t.descricao}
+                          {installmentLabels.has(t.transaction_id) && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              {installmentLabels.get(t.transaction_id)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {brl(t.valor_final ?? t.valor_previsto)}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirming(null)}>Cancelar</Button>
             <Button

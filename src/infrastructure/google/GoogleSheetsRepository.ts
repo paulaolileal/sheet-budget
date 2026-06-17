@@ -252,7 +252,11 @@ export class GoogleSheetsRepository implements FinanceRepository {
   async bulkPayByAccount(payment_account_id: string, competencia: string): Promise<void> {
     const txs = await this.getTransactions();
     const affected = txs.filter(
-      (t) => t.payment_account_id === payment_account_id && t.competencia === competencia,
+      (t) =>
+        t.payment_account_id === payment_account_id &&
+        t.competencia === competencia &&
+        t.status !== "ADIANTADO" &&
+        t.status !== "IGNORADO",
     );
     for (const t of affected) {
       await this.updateTransaction(t.transaction_id, {
