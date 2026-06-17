@@ -118,7 +118,7 @@ function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
 
 function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCompetencia: string): number {
   const lastTx = txs
-    .filter((t) => t.competencia < beforeCompetencia && t.status !== "CANCELADO" && matchesTemplate(t, tpl))
+    .filter((t) => t.competencia < beforeCompetencia && matchesTemplate(t, tpl))
     .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
   return lastTx?.valor_previsto ?? tpl.valor_padrao ?? 0;
 }
@@ -128,7 +128,6 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   return txs.some(
     (t) =>
       t.competencia === competencia &&
-      t.status !== "CANCELADO" &&
       (t.transaction_id === expectedId || matchesTemplate(t, tpl)),
   );
 }

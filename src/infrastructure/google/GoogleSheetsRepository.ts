@@ -184,9 +184,35 @@ export class GoogleSheetsRepository implements FinanceRepository {
     return updated;
   }
 
+  private async getSheetId(sheetName: string): Promise<number> {
+    const data = await this.request<{
+      sheets: { properties: { sheetId: number; title: string } }[];
+    }>("");
+    const sheet = data.sheets.find((s) => s.properties.title === sheetName);
+    if (!sheet) throw new Error(`Aba "${sheetName}" não encontrada na planilha`);
+    return sheet.properties.sheetId;
+  }
+
   async deleteTransaction(id: string) {
-    // Marca como cancelado em vez de remover linha (preserva histórico).
-    await this.updateTransaction(id, { status: "CANCELADO" });
+    const rowIdx = await this.findRowIndex(SHEETS.transactions, "transaction_id", id);
+    const sheetId = await this.getSheetId(SHEETS.transactions);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: "ROWS",
+                startIndex: rowIdx - 1,
+                endIndex: rowIdx,
+              },
+            },
+          },
+        ],
+      }),
+    });
   }
 
   async getTemplates(): Promise<RecurrenceTemplate[]> {

@@ -54,23 +54,17 @@ import { TransactionDialog } from "../components/TransactionDialog";
 import { cn } from "@/lib/utils";
 
 const STATUS_TONES: Record<TransactionStatus, string> = {
-  PLANEJADO: "bg-muted text-muted-foreground",
-  AGENDADO: "bg-[color:var(--color-chart-1)]/15 text-[color:var(--color-chart-1)]",
   PENDENTE: "bg-[color:var(--color-warning)]/20 text-[color:var(--color-warning)]",
   PAGO: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
   ADIANTADO: "bg-purple-500/15 text-purple-500",
-  CANCELADO: "bg-destructive/10 text-destructive line-through",
   IGNORADO: "bg-muted text-muted-foreground opacity-60",
 };
 
 const STATUS_ORDER: Record<TransactionStatus, number> = {
   PENDENTE: 0,
-  AGENDADO: 1,
-  PLANEJADO: 2,
-  PAGO: 3,
-  ADIANTADO: 4,
-  IGNORADO: 5,
-  CANCELADO: 6,
+  PAGO: 1,
+  ADIANTADO: 2,
+  IGNORADO: 3,
 };
 
 const TIPO_ORDER: Record<TipoLancamento, number> = {
@@ -81,16 +75,13 @@ const TIPO_ORDER: Record<TipoLancamento, number> = {
 
 const ACTIONABLE_STATUSES: TransactionStatus[] = [
   "PENDENTE",
-  "AGENDADO",
-  "PLANEJADO",
   "PAGO",
   "ADIANTADO",
   "IGNORADO",
-  "CANCELADO",
 ];
 
 // Palette for category group header rows — full class strings for Tailwind JIT
-// Avoids green/yellow/red to prevent confusion with status colors (PAGO/PENDENTE/CANCELADO)
+// Avoids green/yellow/red to prevent confusion with status colors (PAGO/PENDENTE)
 const CAT_PALETTE = [
   "border-l-blue-400 bg-blue-500/10",
   "border-l-violet-400 bg-violet-500/10",
@@ -190,7 +181,7 @@ export function TransactionsPage() {
     if (!templates || !txs) return [];
     const existingKeys = new Set(
       txs
-        .filter((t) => t.competencia === competencia && t.template_id && t.status !== "CANCELADO")
+        .filter((t) => t.competencia === competencia && t.template_id)
         .map((t) => t.template_id!),
     );
     return templates.filter((tpl) => {
@@ -231,9 +222,7 @@ export function TransactionsPage() {
     }
     return [...map.entries()]
       .map(([categoria_id, transactions]) => {
-        const active = transactions.filter(
-          (t) => t.status !== "CANCELADO" && t.status !== "IGNORADO",
-        );
+        const active = transactions.filter((t) => t.status !== "IGNORADO");
         const paid = transactions.filter((t) => t.status === "PAGO");
         const unpaid = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
         const pago = paid.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
@@ -244,8 +233,7 @@ export function TransactionsPage() {
           total: aPagar + pago,
           aPagar,
           pago,
-          allSettled: transactions.some((t) => t.status !== "CANCELADO") &&
-            transactions.filter((t) => t.status !== "CANCELADO").every(isSettled),
+          allSettled: transactions.length > 0 && transactions.every(isSettled),
         };
       })
       .sort((a, b) =>
@@ -274,7 +262,7 @@ export function TransactionsPage() {
 
   const { globalAPagar, globalAPagarCount, globalPago, globalPagoCount, globalAdiantado, globalAdiantadoCount } =
     useMemo(() => {
-      const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
+      const active = filtered.filter((t) => t.status !== "IGNORADO");
       const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
       const pagoItems = active.filter((t) => t.status === "PAGO");
       const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
@@ -389,17 +377,10 @@ export function TransactionsPage() {
           placeholder="Status"
           options={[
             { value: "all", label: "Todos status" },
-            ...(
-              [
-                "PLANEJADO",
-                "AGENDADO",
-                "PENDENTE",
-                "PAGO",
-                "ADIANTADO",
-                "CANCELADO",
-                "IGNORADO",
-              ] as TransactionStatus[]
-            ).map((s) => ({ value: s, label: s })),
+            ...(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as TransactionStatus[]).map((s) => ({
+              value: s,
+              label: s,
+            })),
           ]}
         />
         <FilterSelect
@@ -528,7 +509,6 @@ export function TransactionsPage() {
                         const txExpanded = expandedTxs.has(tx.transaction_id);
                         const txCollapsed = settled && !txExpanded;
                         const isIgnored = tx.status === "IGNORADO";
-                        const isCancelled = tx.status === "CANCELADO";
 
                         // Thin collapsed row for settled transactions
                         if (txCollapsed) {
@@ -577,7 +557,7 @@ export function TransactionsPage() {
                             key={tx.transaction_id}
                             className={cn(
                               "border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer",
-                              (isIgnored || isCancelled) && "opacity-50",
+                              isIgnored && "opacity-50",
                             )}
                             onClick={rowClick}
                           >

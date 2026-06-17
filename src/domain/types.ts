@@ -5,12 +5,9 @@
 export type Competencia = string; // formato YYYY-MM
 
 export const TRANSACTION_STATUS = [
-  "PLANEJADO",
-  "AGENDADO",
   "PENDENTE",
   "PAGO",
   "ADIANTADO",
-  "CANCELADO",
   "IGNORADO",
 ] as const;
 export type TransactionStatus = (typeof TRANSACTION_STATUS)[number];

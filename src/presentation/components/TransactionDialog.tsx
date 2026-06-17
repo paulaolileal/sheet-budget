@@ -43,7 +43,7 @@ const formSchema = z
     payment_account_id: z.string().min(1, "Selecione"),
     valor_previsto: z.coerce.number().nonnegative("Inválido"),
     valor_final: z.union([z.coerce.number().nonnegative(), z.literal(""), z.nan()]).optional(),
-    status: z.enum(["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "ADIANTADO", "CANCELADO", "IGNORADO"]),
+    status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
     tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
     considerar_resumo: z.boolean(),
     parcelas: z.coerce.number().int().min(1).max(120).optional(),
@@ -55,8 +55,7 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-const CREATE_STATUSES = ["PENDENTE", "PAGO", "ADIANTADO"] as const;
-const ALL_STATUSES = ["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "ADIANTADO", "CANCELADO", "IGNORADO"] as const;
+const STATUSES = ["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as const;
 
 function nextCompetencia(c: string, offset: number) {
   const [y, m] = c.split("-").map(Number);
@@ -220,7 +219,7 @@ export function TransactionDialog({
     onOpenChange(false);
   });
 
-  const statusOptions = isEditing ? ALL_STATUSES : CREATE_STATUSES;
+  const statusOptions = STATUSES;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -389,7 +388,7 @@ export function TransactionDialog({
                 }}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                {confirmDelete ? "Confirmar cancelamento" : "Cancelar lançamento"}
+                {confirmDelete ? "Confirmar exclusão" : "Excluir lançamento"}
               </Button>
             )}
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

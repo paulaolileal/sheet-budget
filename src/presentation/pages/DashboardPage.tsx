@@ -34,7 +34,7 @@ export function DashboardPage() {
   const { data: accounts } = useAccounts();
 
   const filtered = useMemo(
-    () => (txs ?? []).filter((t) => t.competencia === competencia && t.status !== "CANCELADO" && t.status !== "IGNORADO"),
+    () => (txs ?? []).filter((t) => t.competencia === competencia && t.status !== "IGNORADO"),
     [txs, competencia],
   );
 

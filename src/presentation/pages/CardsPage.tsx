@@ -46,7 +46,7 @@ export function CardsPage() {
 
   const totalFor = (g: PaymentGroup) =>
     (txs ?? [])
-      .filter((t) => t.payment_group_id === g.payment_group_id && t.status !== "CANCELADO")
+      .filter((t) => t.payment_group_id === g.payment_group_id)
       .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
 
   const detailTxs = useMemo(
