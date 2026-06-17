@@ -254,6 +254,23 @@ export function TransactionsPage() {
       );
   }, [filtered, catMap]);
 
+  const parcelaMap = useMemo<Map<string, string>>(() => {
+    const map = new Map<string, string>();
+    if (!txs) return map;
+    const parcelados = txs.filter((t) => t.tipo_lancamento === "PARCELADO");
+    const groups = new Map<string, Transaction[]>();
+    for (const tx of parcelados) {
+      const key = tx.template_id ?? stripParcela(tx.descricao);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(tx);
+    }
+    for (const group of groups.values()) {
+      group.sort((a, b) => a.competencia.localeCompare(b.competencia));
+      group.forEach((tx, i) => map.set(tx.transaction_id, `${i + 1}/${group.length}`));
+    }
+    return map;
+  }, [txs]);
+
   const { globalAPagar, globalAPagarCount, globalPago, globalPagoCount, globalAdiantado, globalAdiantadoCount } =
     useMemo(() => {
       const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
@@ -503,7 +520,7 @@ export function TransactionsPage() {
                     {/* Transaction rows */}
                     {!catCollapsed &&
                       group.transactions.map((tx) => {
-                        const parcela = parseParcela(tx.descricao, tx.tipo_lancamento);
+                        const parcela = parcelaMap.get(tx.transaction_id) ?? parseParcela(tx.descricao, tx.tipo_lancamento);
                         const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
                         const settled = isSettled(tx);
                         // txExpanded = user manually opened a settled row; we can re-collapse on click
