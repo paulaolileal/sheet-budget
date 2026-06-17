@@ -119,7 +119,7 @@ function stripParcela(descricao: string): string {
 }
 
 function isSettled(tx: Transaction): boolean {
-  return tx.status === "PAGO" || tx.status === "ADIANTADO";
+  return tx.status === "PAGO" || tx.status === "ADIANTADO" || tx.status === "IGNORADO";
 }
 
 interface CategoryGroup {
@@ -253,20 +253,21 @@ export function TransactionsPage() {
       );
   }, [filtered, catMap]);
 
-  const { globalAPagar, globalPago, globalAdiantado } = useMemo(() => {
-    const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
-    return {
-      globalAPagar: active
-        .filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO")
-        .reduce((s, t) => s + t.valor_previsto, 0),
-      globalPago: active
-        .filter((t) => t.status === "PAGO")
-        .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
-      globalAdiantado: active
-        .filter((t) => t.status === "ADIANTADO")
-        .reduce((s, t) => s + t.valor_previsto, 0),
-    };
-  }, [filtered]);
+  const { globalAPagar, globalAPagarCount, globalPago, globalPagoCount, globalAdiantado, globalAdiantadoCount } =
+    useMemo(() => {
+      const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
+      const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
+      const pagoItems = active.filter((t) => t.status === "PAGO");
+      const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
+      return {
+        globalAPagar: aPagarItems.reduce((s, t) => s + t.valor_previsto, 0),
+        globalAPagarCount: aPagarItems.length,
+        globalPago: pagoItems.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+        globalPagoCount: pagoItems.length,
+        globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor_previsto, 0),
+        globalAdiantadoCount: adiantadoItems.length,
+      };
+    }, [filtered]);
 
   function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
     const patch: Partial<Transaction> = { status: newStatus };
@@ -309,19 +310,25 @@ export function TransactionsPage() {
       />
 
       <div className="flex items-center gap-5 mb-5 text-sm">
-        <span className="text-muted-foreground">A pagar</span>
+        <span className="text-muted-foreground">
+          A pagar <span className="text-xs">({globalAPagarCount})</span>
+        </span>
         <span className="font-semibold tabular-nums text-[color:var(--color-warning)]">
           {brl(globalAPagar)}
         </span>
         <div className="h-4 w-px bg-border" />
-        <span className="text-muted-foreground">Pago</span>
+        <span className="text-muted-foreground">
+          Pago <span className="text-xs">({globalPagoCount})</span>
+        </span>
         <span className="font-semibold tabular-nums text-[color:var(--color-success)]">
           {brl(globalPago)}
         </span>
         {globalAdiantado > 0 && (
           <>
             <div className="h-4 w-px bg-border" />
-            <span className="text-muted-foreground">Adiantado</span>
+            <span className="text-muted-foreground">
+              Adiantado <span className="text-xs">({globalAdiantadoCount})</span>
+            </span>
             <span className="font-semibold tabular-nums text-purple-500">
               {brl(globalAdiantado)}
             </span>
