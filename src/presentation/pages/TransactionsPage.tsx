@@ -1,5 +1,16 @@
-import { Fragment, useMemo, useState } from "react";
-import { Search, Plus, Repeat, RefreshCw, CalendarCheck, CheckCircle2, EyeOff, Pencil } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import {
+  Search,
+  Plus,
+  Repeat,
+  RefreshCw,
+  CalendarCheck,
+  CheckCircle2,
+  EyeOff,
+  Pencil,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { Input } from "@/components/ui/input";
@@ -40,6 +51,7 @@ const STATUS_TONES: Record<TransactionStatus, string> = {
   AGENDADO: "bg-[color:var(--color-chart-1)]/15 text-[color:var(--color-chart-1)]",
   PENDENTE: "bg-[color:var(--color-warning)]/20 text-[color:var(--color-warning)]",
   PAGO: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
+  ADIANTADO: "bg-[color:var(--color-chart-2)]/15 text-[color:var(--color-chart-2)]",
   CANCELADO: "bg-destructive/10 text-destructive line-through",
   IGNORADO: "bg-muted text-muted-foreground opacity-60",
 };
@@ -49,8 +61,9 @@ const STATUS_ORDER: Record<TransactionStatus, number> = {
   AGENDADO: 1,
   PLANEJADO: 2,
   PAGO: 3,
-  IGNORADO: 4,
-  CANCELADO: 5,
+  ADIANTADO: 4,
+  IGNORADO: 5,
+  CANCELADO: 6,
 };
 
 const TIPO_ORDER: Record<TipoLancamento, number> = {
@@ -59,11 +72,7 @@ const TIPO_ORDER: Record<TipoLancamento, number> = {
   MANUAL: 2,
 };
 
-const TIPO_LABEL: Record<TipoLancamento, string> = {
-  RECORRENTE: "Rec",
-  PARCELADO: "Parc",
-  MANUAL: "Man",
-};
+const COL_COUNT = 6;
 
 function currentCompetencia(): string {
   const now = new Date();
@@ -80,12 +89,17 @@ function stripParcela(descricao: string): string {
   return descricao.replace(/\s*\(\d+\/\d+\)$/, "");
 }
 
+function isSettled(tx: Transaction): boolean {
+  return tx.status === "PAGO" || tx.status === "ADIANTADO";
+}
+
 interface CategoryGroup {
   categoria_id: string;
   transactions: Transaction[];
   total: number;
   aPagar: number;
   pago: number;
+  allSettled: boolean;
 }
 
 export function TransactionsPage() {
@@ -105,6 +119,31 @@ export function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  const [expandedTxs, setExpandedTxs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setExpandedCats(new Set());
+    setExpandedTxs(new Set());
+  }, [competencia]);
+
+  function toggleCat(id: string) {
+    setExpandedCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleTx(id: string) {
+    setExpandedTxs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const catMap = useMemo(
     () => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c.nome])),
@@ -164,21 +203,37 @@ export function TransactionsPage() {
           (t) => t.status !== "CANCELADO" && t.status !== "IGNORADO",
         );
         const paid = transactions.filter((t) => t.status === "PAGO");
-        const unpaid = active.filter((t) => t.status !== "PAGO");
+        const unpaid = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
         return {
           categoria_id,
           transactions,
           total: active.reduce((s, t) => s + t.valor_previsto, 0),
           aPagar: unpaid.reduce((s, t) => s + t.valor_previsto, 0),
           pago: paid.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+          allSettled: active.length > 0 && active.every(isSettled),
         };
       })
-      .sort((a, b) => (catMap[a.categoria_id] ?? a.categoria_id).localeCompare(catMap[b.categoria_id] ?? b.categoria_id));
+      .sort((a, b) =>
+        (catMap[a.categoria_id] ?? a.categoria_id).localeCompare(
+          catMap[b.categoria_id] ?? b.categoria_id,
+        ),
+      );
   }, [filtered, catMap]);
 
-  const totalPrevisto = filtered
-    .filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO")
-    .reduce((s, t) => s + t.valor_previsto, 0);
+  const { globalAPagar, globalPago, globalAdiantado } = useMemo(() => {
+    const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
+    return {
+      globalAPagar: active
+        .filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO")
+        .reduce((s, t) => s + t.valor_previsto, 0),
+      globalPago: active
+        .filter((t) => t.status === "PAGO")
+        .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+      globalAdiantado: active
+        .filter((t) => t.status === "ADIANTADO")
+        .reduce((s, t) => s + t.valor_previsto, 0),
+    };
+  }, [filtered]);
 
   function handlePay(e: React.MouseEvent, tx: Transaction) {
     e.stopPropagation();
@@ -204,7 +259,7 @@ export function TransactionsPage() {
     <div className="p-8 max-w-7xl mx-auto">
       <PageHeader
         title="Lançamentos"
-        description={`${filtered.length} lançamentos em ${competenciaLabel(competencia)} — total ${brl(totalPrevisto)}`}
+        description={`${filtered.length} lançamentos em ${competenciaLabel(competencia)}`}
         actions={
           <div className="flex items-center gap-2">
             {competencia !== today && (
@@ -229,6 +284,27 @@ export function TransactionsPage() {
           </div>
         }
       />
+
+      <div className="flex items-center gap-5 mb-5 text-sm">
+        <span className="text-muted-foreground">A pagar</span>
+        <span className="font-semibold tabular-nums text-[color:var(--color-warning)]">
+          {brl(globalAPagar)}
+        </span>
+        <div className="h-4 w-px bg-border" />
+        <span className="text-muted-foreground">Pago</span>
+        <span className="font-semibold tabular-nums text-[color:var(--color-success)]">
+          {brl(globalPago)}
+        </span>
+        {globalAdiantado > 0 && (
+          <>
+            <div className="h-4 w-px bg-border" />
+            <span className="text-muted-foreground">Adiantado</span>
+            <span className="font-semibold tabular-nums text-[color:var(--color-chart-2)]">
+              {brl(globalAdiantado)}
+            </span>
+          </>
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
         <div className="relative flex-1 min-w-[220px]">
@@ -264,9 +340,17 @@ export function TransactionsPage() {
           placeholder="Status"
           options={[
             { value: "all", label: "Todos status" },
-            ...(["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "CANCELADO", "IGNORADO"] as TransactionStatus[]).map(
-              (s) => ({ value: s, label: s }),
-            ),
+            ...(
+              [
+                "PLANEJADO",
+                "AGENDADO",
+                "PENDENTE",
+                "PAGO",
+                "ADIANTADO",
+                "CANCELADO",
+                "IGNORADO",
+              ] as TransactionStatus[]
+            ).map((s) => ({ value: s, label: s })),
           ]}
         />
         <FilterSelect
@@ -290,9 +374,6 @@ export function TransactionsPage() {
               <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Descrição
               </th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20">
-                Parcela
-              </th>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Conta
               </th>
@@ -312,7 +393,7 @@ export function TransactionsPage() {
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
-                  {Array.from({ length: 7 }).map((_, j) => (
+                  {Array.from({ length: COL_COUNT }).map((_, j) => (
                     <td key={j} className="px-4 py-3">
                       <Skeleton className="h-4 w-full max-w-[160px]" />
                     </td>
@@ -321,125 +402,190 @@ export function TransactionsPage() {
               ))
             ) : grouped.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-muted-foreground">
+                <td
+                  colSpan={COL_COUNT}
+                  className="px-4 py-12 text-center text-sm text-muted-foreground"
+                >
                   Nenhum lançamento encontrado para este filtro.
                 </td>
               </tr>
             ) : (
-              grouped.map((group) => (
-                <Fragment key={group.categoria_id}>
-                  <tr className="bg-muted/60 border-b border-t">
-                    <td className="px-4 py-2 font-semibold text-xs uppercase tracking-wide text-foreground/80">
-                      {catMap[group.categoria_id] ?? group.categoria_id}
-                    </td>
-                    <td />
-                    <td />
-                    <td />
-                    <td className="px-4 py-2 text-right">
-                      <span className="text-xs text-muted-foreground">Total </span>
-                      <span className="text-xs font-medium tabular-nums">{brl(group.total)}</span>
-                    </td>
-                    <td className="px-4 py-2" colSpan={2}>
-                      <div className="flex items-center gap-3 text-xs tabular-nums">
-                        <span>
-                          <span className="text-muted-foreground">A pagar </span>
-                          <span className="font-medium text-[color:var(--color-warning)]">
-                            {brl(group.aPagar)}
-                          </span>
-                        </span>
-                        <span>
-                          <span className="text-muted-foreground">Pago </span>
-                          <span className="font-medium text-[color:var(--color-success)]">
-                            {brl(group.pago)}
-                          </span>
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                  {group.transactions.map((tx) => {
-                    const parcela = parseParcela(tx.descricao, tx.tipo_lancamento);
-                    const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
-                    const isPaid = tx.status === "PAGO";
-                    const isIgnored = tx.status === "IGNORADO";
-                    const isCancelled = tx.status === "CANCELADO";
-                    const canPay = !isPaid && !isCancelled;
-                    const canIgnore = !isIgnored && !isCancelled && !isPaid;
-                    return (
-                      <tr
-                        key={tx.transaction_id}
-                        className={cn(
-                          "border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer",
-                          (isIgnored || isCancelled) && "opacity-50",
-                        )}
-                        onClick={() => setEditing(tx)}
-                      >
-                        <td className="px-4 py-2.5 font-medium">{descricao}</td>
-                        <td className="px-4 py-2.5">
-                          {parcela && (
-                            <Badge variant="outline" className="text-xs font-normal px-1.5">
-                              {parcela}
-                            </Badge>
+              grouped.map((group) => {
+                const catCollapsed = group.allSettled && !expandedCats.has(group.categoria_id);
+                const CatChevron = catCollapsed ? ChevronRight : ChevronDown;
+                const settledCount = group.transactions.filter(isSettled).length;
+
+                return (
+                  <Fragment key={group.categoria_id}>
+                    <tr
+                      className={cn(
+                        "bg-muted/60 border-b border-t",
+                        group.allSettled &&
+                          "cursor-pointer hover:bg-muted/80 transition-colors select-none",
+                      )}
+                      onClick={group.allSettled ? () => toggleCat(group.categoria_id) : undefined}
+                    >
+                      <td className="px-4 py-2 font-semibold text-xs uppercase tracking-wide text-foreground/80">
+                        <span className="inline-flex items-center gap-1.5">
+                          {group.allSettled && (
+                            <CatChevron className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           )}
-                        </td>
-                        <td className="px-4 py-2.5 text-muted-foreground text-xs">
-                          {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "—") : "—"}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="text-xs text-muted-foreground">
-                            {TIPO_LABEL[tx.tipo_lancamento]}
-                          </span>
-                        </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums">
-                          {brl(tx.valor_final ?? tx.valor_previsto)}
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <Badge
-                            variant="outline"
-                            className={cn("font-normal border-0 text-xs", STATUS_TONES[tx.status])}
-                          >
-                            {tx.status}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <div className="flex items-center justify-end gap-1">
-                            {canPay && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-[color:var(--color-success)] hover:text-[color:var(--color-success)] hover:bg-[color:var(--color-success)]/10"
-                                title="Marcar como pago"
-                                onClick={(e) => handlePay(e, tx)}
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canIgnore && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-muted-foreground hover:bg-muted"
-                                title="Ignorar"
-                                onClick={(e) => handleIgnore(e, tx)}
-                              >
-                                <EyeOff className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-muted-foreground"
-                              title="Editar"
-                              onClick={(e) => handleEdit(e, tx)}
+                          {catMap[group.categoria_id] ?? group.categoria_id}
+                          {catCollapsed && (
+                            <span className="font-normal normal-case tracking-normal text-muted-foreground ml-1">
+                              · {settledCount} {settledCount === 1 ? "item" : "itens"}
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td />
+                      <td />
+                      <td className="px-4 py-2 text-right">
+                        <span className="text-xs text-muted-foreground">Total </span>
+                        <span className="text-xs font-medium tabular-nums">{brl(group.total)}</span>
+                      </td>
+                      <td className="px-4 py-2" colSpan={2}>
+                        <div className="flex items-center gap-3 text-xs tabular-nums">
+                          {group.aPagar > 0 && (
+                            <span>
+                              <span className="text-muted-foreground">A pagar </span>
+                              <span className="font-medium text-[color:var(--color-warning)]">
+                                {brl(group.aPagar)}
+                              </span>
+                            </span>
+                          )}
+                          {group.pago > 0 && (
+                            <span>
+                              <span className="text-muted-foreground">Pago </span>
+                              <span className="font-medium text-[color:var(--color-success)]">
+                                {brl(group.pago)}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+
+                    {!catCollapsed &&
+                      group.transactions.map((tx) => {
+                        const parcela = parseParcela(tx.descricao, tx.tipo_lancamento);
+                        const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
+                        const settled = isSettled(tx);
+                        const txCollapsed = settled && !expandedTxs.has(tx.transaction_id);
+                        const isPaid = tx.status === "PAGO";
+                        const isAdiantado = tx.status === "ADIANTADO";
+                        const isIgnored = tx.status === "IGNORADO";
+                        const isCancelled = tx.status === "CANCELADO";
+                        const canPay = !isPaid && !isAdiantado && !isCancelled;
+                        const canIgnore = !isIgnored && !isCancelled && !isPaid && !isAdiantado;
+
+                        if (txCollapsed) {
+                          return (
+                            <tr
+                              key={tx.transaction_id}
+                              className="border-b last:border-0 opacity-40 hover:opacity-70 transition-opacity cursor-pointer"
+                              title="Clique para expandir"
+                              onClick={() => toggleTx(tx.transaction_id)}
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </Fragment>
-              ))
+                              <td className="px-4 py-0.5 text-xs text-muted-foreground">
+                                {descricao}
+                              </td>
+                              <td className="px-4 py-0.5 text-xs text-muted-foreground">
+                                {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "") : ""}
+                              </td>
+                              <td className="px-4 py-0.5">
+                                <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
+                              </td>
+                              <td className="px-4 py-0.5 text-right text-xs tabular-nums text-muted-foreground">
+                                {brl(tx.valor_final ?? tx.valor_previsto)}
+                              </td>
+                              <td className="px-4 py-0.5">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "font-normal border-0 text-xs",
+                                    STATUS_TONES[tx.status],
+                                  )}
+                                >
+                                  {tx.status}
+                                </Badge>
+                              </td>
+                              <td />
+                            </tr>
+                          );
+                        }
+
+                        return (
+                          <tr
+                            key={tx.transaction_id}
+                            className={cn(
+                              "border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer",
+                              (isIgnored || isCancelled) && "opacity-50",
+                            )}
+                            onClick={() => setEditing(tx)}
+                          >
+                            <td className="px-4 py-2.5 font-medium">{descricao}</td>
+                            <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                              {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "—") : "—"}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
+                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums">
+                              {brl(tx.valor_final ?? tx.valor_previsto)}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "font-normal border-0 text-xs",
+                                  STATUS_TONES[tx.status],
+                                )}
+                              >
+                                {tx.status}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <div className="flex items-center justify-end gap-1">
+                                {canPay && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-[color:var(--color-success)] hover:text-[color:var(--color-success)] hover:bg-[color:var(--color-success)]/10"
+                                    title="Marcar como pago"
+                                    onClick={(e) => handlePay(e, tx)}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canIgnore && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-muted-foreground hover:bg-muted"
+                                    title="Ignorar"
+                                    onClick={(e) => handleIgnore(e, tx)}
+                                  >
+                                    <EyeOff className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground"
+                                  title="Editar"
+                                  onClick={(e) => handleEdit(e, tx)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </Fragment>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -503,6 +649,16 @@ export function TransactionsPage() {
       </Dialog>
     </div>
   );
+}
+
+function TipoCell({ tipo, parcela }: { tipo: TipoLancamento; parcela: string | null }) {
+  if (tipo === "RECORRENTE") {
+    return <Repeat className="h-3.5 w-3.5 text-muted-foreground" />;
+  }
+  if (tipo === "PARCELADO" && parcela) {
+    return <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>;
+  }
+  return null;
 }
 
 function FilterSelect({

@@ -43,7 +43,7 @@ const formSchema = z
     payment_account_id: z.string().min(1, "Selecione"),
     valor_previsto: z.coerce.number().nonnegative("Inválido"),
     valor_final: z.union([z.coerce.number().nonnegative(), z.literal(""), z.nan()]).optional(),
-    status: z.enum(["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "CANCELADO", "IGNORADO"]),
+    status: z.enum(["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "ADIANTADO", "CANCELADO", "IGNORADO"]),
     tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
     considerar_resumo: z.boolean(),
     parcelas: z.coerce.number().int().min(1).max(120).optional(),
@@ -55,8 +55,8 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-const CREATE_STATUSES = ["PENDENTE", "PAGO"] as const;
-const ALL_STATUSES = ["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "CANCELADO", "IGNORADO"] as const;
+const CREATE_STATUSES = ["PENDENTE", "PAGO", "ADIANTADO"] as const;
+const ALL_STATUSES = ["PLANEJADO", "AGENDADO", "PENDENTE", "PAGO", "ADIANTADO", "CANCELADO", "IGNORADO"] as const;
 
 function nextCompetencia(c: string, offset: number) {
   const [y, m] = c.split("-").map(Number);
@@ -131,11 +131,11 @@ export function TransactionDialog({
   const tipo = watch("tipo_lancamento");
   const status = watch("status");
 
-  const showValorFinal = isEditing || status === "PAGO";
+  const showValorFinal = isEditing || status === "PAGO" || status === "ADIANTADO";
 
   const onSubmit = handleSubmit(async (values) => {
     const valorFinal =
-      values.status === "PAGO" &&
+      (values.status === "PAGO" || values.status === "ADIANTADO") &&
       typeof values.valor_final === "number" &&
       !Number.isNaN(values.valor_final)
         ? values.valor_final
@@ -333,7 +333,7 @@ export function TransactionDialog({
                   type="number"
                   step="0.01"
                   {...register("valor_final")}
-                  placeholder={status === "PAGO" ? "obrigatório" : "—"}
+                  placeholder={status === "PAGO" || status === "ADIANTADO" ? "obrigatório" : "—"}
                 />
                 {formState.errors.valor_final && (
                   <p className="text-xs text-destructive mt-1">

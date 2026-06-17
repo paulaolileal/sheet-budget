@@ -9,6 +9,7 @@ export const TRANSACTION_STATUS = [
   "AGENDADO",
   "PENDENTE",
   "PAGO",
+  "ADIANTADO",
   "CANCELADO",
   "IGNORADO",
 ] as const;
