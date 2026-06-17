@@ -81,7 +81,7 @@ export function TemplatesPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="px-4 py-4 md:p-8 max-w-6xl mx-auto">
       <PageHeader
         title="Recorrências"
         description="Templates que geram lançamentos mensais automaticamente."

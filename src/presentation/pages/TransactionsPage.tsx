@@ -287,7 +287,7 @@ export function TransactionsPage() {
   const today = currentCompetencia();
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
       <PageHeader
         title="Lançamentos"
         description={`${filtered.length} lançamentos em ${competenciaLabel(competencia)}`}
@@ -316,7 +316,7 @@ export function TransactionsPage() {
         }
       />
 
-      <div className="flex items-center gap-5 mb-5 text-sm">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mb-5 text-sm">
         <span className="text-muted-foreground">
           A pagar <span className="text-xs">({globalAPagarCount})</span>
         </span>
@@ -343,8 +343,8 @@ export function TransactionsPage() {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-[220px]">
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
+        <div className="relative flex-1 min-w-[200px] md:min-w-[220px]">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar descrição..."
@@ -404,10 +404,10 @@ export function TransactionsPage() {
               <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Descrição
               </th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Conta
               </th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20">
+              <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20">
                 Tipo
               </th>
               <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-32">
@@ -424,7 +424,7 @@ export function TransactionsPage() {
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
                   {Array.from({ length: COL_COUNT }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
+                    <td key={j} className={cn("px-4 py-3", (j === 1 || j === 2) && "hidden md:table-cell")}>
                       <Skeleton className="h-4 w-full max-w-[160px]" />
                     </td>
                   ))}
@@ -476,8 +476,8 @@ export function TransactionsPage() {
                           )}
                         </span>
                       </td>
-                      <td />
-                      <td />
+                      <td className="hidden md:table-cell" />
+                      <td className="hidden md:table-cell" />
                       <td className="px-4 py-2 text-right">
                         <span className="text-xs text-muted-foreground">Total </span>
                         <span className="text-xs font-medium tabular-nums">{brl(group.total)}</span>
@@ -527,10 +527,10 @@ export function TransactionsPage() {
                               <td className="px-4 py-0.5 text-xs text-muted-foreground">
                                 {descricao}
                               </td>
-                              <td className="px-4 py-0.5 text-xs text-muted-foreground">
+                              <td className="hidden md:table-cell px-4 py-0.5 text-xs text-muted-foreground">
                                 {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "") : ""}
                               </td>
-                              <td className="px-4 py-0.5">
+                              <td className="hidden md:table-cell px-4 py-0.5">
                                 <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                               </td>
                               <td className="px-4 py-0.5 text-right text-xs tabular-nums text-muted-foreground">
@@ -567,10 +567,10 @@ export function TransactionsPage() {
                             onClick={rowClick}
                           >
                             <td className="px-4 py-2.5 font-medium">{descricao}</td>
-                            <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                            <td className="hidden md:table-cell px-4 py-2.5 text-muted-foreground text-xs">
                               {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "—") : "—"}
                             </td>
-                            <td className="px-4 py-2.5">
+                            <td className="hidden md:table-cell px-4 py-2.5">
                               <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                             </td>
                             <td className="px-4 py-2.5 text-right tabular-nums">

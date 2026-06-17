@@ -216,7 +216,7 @@ export function TransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
           <DialogDescription>
@@ -233,7 +233,7 @@ export function TransactionDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Competência</Label>
               <Input type="month" {...register("competencia")} disabled={isEditing} />
@@ -276,7 +276,7 @@ export function TransactionDialog({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Categoria</Label>
               <Controller
@@ -336,7 +336,7 @@ export function TransactionDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             <div>
               <Label>Status</Label>
               <Controller

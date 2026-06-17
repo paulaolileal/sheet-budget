@@ -17,12 +17,19 @@ import { useTheme } from "../theme/ThemeProvider";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import { clearAccessToken } from "@/services/googleAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/transactions", label: "Lançamentos", icon: Receipt },
-  { to: "/cards", label: "Cartões & Faturas", icon: CreditCard },
+  { to: "/cards", label: "Cartões", icon: CreditCard },
   { to: "/recurrences", label: "Recorrências", icon: Repeat },
-  { to: "/settings", label: "Configurações", icon: Settings },
+  { to: "/settings", label: "Config", icon: Settings },
 ];
 
 function SyncIndicator() {
@@ -61,6 +68,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen w-full bg-background text-foreground">
+      {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="px-5 py-5 border-b">
           <div className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
@@ -123,9 +131,82 @@ export function AppShell() {
           </div>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
-        <Outlet />
-      </main>
+
+      <div className="flex flex-col flex-1 min-h-0">
+        {/* Mobile header */}
+        <header className="sticky top-0 z-40 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm shrink-0">
+          <div>
+            <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
+              lealtek
+            </div>
+            <div className="text-sm font-bold tracking-tight leading-tight">Budget</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <SyncIndicator />
+            <button
+              onClick={toggle}
+              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition-colors"
+              aria-label="Alternar tema"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </button>
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    <img
+                      src={user.picture}
+                      alt={user.name}
+                      className="h-7 w-7 rounded-full"
+                    />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground truncate">
+                    {user.email}
+                  </div>
+                  <DropdownMenuItem
+                    className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-auto pb-16 md:pb-0">
+          <Outlet />
+        </main>
+
+        {/* Mobile bottom nav */}
+        <nav className="fixed bottom-0 inset-x-0 h-16 bg-background/95 backdrop-blur-sm border-t md:hidden z-50">
+          <div className="grid grid-cols-5 h-full">
+            {NAV.map(({ to, label, icon: Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                    isActive
+                      ? "text-primary"
+                      : "text-muted-foreground hover:text-foreground",
+                  )
+                }
+              >
+                <Icon className="h-5 w-5" />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      </div>
     </div>
   );
 }

@@ -108,7 +108,7 @@ export function DashboardPage() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
       <PageHeader
         title="Dashboard"
         description={`Resumo de ${competenciaLabel(competencia)}`}

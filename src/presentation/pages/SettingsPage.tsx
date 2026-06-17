@@ -130,7 +130,7 @@ function CategoriesTab() {
 
 export function SettingsPage() {
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="px-4 py-4 md:p-8 max-w-3xl mx-auto">
       <PageHeader title="Configurações" description="Configurações do aplicativo." />
 
       <Tabs defaultValue="categories">

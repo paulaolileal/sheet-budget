@@ -28,7 +28,7 @@ export function CreditCardVisual({ nome, total, isPaid, iconId }: CreditCardVisu
 
   return (
     <div
-      className={`relative w-full max-w-sm bg-gradient-to-br ${gradient} text-white rounded-2xl overflow-hidden select-none`}
+      className={`relative w-full bg-gradient-to-br ${gradient} text-white rounded-2xl overflow-hidden select-none`}
       style={{ aspectRatio: "1.586" }}
     >
       {/* decorative circles */}

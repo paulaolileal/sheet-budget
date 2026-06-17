@@ -194,7 +194,7 @@ export function CardsPage() {
   const canGoPrev = allMonths.length > 0 && competencia > allMonths[0];
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="px-4 py-4 md:p-8 max-w-2xl mx-auto">
       <PageHeader title="Cartões & Faturas" description="Gerencie faturas e contas de pagamento." />
 
       <Tabs defaultValue="faturas">
@@ -250,15 +250,20 @@ export function CardsPage() {
             <div
               className={cn(
                 "grid gap-4",
-                monthFaturas.length === 1
-                  ? "justify-items-center"
-                  : "grid-cols-1 sm:grid-cols-2",
+                monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2",
               )}
             >
               {monthFaturas.map((f) => {
                 const account = accMap[f.payment_account_id];
                 return (
-                  <div key={f.key} className={cn("space-y-2", f.isPaid && "opacity-80")}>
+                  <div
+                    key={f.key}
+                    className={cn(
+                      "space-y-2",
+                      f.isPaid && "opacity-80",
+                      monthFaturas.length === 1 && "max-w-sm mx-auto w-full",
+                    )}
+                  >
                     <CreditCardVisual
                       nome={account?.nome ?? "Cartão"}
                       total={f.total}
