@@ -110,6 +110,21 @@ export function CardsPage() {
     [accounts],
   );
 
+  const installmentLabels = useMemo(() => {
+    const groups = new Map<string, Transaction[]>();
+    for (const t of txs ?? []) {
+      if (t.tipo_lancamento !== "PARCELADO" || !t.origem) continue;
+      if (!groups.has(t.origem)) groups.set(t.origem, []);
+      groups.get(t.origem)!.push(t);
+    }
+    const labels = new Map<string, string>();
+    for (const group of groups.values()) {
+      const sorted = [...group].sort((a, b) => a.competencia.localeCompare(b.competencia));
+      sorted.forEach((t, i) => labels.set(t.transaction_id, `(${i + 1}/${sorted.length})`));
+    }
+    return labels;
+  }, [txs]);
+
   const faturas = useMemo<DerivedFatura[]>(() => {
     const grouped = new Map<string, Transaction[]>();
     for (const t of txs ?? []) {
@@ -243,7 +258,14 @@ export function CardsPage() {
               <tbody>
                 {(selected?.transactions ?? []).map((t) => (
                   <tr key={t.transaction_id} className="border-t">
-                    <td className="px-3 py-2">{t.descricao}</td>
+                    <td className="px-3 py-2">
+                      {t.descricao}
+                      {installmentLabels.has(t.transaction_id) && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          {installmentLabels.get(t.transaction_id)}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {brl(t.valor_final ?? t.valor_previsto)}
                     </td>

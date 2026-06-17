@@ -194,7 +194,7 @@ export function TransactionDialog({
         await create.mutateAsync({
           ...base,
           transaction_id: `tx-${comp}-${descSlug}`,
-          descricao: `${values.descricao} (${i + 1}/${numParcelas})`,
+          descricao: values.descricao,
           competencia: comp,
           template_id: null,
           origem: groupOrigem,
