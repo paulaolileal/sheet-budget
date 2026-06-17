@@ -243,7 +243,8 @@ export function TransactionsPage() {
           total: aPagar + pago,
           aPagar,
           pago,
-          allSettled: active.length > 0 && active.every(isSettled),
+          allSettled: transactions.some((t) => t.status !== "CANCELADO") &&
+            transactions.filter((t) => t.status !== "CANCELADO").every(isSettled),
         };
       })
       .sort((a, b) =>
