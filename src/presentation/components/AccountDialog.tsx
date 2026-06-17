@@ -71,7 +71,7 @@ export function AccountDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar conta" : "Nova conta"}</DialogTitle>
           <DialogDescription>

@@ -132,9 +132,9 @@ export function AppShell() {
         </div>
       </aside>
 
-      <div className="flex flex-col flex-1 min-h-0">
-        {/* Mobile header */}
-        <header className="sticky top-0 z-40 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm shrink-0">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
+        <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
           <div>
             <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
               lealtek
@@ -178,13 +178,13 @@ export function AppShell() {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-auto pb-16 md:pb-0">
+        {/* Page content — min-w-0 prevents flex children from overflowing horizontally */}
+        <main className="flex-1 min-w-0 overflow-x-hidden overflow-y-auto">
           <Outlet />
         </main>
 
-        {/* Mobile bottom nav */}
-        <nav className="fixed bottom-0 inset-x-0 h-16 bg-background/95 backdrop-blur-sm border-t md:hidden z-50">
+        {/* Mobile bottom nav — shrink-0 keeps it fixed-height at the bottom of the flex column */}
+        <nav className="shrink-0 md:hidden h-16 bg-background/95 backdrop-blur-sm border-t z-50">
           <div className="grid grid-cols-5 h-full">
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink

@@ -404,7 +404,7 @@ export function CardsPage() {
       />
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selected?.nome}</DialogTitle>
             <DialogDescription>
@@ -459,7 +459,7 @@ export function CardsPage() {
       </Dialog>
 
       <Dialog open={!!confirming} onOpenChange={(o) => !o && setConfirming(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirmar pagamento</DialogTitle>
             <DialogDescription>

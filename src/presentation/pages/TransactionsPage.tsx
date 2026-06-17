@@ -659,7 +659,7 @@ export function TransactionsPage() {
       />
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Gerar recorrências para {competenciaLabel(competencia)}</DialogTitle>
             <DialogDescription>

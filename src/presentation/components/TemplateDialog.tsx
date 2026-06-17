@@ -126,7 +126,7 @@ export function TemplateDialog({
         if (!o) setConfirmingDelete(false);
       }}
     >
-      <DialogContent className="max-w-md flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md flex flex-col max-h-[90vh]">
         <DialogHeader className="shrink-0">
           <DialogTitle>{isEditing ? "Editar recorrência" : "Nova recorrência"}</DialogTitle>
           <DialogDescription>
