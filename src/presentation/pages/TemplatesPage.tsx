@@ -1,181 +1,235 @@
 import { useMemo, useState } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { TemplateDialog } from "../components/TemplateDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  useCategories,
-  useAccounts,
-  useTemplates,
-  useTransactions,
-  useCreateTransaction,
-} from "@/hooks/queries";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useCategories, useAccounts, useTemplates } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
 import { brl, competenciaLabel } from "@/utils/format";
-import { Play, Repeat } from "lucide-react";
-import { toast } from "sonner";
+import { Pencil, Plus, Repeat } from "lucide-react";
+import { isTemplateActive } from "@/domain/types";
+import type { RecurrenceTemplate } from "@/domain/types";
+
+const PAGE_SIZE = 12;
 
 export function TemplatesPage() {
   const { data: templates, isLoading } = useTemplates();
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
-  const { data: txs } = useTransactions();
-  const create = useCreateTransaction();
   const competencia = useUiStore((s) => s.competencia);
-  const [filter, setFilter] = useState("");
-  const [running, setRunning] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const catMap = useMemo(() => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c.nome])), [categories]);
-  const accMap = useMemo(() => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a.nome])), [accounts]);
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [accountFilter, setAccountFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [page, setPage] = useState(1);
 
-  const filtered = (templates ?? []).filter((t) =>
-    !filter || t.nome.toLowerCase().includes(filter.toLowerCase()),
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<RecurrenceTemplate | null>(null);
+
+  const catMap = useMemo(
+    () => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c.nome])),
+    [categories],
+  );
+  const accMap = useMemo(
+    () => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a.nome])),
+    [accounts],
   );
 
-  const pendingTemplates = useMemo(() => {
-    if (!templates || !txs) return [];
-    const target = competencia;
-    const existingKeys = new Set(
-      txs.filter((t) => t.competencia === target && t.template_id).map((t) => t.template_id!),
-    );
-    return templates.filter((tpl) => {
-      if (!tpl.ativo) return false;
-      if (tpl.primeira_competencia > target) return false;
-      if (tpl.ultima_competencia && target > tpl.ultima_competencia) return false;
-      if (existingKeys.has(tpl.template_id)) return false;
+  const valid = useMemo(() => (templates ?? []).filter((t) => !!t.template_id), [templates]);
+
+  const filtered = useMemo(() => {
+    return valid.filter((t) => {
+      const active = isTemplateActive(t, competencia);
+      if (search && !t.nome.toLowerCase().includes(search.toLowerCase())) return false;
+      if (categoryFilter !== "all" && t.categoria_id !== categoryFilter) return false;
+      if (accountFilter !== "all" && t.payment_account_id !== accountFilter) return false;
+      if (statusFilter === "active" && !active) return false;
+      if (statusFilter === "inactive" && active) return false;
       return true;
     });
-  }, [templates, txs, competencia]);
+  }, [valid, search, categoryFilter, accountFilter, statusFilter, competencia]);
 
-  async function gerarMes() {
-    setConfirmOpen(false);
-    setRunning(true);
-    let criados = 0;
-    try {
-      for (const tpl of pendingTemplates) {
-        await create.mutateAsync({
-          competencia,
-          descricao: tpl.nome,
-          categoria_id: tpl.categoria_id,
-          valor_previsto: tpl.valor_padrao ?? 0,
-          valor_final: null,
-          status: "PENDENTE",
-          considerar_resumo: tpl.considerar_resumo,
-          payment_account_id: tpl.payment_account_id,
-          tipo_lancamento: "RECORRENTE",
-          template_id: tpl.template_id,
-        });
-        criados++;
-      }
-      if (criados > 0) toast.success(`${criados} lançamento(s) gerados para ${competenciaLabel(competencia)}`);
-      else toast.info(`Todos os templates já estão gerados para ${competenciaLabel(competencia)}`);
-    } finally {
-      setRunning(false);
-    }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  function applyFilter(fn: () => void) {
+    fn();
+    setPage(1);
+  }
+
+  function openCreate() {
+    setEditingTemplate(null);
+    setDialogOpen(true);
+  }
+
+  function openEdit(t: RecurrenceTemplate) {
+    setEditingTemplate(t);
+    setDialogOpen(true);
   }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <PageHeader
         title="Recorrências"
-        description={`Templates ativos geram automaticamente lançamentos mensais.`}
+        description="Templates que geram lançamentos mensais automaticamente."
         actions={
-          <Button onClick={() => setConfirmOpen(true)} disabled={running || isLoading}>
-            <Play className="h-4 w-4 mr-1" />
-            Gerar para {competenciaLabel(competencia)}
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1" />
+            Nova recorrência
           </Button>
         }
       />
-      <div className="mb-4">
-        <Input placeholder="Filtrar..." value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-sm" />
+
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Input
+          placeholder="Filtrar por nome..."
+          value={search}
+          onChange={(e) => applyFilter(() => setSearch(e.target.value))}
+          className="max-w-xs"
+        />
+
+        <Select
+          value={categoryFilter}
+          onValueChange={(v) => applyFilter(() => setCategoryFilter(v))}
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as categorias</SelectItem>
+            {(categories ?? []).map((c) => (
+              <SelectItem key={c.category_id} value={c.category_id}>
+                {c.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={accountFilter} onValueChange={(v) => applyFilter(() => setAccountFilter(v))}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Conta" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as contas</SelectItem>
+            {(accounts ?? []).map((a) => (
+              <SelectItem key={a.account_id} value={a.account_id}>
+                {a.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => applyFilter(() => setStatusFilter(v as typeof statusFilter))}
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="active">Ativos</SelectItem>
+            <SelectItem value="inactive">Inativos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-          : filtered.map((t) => (
-              <Card key={t.template_id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Repeat className="h-4 w-4" /> {t.nome}
-                    </CardTitle>
-                    <Badge variant={t.ativo ? "default" : "outline"} className="text-[10px]">
-                      {t.ativo ? "ativo" : "inativo"}
-                    </Badge>
-                  </div>
-                  <CardDescription className="text-xs">
-                    {catMap[t.categoria_id] ?? t.categoria_id} · {t.payment_account_id ? accMap[t.payment_account_id] : "—"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-xs text-muted-foreground">
-                  Desde {competenciaLabel(t.primeira_competencia)}
-                  {t.ultima_competencia && ` até ${competenciaLabel(t.ultima_competencia)}`}
-                  {" · "}{t.considerar_resumo ? "no resumo" : "fora do resumo"}
-                  {t.valor_padrao != null && ` · R$ ${t.valor_padrao.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-                </CardContent>
-              </Card>
-            ))}
+          : paged.map((t) => {
+              const active = isTemplateActive(t, competencia);
+              return (
+                <Card key={t.template_id} className="relative">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-base flex items-center gap-2 min-w-0">
+                        <Repeat className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{t.nome}</span>
+                      </CardTitle>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Badge variant={active ? "default" : "outline"} className="text-[10px]">
+                          {active ? "ativo" : "inativo"}
+                        </Badge>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() => openEdit(t)}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardDescription className="text-xs">
+                      {catMap[t.categoria_id] ?? t.categoria_id}
+                      {t.payment_account_id
+                        ? ` · ${accMap[t.payment_account_id] ?? t.payment_account_id}`
+                        : ""}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-xs text-muted-foreground">
+                    Desde {competenciaLabel(t.primeira_competencia)}
+                    {t.ultima_competencia && ` até ${competenciaLabel(t.ultima_competencia)}`}
+                    {" · "}
+                    {t.considerar_resumo ? "no resumo" : "fora do resumo"}
+                    {t.valor_padrao != null && ` · ${brl(t.valor_padrao)}`}
+                  </CardContent>
+                </Card>
+              );
+            })}
       </div>
 
-      <p className="text-xs text-muted-foreground mt-6">
-        Lançamentos são gerados automaticamente ao entrar em um novo mês. Use o botão acima para forçar a geração manualmente.
-      </p>
+      {!isLoading && filtered.length === 0 && (
+        <p className="text-sm text-muted-foreground mt-6 text-center">
+          Nenhuma recorrência encontrada.
+        </p>
+      )}
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gerar lançamentos para {competenciaLabel(competencia)}</DialogTitle>
-            <DialogDescription>
-              {pendingTemplates.length === 0
-                ? "Todos os templates já foram gerados para este mês."
-                : `${pendingTemplates.length} lançamento(s) serão criados:`}
-            </DialogDescription>
-          </DialogHeader>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+          >
+            Anterior
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Página {safePage} de {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+          >
+            Próxima
+          </Button>
+        </div>
+      )}
 
-          {pendingTemplates.length > 0 && (
-            <ul className="max-h-64 overflow-y-auto divide-y text-sm">
-              {pendingTemplates.map((tpl) => (
-                <li key={tpl.template_id} className="py-2 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{tpl.nome}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {catMap[tpl.categoria_id] ?? tpl.categoria_id}
-                      {tpl.payment_account_id ? ` · ${accMap[tpl.payment_account_id]}` : ""}
-                    </p>
-                  </div>
-                  {tpl.valor_padrao != null && (
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {brl(tpl.valor_padrao)}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={gerarMes} disabled={pendingTemplates.length === 0 || running}>
-              <Play className="h-4 w-4 mr-1" />
-              Confirmar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TemplateDialog
+        open={dialogOpen}
+        onOpenChange={(o) => {
+          setDialogOpen(o);
+          if (!o) setEditingTemplate(null);
+        }}
+        template={editingTemplate}
+      />
     </div>
   );
 }

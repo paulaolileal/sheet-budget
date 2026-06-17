@@ -38,11 +38,18 @@ export interface RecurrenceTemplate {
   categoria_id: string;
   payment_account_id: string | null;
   considerar_resumo: boolean;
-  ativo: boolean;
   primeira_competencia: Competencia;
-  /** Inclusive end month. If absent, the recurrence runs indefinitely. */
+  /** Inclusive end month. Absent means the recurrence runs indefinitely. */
   ultima_competencia?: Competencia;
   valor_padrao?: number;
+}
+
+/** Derives active status from date range instead of a stored boolean. */
+export function isTemplateActive(tpl: RecurrenceTemplate, competencia: Competencia): boolean {
+  return (
+    tpl.primeira_competencia <= competencia &&
+    (!tpl.ultima_competencia || tpl.ultima_competencia >= competencia)
+  );
 }
 
 export interface Category {

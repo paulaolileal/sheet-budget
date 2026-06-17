@@ -20,6 +20,7 @@ export interface FinanceRepository {
   // templates
   getTemplates(): Promise<RecurrenceTemplate[]>;
   saveTemplate(t: RecurrenceTemplate): Promise<RecurrenceTemplate>;
+  deleteTemplate(id: string): Promise<void>;
 
   // accounts
   getAccounts(): Promise<Account[]>;

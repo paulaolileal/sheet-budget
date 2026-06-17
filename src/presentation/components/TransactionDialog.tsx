@@ -168,7 +168,7 @@ export function TransactionDialog({
         categoria_id: values.categoria_id,
         payment_account_id: values.payment_account_id,
         considerar_resumo: values.considerar_resumo,
-        ativo: true,
+
         primeira_competencia: values.competencia,
         valor_padrao: values.valor_previsto,
       });

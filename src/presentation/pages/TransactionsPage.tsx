@@ -49,6 +49,7 @@ import {
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
 import { brl, competenciaLabel } from "@/utils/format";
+import { isTemplateActive } from "@/domain/types";
 import type { Transaction, TransactionStatus, TipoLancamento } from "@/domain/types";
 import { TransactionDialog } from "../components/TransactionDialog";
 import { cn } from "@/lib/utils";
@@ -185,9 +186,7 @@ export function TransactionsPage() {
         .map((t) => t.template_id!),
     );
     return templates.filter((tpl) => {
-      if (!tpl.ativo) return false;
-      if (tpl.primeira_competencia > competencia) return false;
-      if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
+      if (!isTemplateActive(tpl, competencia)) return false;
       return !existingKeys.has(tpl.template_id);
     });
   }, [templates, txs, competencia]);

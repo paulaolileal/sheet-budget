@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
+import { isTemplateActive } from "@/domain/types";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
 import {
   accountInputSchema,
@@ -71,6 +72,30 @@ export function useCreateTemplate() {
     mutationFn: async (t: RecurrenceTemplate) => withSync(() => repo().saveTemplate(t)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.templates });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (t: RecurrenceTemplate) => withSync(() => repo().saveTemplate(t)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.templates });
+      toast.success("Recorrência atualizada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteTemplate(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.templates });
+      toast.success("Recorrência excluída");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -191,9 +216,7 @@ export function useGenerateRecurring() {
       const [txs, templates] = await Promise.all([repo().getTransactions(), repo().getTemplates()]);
 
       const missing = templates.filter((tpl) => {
-        if (!tpl.ativo) return false;
-        if (tpl.primeira_competencia > competencia) return false;
-        if (tpl.ultima_competencia && competencia > tpl.ultima_competencia) return false;
+        if (!isTemplateActive(tpl, competencia)) return false;
         return !alreadyExists(txs, tpl, competencia);
       });
 

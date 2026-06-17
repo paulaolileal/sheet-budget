@@ -44,11 +44,12 @@ export const templateSchema = z.object({
   categoria_id: z.string().min(1),
   payment_account_id: z.string().nullable(),
   considerar_resumo: z.boolean(),
-  ativo: z.boolean(),
   primeira_competencia: competenciaSchema,
   ultima_competencia: competenciaSchema.optional(),
   valor_padrao: z.number().nonnegative().optional(),
 });
+
+export const templateInputSchema = templateSchema.omit({ template_id: true });
 
 export const accountSchema = z.object({
   account_id: z.string().min(1),
@@ -68,4 +69,5 @@ export const accountInputSchema = z.object({
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
+export type TemplateFormInput = z.infer<typeof templateInputSchema>;
 export type AccountInput = z.infer<typeof accountInputSchema>;

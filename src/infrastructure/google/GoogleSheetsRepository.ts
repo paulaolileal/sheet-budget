@@ -206,17 +206,18 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   async getTemplates(): Promise<RecurrenceTemplate[]> {
     const rows = await this.getValues(SHEETS.templates);
-    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
-      template_id: r.template_id,
-      nome: r.nome,
-      categoria_id: r.categoria_id,
-      payment_account_id: r.payment_account_id || null,
-      considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
-      ativo: String(r.ativo).toUpperCase() === "TRUE",
-      primeira_competencia: r.primeira_competencia,
-      ultima_competencia: r.ultima_competencia || undefined,
-      valor_padrao: r.valor_padrao ? parseCurrency(r.valor_padrao) : undefined,
-    }));
+    return this.rowsToObjects<Record<string, string>>(rows)
+      .filter((r) => !!r.template_id)
+      .map((r) => ({
+        template_id: r.template_id,
+        nome: r.nome,
+        categoria_id: r.categoria_id,
+        payment_account_id: r.payment_account_id || null,
+        considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
+        primeira_competencia: r.primeira_competencia,
+        ultima_competencia: r.ultima_competencia || undefined,
+        valor_padrao: r.valor_padrao ? parseCurrency(r.valor_padrao) : undefined,
+      }));
   }
 
   async saveTemplate(t: RecurrenceTemplate) {
@@ -226,7 +227,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.categoria_id,
       t.payment_account_id ?? "",
       t.considerar_resumo ? "TRUE" : "FALSE",
-      t.ativo ? "TRUE" : "FALSE",
       t.primeira_competencia,
       t.ultima_competencia ?? "",
       t.valor_padrao ?? "",
@@ -234,16 +234,38 @@ export class GoogleSheetsRepository implements FinanceRepository {
     try {
       const idx = await this.findRowIndex(SHEETS.templates, "template_id", t.template_id);
       await this.request(
-        `/values/${SHEETS.templates}!A${idx}:I${idx}?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A${idx}:H${idx}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
-      await this.request(`/values/${SHEETS.templates}!A:I:append?valueInputOption=USER_ENTERED`, {
+      await this.request(`/values/${SHEETS.templates}!A:H:append?valueInputOption=USER_ENTERED`, {
         method: "POST",
         body: JSON.stringify({ values: [row] }),
       });
     }
     return t;
+  }
+
+  async deleteTemplate(id: string): Promise<void> {
+    const rowIdx = await this.findRowIndex(SHEETS.templates, "template_id", id);
+    const sheetId = await this.getSheetId(SHEETS.templates);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: "ROWS",
+                startIndex: rowIdx - 1,
+                endIndex: rowIdx,
+              },
+            },
+          },
+        ],
+      }),
+    });
   }
 
   async bulkPayByAccount(payment_account_id: string, competencia: string): Promise<void> {
