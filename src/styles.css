@@ -120,12 +120,16 @@
 
 @layer base {
   * { border-color: var(--color-border); }
-  html, body, #root { height: 100%; }
+  html, body, #root {
+    height: 100%;
+    overflow: hidden; /* App controls its own scroll — prevents body-level scroll on mobile */
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+    overscroll-behavior: none; /* Prevents iOS rubber-band bounce on body */
   }
 }

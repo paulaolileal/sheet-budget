@@ -67,7 +67,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-background text-foreground">
+    <div className="fixed inset-0 flex bg-background text-foreground">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="px-5 py-5 border-b">
@@ -132,7 +132,7 @@ export function AppShell() {
         </div>
       </aside>
 
-      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0">
         {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
         <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
           <div>
