@@ -46,7 +46,6 @@ export const templateSchema = z.object({
   considerar_resumo: z.boolean(),
   primeira_competencia: competenciaSchema,
   ultima_competencia: competenciaSchema.optional(),
-  valor_padrao: z.number().nonnegative().optional(),
   logo_url: z.string().optional(),
   icon_id: z.string().optional(),
 });

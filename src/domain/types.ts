@@ -41,7 +41,6 @@ export interface RecurrenceTemplate {
   primeira_competencia: Competencia;
   /** Inclusive end month. Absent means the recurrence runs indefinitely. */
   ultima_competencia?: Competencia;
-  valor_padrao?: number;
   logo_url?: string;
   icon_id?: string;
 }

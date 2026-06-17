@@ -239,7 +239,7 @@ function resolveLastValue(
   const lastTx = txs
     .filter((t) => t.competencia < beforeCompetencia && matchesTemplate(t, tpl))
     .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
-  return lastTx?.valor_previsto ?? tpl.valor_padrao ?? 0;
+  return lastTx?.valor_previsto ?? 0;
 }
 
 function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia: string): boolean {

@@ -170,7 +170,6 @@ export function TransactionDialog({
         considerar_resumo: values.considerar_resumo,
 
         primeira_competencia: values.competencia,
-        valor_padrao: values.valor_previsto,
       });
       for (let i = 0; i < numParcelas; i++) {
         const comp = nextCompetencia(values.competencia, i);

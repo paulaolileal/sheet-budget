@@ -59,7 +59,6 @@ export function TemplateDialog({
       considerar_resumo: true,
       primeira_competencia: "",
       ultima_competencia: undefined,
-      valor_padrao: undefined,
       logo_url: undefined,
       icon_id: undefined,
     },
@@ -81,7 +80,6 @@ export function TemplateDialog({
               considerar_resumo: template.considerar_resumo,
               primeira_competencia: template.primeira_competencia,
               ultima_competencia: template.ultima_competencia,
-              valor_padrao: template.valor_padrao,
               logo_url: template.logo_url,
               icon_id: template.icon_id,
             }
@@ -92,7 +90,6 @@ export function TemplateDialog({
               considerar_resumo: true,
               primeira_competencia: "",
               ultima_competencia: undefined,
-              valor_padrao: undefined,
               logo_url: undefined,
               icon_id: undefined,
             },
@@ -227,19 +224,6 @@ export function TemplateDialog({
                 </p>
               )}
             </div>
-          </div>
-
-          <div>
-            <Label>Valor padrão (opcional)</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              {...register("valor_padrao", {
-                setValueAs: (v) => (v === "" ? undefined : Number(v)),
-              })}
-              placeholder="0,00"
-            />
           </div>
 
           <div className="flex items-center gap-2">

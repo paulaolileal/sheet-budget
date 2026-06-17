@@ -680,11 +680,6 @@ export function TransactionsPage() {
                       {tpl.payment_account_id ? ` · ${accMap[tpl.payment_account_id]}` : ""}
                     </p>
                   </div>
-                  {tpl.valor_padrao != null && (
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {brl(tpl.valor_padrao)}
-                    </span>
-                  )}
                 </li>
               ))}
             </ul>

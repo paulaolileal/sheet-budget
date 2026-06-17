@@ -194,7 +194,6 @@ export function TemplatesPage() {
                     {t.ultima_competencia && ` até ${competenciaLabel(t.ultima_competencia)}`}
                     {" · "}
                     {t.considerar_resumo ? "no resumo" : "fora do resumo"}
-                    {t.valor_padrao != null && ` · ${brl(t.valor_padrao)}`}
                   </CardContent>
                 </Card>
               );
