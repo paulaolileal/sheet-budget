@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { signIn, getAccessToken } from "@/services/googleAuth";
+import { signIn, silentSignIn, getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
 
 function GoogleIcon() {
@@ -21,6 +21,19 @@ export function LoginPage() {
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || getAccessToken()) return;
+    setLoading(true);
+    silentSignIn().then((info) => {
+      if (info) {
+        setUser(info);
+        navigate("/", { replace: true });
+      } else {
+        setLoading(false);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (user && getAccessToken()) return <Navigate to="/" replace />;
 

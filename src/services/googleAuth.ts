@@ -64,6 +64,31 @@ export function clearAccessToken() {
   expiresAt = 0;
 }
 
+export async function silentSignIn(): Promise<UserInfo | null> {
+  if (!config.googleClientId) return null;
+  try {
+    await loadGsi();
+    const token = await new Promise<string>((resolve, reject) => {
+      const tokenClient = window.google!.accounts.oauth2.initTokenClient({
+        client_id: config.googleClientId!,
+        scope: `${config.scopes} openid email profile`,
+        callback: (resp) => {
+          if (resp.error || !resp.access_token) {
+            return reject(new Error(resp.error ?? "silent_failed"));
+          }
+          accessToken = resp.access_token;
+          expiresAt = Date.now() + (resp.expires_in ?? 3600) * 1000 - 30_000;
+          resolve(resp.access_token);
+        },
+      });
+      tokenClient.requestAccessToken({ prompt: "none" });
+    });
+    return fetchUserInfo(token);
+  } catch {
+    return null;
+  }
+}
+
 export async function signIn(): Promise<UserInfo> {
   if (!config.googleClientId) {
     throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
