@@ -113,9 +113,9 @@ export function CardsPage() {
   const installmentLabels = useMemo(() => {
     const groups = new Map<string, Transaction[]>();
     for (const t of txs ?? []) {
-      if (t.tipo_lancamento !== "PARCELADO" || !t.origem) continue;
-      if (!groups.has(t.origem)) groups.set(t.origem, []);
-      groups.get(t.origem)!.push(t);
+      if (t.tipo_lancamento !== "PARCELADO") continue;
+      if (!groups.has(t.descricao)) groups.set(t.descricao, []);
+      groups.get(t.descricao)!.push(t);
     }
     const labels = new Map<string, string>();
     for (const group of groups.values()) {

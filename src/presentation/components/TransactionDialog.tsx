@@ -179,7 +179,6 @@ export function TransactionDialog({
           transaction_id: `tx-${comp}-${descSlug}`,
           competencia: comp,
           template_id: templateId,
-          origem: templateId,
         });
       }
       toast.success(
@@ -188,7 +187,6 @@ export function TransactionDialog({
           : "Template e lançamento recorrente criados",
       );
     } else if (values.tipo_lancamento === "PARCELADO" && numParcelas > 1) {
-      const groupOrigem = `parcelado-${descSlug}`;
       for (let i = 0; i < numParcelas; i++) {
         const comp = nextCompetencia(values.competencia, i);
         await create.mutateAsync({
@@ -197,7 +195,6 @@ export function TransactionDialog({
           descricao: values.descricao,
           competencia: comp,
           template_id: null,
-          origem: groupOrigem,
         });
       }
       toast.success(`${numParcelas} parcelas criadas`);
@@ -207,7 +204,6 @@ export function TransactionDialog({
         transaction_id: `tx-${values.competencia}-${descSlug}`,
         competencia: values.competencia,
         template_id: null,
-        origem: "manual",
       });
       toast.success("Lançamento criado");
     }

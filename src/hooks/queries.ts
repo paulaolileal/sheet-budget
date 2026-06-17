@@ -105,11 +105,7 @@ export function useBulkPayByAccount() {
 }
 
 function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
-  return (
-    (t.template_id != null && t.template_id === tpl.template_id) ||
-    t.origem === `template:${tpl.template_id}` ||
-    t.descricao === tpl.nome
-  );
+  return (t.template_id != null && t.template_id === tpl.template_id) || t.descricao === tpl.nome;
 }
 
 function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCompetencia: string): number {
@@ -162,7 +158,6 @@ export function useGenerateRecurring() {
           considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
           tipo_lancamento: "RECORRENTE" as const,
-          origem: `template:${tpl.template_id}`,
           template_id: tpl.template_id,
         })),
       );

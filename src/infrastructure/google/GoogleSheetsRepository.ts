@@ -52,7 +52,6 @@ const TX_HEADERS = [
   "considerar_resumo",
   "payment_account_id",
   "tipo_lancamento",
-  "origem",
 ];
 
 export interface GoogleSheetsConfig {
@@ -111,7 +110,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       payment_account_id: r.payment_account_id || null,
       tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
-      origem: r.origem ?? "",
     }));
   }
 
@@ -128,7 +126,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.considerar_resumo ? "TRUE" : "FALSE",
       t.payment_account_id ?? "",
       t.tipo_lancamento,
-      t.origem,
     ];
   }
 
@@ -138,7 +135,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     };
     await this.request(
-      `/values/${SHEETS.transactions}!A:L:append?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`,
       { method: "POST", body: JSON.stringify({ values: [this.txToRow(tx)] }) },
     );
     return tx;
@@ -150,7 +147,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     }));
     await this.request(
-      `/values/${SHEETS.transactions}!A:L:append?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`,
       { method: "POST", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
     );
     return created;
@@ -173,7 +170,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     const updated: Transaction = { ...current, ...patch, transaction_id: id };
     const rowIdx = await this.findRowIndex(SHEETS.transactions, "transaction_id", id);
     await this.request(
-      `/values/${SHEETS.transactions}!A${rowIdx}:L${rowIdx}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.transactions}!A${rowIdx}:K${rowIdx}?valueInputOption=USER_ENTERED`,
       { method: "PUT", body: JSON.stringify({ values: [this.txToRow(updated)] }) },
     );
     return updated;

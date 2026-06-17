@@ -74,7 +74,6 @@ export function TemplatesPage() {
           considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
           tipo_lancamento: "RECORRENTE",
-          origem: `template:${tpl.template_id}`,
           template_id: tpl.template_id,
         });
         criados++;

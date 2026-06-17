@@ -30,7 +30,6 @@ export interface Transaction {
   considerar_resumo: boolean;
   payment_account_id: string | null;
   tipo_lancamento: TipoLancamento;
-  origem: string;
 }
 
 export interface RecurrenceTemplate {

@@ -31,7 +31,6 @@ export const transactionSchema = z.object({
   considerar_resumo: z.boolean(),
   payment_account_id: z.string().nullable(),
   tipo_lancamento: z.enum(TIPO_LANCAMENTO),
-  origem: safeString(60),
 });
 
 export const transactionInputSchema = transactionSchema
