@@ -18,13 +18,8 @@
  */
 
 import type { FinanceRepository } from "@/domain/repository";
-import type {
-  Account,
-  Category,
-  RecurrenceTemplate,
-  Transaction,
-} from "@/domain/types";
-import { transactionId } from "@/lib/idgen";
+import type { Account, Category, RecurrenceTemplate, Transaction } from "@/domain/types";
+import { accountId, transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
@@ -134,22 +129,24 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     };
-    await this.request(
-      `/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: [this.txToRow(tx)] }) },
-    );
+    await this.request(`/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [this.txToRow(tx)] }),
+    });
     return tx;
   }
 
-  async createTransactionsBatch(ts: (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[]) {
+  async createTransactionsBatch(
+    ts: (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[],
+  ) {
     const created: Transaction[] = ts.map((t) => ({
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     }));
-    await this.request(
-      `/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
-    );
+    await this.request(`/values/${SHEETS.transactions}!A:K:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }),
+    });
     return created;
   }
 
@@ -241,10 +238,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
-      await this.request(
-        `/values/${SHEETS.templates}!A:I:append?valueInputOption=USER_ENTERED`,
-        { method: "POST", body: JSON.stringify({ values: [row] }) },
-      );
+      await this.request(`/values/${SHEETS.templates}!A:I:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [row] }),
+      });
     }
     return t;
   }
@@ -273,6 +270,46 @@ export class GoogleSheetsRepository implements FinanceRepository {
       nome: r.nome,
       tipo: (r.tipo as Account["tipo"]) ?? "CONTA",
     }));
+  }
+
+  async createAccount(data: { nome: string; tipo: Account["tipo"] }): Promise<Account> {
+    const account: Account = { account_id: accountId(data.nome), nome: data.nome, tipo: data.tipo };
+    await this.request(`/values/${SHEETS.accounts}!A:C:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [[account.account_id, account.nome, account.tipo]] }),
+    });
+    return account;
+  }
+
+  async updateAccount(id: string, data: { nome: string; tipo: Account["tipo"] }): Promise<Account> {
+    const rowIdx = await this.findRowIndex(SHEETS.accounts, "account_id", id);
+    await this.request(
+      `/values/${SHEETS.accounts}!A${rowIdx}:C${rowIdx}?valueInputOption=USER_ENTERED`,
+      { method: "PUT", body: JSON.stringify({ values: [[id, data.nome, data.tipo]] }) },
+    );
+    return { account_id: id, nome: data.nome, tipo: data.tipo };
+  }
+
+  async deleteAccount(id: string): Promise<void> {
+    const rowIdx = await this.findRowIndex(SHEETS.accounts, "account_id", id);
+    const sheetId = await this.getSheetId(SHEETS.accounts);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: "ROWS",
+                startIndex: rowIdx - 1,
+                endIndex: rowIdx,
+              },
+            },
+          },
+        ],
+      }),
+    });
   }
   async getCategories(): Promise<Category[]> {
     const rows = await this.getValues(SHEETS.categories);

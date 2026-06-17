@@ -1,11 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,11 +12,27 @@ import {
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "../components/PageHeader";
-import { useAccounts, useBulkPayByAccount, useTransactions } from "@/hooks/queries";
+import { AccountDialog } from "../components/AccountDialog";
+import {
+  useAccounts,
+  useBulkPayByAccount,
+  useDeleteAccount,
+  useTransactions,
+} from "@/hooks/queries";
 import { brl, competenciaLabel, currentCompetencia } from "@/utils/format";
-import type { Transaction } from "@/domain/types";
-import { CreditCard, CheckCircle2, CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import type { Account, Transaction } from "@/domain/types";
+import {
+  CreditCard,
+  CheckCircle2,
+  CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -65,11 +75,21 @@ function MonthPicker({ value, onChange }: { value: string; onChange: (v: string)
       </PopoverTrigger>
       <PopoverContent className="w-60 p-3">
         <div className="flex items-center justify-between mb-3">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYear((y) => y - 1)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setYear((y) => y - 1)}
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-semibold">{year}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setYear((y) => y + 1)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setYear((y) => y + 1)}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -91,14 +111,24 @@ function MonthPicker({ value, onChange }: { value: string; onChange: (v: string)
   );
 }
 
+const TIPO_LABELS: Record<string, string> = {
+  CONTA: "Conta bancária",
+  CARTAO: "Cartão de crédito",
+  CARTEIRA: "Carteira",
+};
+
 export function CardsPage() {
   const { data: txs, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
   const bulkPay = useBulkPayByAccount();
+  const deleteAccount = useDeleteAccount();
 
   const [competencia, setCompetencia] = useState(() => currentCompetencia());
   const [selected, setSelected] = useState<DerivedFatura | null>(null);
   const [confirming, setConfirming] = useState<DerivedFatura | null>(null);
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
 
   const accMap = useMemo(
     () => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a])),
@@ -166,95 +196,216 @@ export function CardsPage() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      <PageHeader title="Cartões & Faturas" description="Navegue pelas faturas por mês." />
+      <PageHeader title="Cartões & Faturas" description="Gerencie faturas e contas de pagamento." />
 
-      <div className="flex items-center justify-center gap-1 mb-8">
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={!canGoPrev}
-          onClick={() => setCompetencia((c) => addMonths(c, -1))}
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
+      <Tabs defaultValue="faturas">
+        <TabsList className="mb-6">
+          <TabsTrigger value="faturas">Faturas</TabsTrigger>
+          <TabsTrigger value="contas">Contas</TabsTrigger>
+        </TabsList>
 
-        <MonthPicker value={competencia} onChange={setCompetencia} />
+        <TabsContent value="faturas">
+          <div className="flex items-center justify-center gap-1 mb-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={!canGoPrev}
+              onClick={() => setCompetencia((c) => addMonths(c, -1))}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setCompetencia((c) => addMonths(c, 1))}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
+            <MonthPicker value={competencia} onChange={setCompetencia} />
 
-      {isLoading ? (
-        <Skeleton className="h-56 rounded-xl" />
-      ) : monthFaturas.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Nenhuma fatura</CardTitle>
-            <CardDescription>
-              Não há transações de cartão em {competenciaLabel(competencia)}.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}>
-          {monthFaturas.map((f) => (
-            <Card key={f.key} className={cn("transition-all", f.isPaid && "opacity-75")}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardDescription className="text-sm">
-                    {accMap[f.payment_account_id]?.nome ?? "Cartão"}
-                  </CardDescription>
-                  {f.isPaid ? (
-                    <Badge className="bg-[color:var(--color-success)]/15 text-[color:var(--color-success)] border-0 text-[11px]">
-                      <CheckCircle2 className="h-3 w-3 mr-1" /> Pago
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[11px]">Em aberto</Badge>
-                  )}
-                </div>
-                <CardTitle className="text-lg flex items-center gap-2 mt-1">
-                  <CreditCard className="h-5 w-5 shrink-0" />
-                  {f.nome}
-                </CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCompetencia((c) => addMonths(c, 1))}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <Skeleton className="h-56 rounded-xl" />
+          ) : monthFaturas.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Nenhuma fatura</CardTitle>
+                <CardDescription>
+                  Não há transações de cartão em {competenciaLabel(competencia)}.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold tabular-nums mb-6">{brl(f.total)}</div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setSelected(f)}>
-                    Ver transações
-                  </Button>
-                  {!f.isPaid && (
-                    <Button size="sm" onClick={() => setConfirming(f)}>
-                      Pagar fatura
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div
+              className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}
+            >
+              {monthFaturas.map((f) => (
+                <Card key={f.key} className={cn("transition-all", f.isPaid && "opacity-75")}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardDescription className="text-sm">
+                        {accMap[f.payment_account_id]?.nome ?? "Cartão"}
+                      </CardDescription>
+                      {f.isPaid ? (
+                        <Badge className="bg-[color:var(--color-success)]/15 text-[color:var(--color-success)] border-0 text-[11px]">
+                          <CheckCircle2 className="h-3 w-3 mr-1" /> Pago
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[11px]">
+                          Em aberto
+                        </Badge>
+                      )}
+                    </div>
+                    <CardTitle className="text-lg flex items-center gap-2 mt-1">
+                      <CreditCard className="h-5 w-5 shrink-0" />
+                      {f.nome}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-4xl font-bold tabular-nums mb-6">{brl(f.total)}</div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelected(f)}>
+                        Ver transações
+                      </Button>
+                      {!f.isPaid && (
+                        <Button size="sm" onClick={() => setConfirming(f)}>
+                          Pagar fatura
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="contas">
+          <div className="flex justify-end mb-4">
+            <Button
+              size="sm"
+              onClick={() => {
+                setEditingAccount(null);
+                setAccountDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nova conta
+            </Button>
+          </div>
+
+          {!accounts || accounts.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Nenhuma conta cadastrada</CardTitle>
+                <CardDescription>Crie contas bancárias, cartões ou carteiras.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="border rounded-md overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40">
+                  <tr>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">
+                      Nome
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground">
+                      Tipo
+                    </th>
+                    <th className="px-4 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map((a) => (
+                    <tr key={a.account_id} className="border-t">
+                      <td className="px-4 py-2.5 font-medium">{a.nome}</td>
+                      <td className="px-4 py-2.5 text-muted-foreground text-xs">
+                        {TIPO_LABELS[a.tipo] ?? a.tipo}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              setEditingAccount(a);
+                              setAccountDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "h-7 w-7",
+                              deletingAccountId === a.account_id
+                                ? "text-destructive hover:text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                            disabled={deleteAccount.isPending}
+                            onClick={async () => {
+                              if (deletingAccountId !== a.account_id) {
+                                setDeletingAccountId(a.account_id);
+                                return;
+                              }
+                              await deleteAccount.mutateAsync(a.account_id);
+                              setDeletingAccountId(null);
+                            }}
+                            onBlur={() => {
+                              if (deletingAccountId === a.account_id) setDeletingAccountId(null);
+                            }}
+                            title={
+                              deletingAccountId === a.account_id ? "Confirmar exclusão" : "Excluir"
+                            }
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <AccountDialog
+        open={accountDialogOpen}
+        onOpenChange={(o) => {
+          setAccountDialogOpen(o);
+          if (!o) setEditingAccount(null);
+        }}
+        account={editingAccount}
+      />
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{selected?.nome}</DialogTitle>
             <DialogDescription>
-              {selected && `${selected.transactions.length} transações — total ${brl(selected.total)}`}
+              {selected &&
+                `${selected.transactions.length} transações — total ${brl(selected.total)}`}
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[400px] overflow-auto border rounded-md">
             <table className="w-full text-sm">
               <thead className="bg-muted/40 sticky top-0">
                 <tr>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Descrição</th>
-                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Valor</th>
-                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Descrição
+                  </th>
+                  <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Valor
+                  </th>
+                  <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -281,7 +432,9 @@ export function CardsPage() {
             {selected && !selected.isPaid && (
               <Button onClick={() => setConfirming(selected)}>Pagar fatura</Button>
             )}
-            <Button variant="outline" onClick={() => setSelected(null)}>Fechar</Button>
+            <Button variant="outline" onClick={() => setSelected(null)}>
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -295,48 +448,57 @@ export function CardsPage() {
               ADIANTADO ou IGNORADO não serão alterados.
             </DialogDescription>
           </DialogHeader>
-          {confirming && (() => {
-            const toChange = confirming.transactions.filter(
-              (t) => t.status !== "ADIANTADO" && t.status !== "IGNORADO",
-            );
-            return toChange.length === 0 ? (
-              <p className="text-sm text-muted-foreground px-1">
-                Nenhuma transação será alterada.
-              </p>
-            ) : (
-              <div className="max-h-[240px] overflow-auto border rounded-md">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40 sticky top-0">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Descrição</th>
-                      <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">Valor</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Status atual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {toChange.map((t) => (
-                      <tr key={t.transaction_id} className="border-t">
-                        <td className="px-3 py-2">
-                          {t.descricao}
-                          {installmentLabels.has(t.transaction_id) && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              {installmentLabels.get(t.transaction_id)}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-right tabular-nums">
-                          {brl(t.valor_final ?? t.valor_previsto)}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
+          {confirming &&
+            (() => {
+              const toChange = confirming.transactions.filter(
+                (t) => t.status !== "ADIANTADO" && t.status !== "IGNORADO",
+              );
+              return toChange.length === 0 ? (
+                <p className="text-sm text-muted-foreground px-1">
+                  Nenhuma transação será alterada.
+                </p>
+              ) : (
+                <div className="max-h-[240px] overflow-auto border rounded-md">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 sticky top-0">
+                      <tr>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                          Descrição
+                        </th>
+                        <th className="text-right px-3 py-2 text-xs font-medium text-muted-foreground">
+                          Valor
+                        </th>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">
+                          Status atual
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })()}
+                    </thead>
+                    <tbody>
+                      {toChange.map((t) => (
+                        <tr key={t.transaction_id} className="border-t">
+                          <td className="px-3 py-2">
+                            {t.descricao}
+                            {installmentLabels.has(t.transaction_id) && (
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                {installmentLabels.get(t.transaction_id)}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">
+                            {brl(t.valor_final ?? t.valor_previsto)}
+                          </td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirming(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setConfirming(null)}>
+              Cancelar
+            </Button>
             <Button
               onClick={async () => {
                 if (!confirming) return;

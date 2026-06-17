@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  ACCOUNT_TIPO,
-  TIPO_LANCAMENTO,
-  TRANSACTION_STATUS,
-} from "./types";
+import { ACCOUNT_TIPO, TIPO_LANCAMENTO, TRANSACTION_STATUS } from "./types";
 
 const competenciaRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -37,10 +33,10 @@ export const transactionInputSchema = transactionSchema
   .extend({
     transaction_id: z.string().min(1).optional(),
   })
-  .refine(
-    (t) => t.status !== "PAGO" || (t.valor_final != null && t.valor_final >= 0),
-    { message: "valor_final é obrigatório quando status = PAGO", path: ["valor_final"] },
-  );
+  .refine((t) => t.status !== "PAGO" || (t.valor_final != null && t.valor_final >= 0), {
+    message: "valor_final é obrigatório quando status = PAGO",
+    path: ["valor_final"],
+  });
 
 export const templateSchema = z.object({
   template_id: z.string().min(1),
@@ -65,5 +61,11 @@ export const categorySchema = z.object({
   nome: safeString(120),
 });
 
+export const accountInputSchema = z.object({
+  nome: safeString(80),
+  tipo: z.enum(ACCOUNT_TIPO),
+});
+
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
+export type AccountInput = z.infer<typeof accountInputSchema>;

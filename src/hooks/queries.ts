@@ -1,7 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import type { Transaction, RecurrenceTemplate } from "@/domain/types";
-import { transactionInputSchema, type TransactionInput } from "@/domain/schemas";
+import {
+  accountInputSchema,
+  transactionInputSchema,
+  type AccountInput,
+  type TransactionInput,
+} from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaLabel } from "@/utils/format";
 import { transactionId } from "@/lib/idgen";
@@ -48,7 +53,9 @@ export function useCreateTransaction() {
     mutationFn: async (input: TransactionInput) => {
       const parsed = transactionInputSchema.parse(input);
       return withSync(() =>
-        repo().createTransaction(parsed as Omit<Transaction, "transaction_id"> & { transaction_id?: string }),
+        repo().createTransaction(
+          parsed as Omit<Transaction, "transaction_id"> & { transaction_id?: string },
+        ),
       );
     },
     onSuccess: () => {
@@ -91,11 +98,59 @@ export function useDeleteTransaction() {
   });
 }
 
+export function useCreateAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AccountInput) => {
+      const parsed = accountInputSchema.parse(input);
+      return withSync(() => repo().createAccount(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.accounts });
+      toast.success("Conta criada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: AccountInput }) => {
+      const parsed = accountInputSchema.parse(data);
+      return withSync(() => repo().updateAccount(id, parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.accounts });
+      toast.success("Conta atualizada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteAccount(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.accounts });
+      qc.invalidateQueries({ queryKey: qk.transactions });
+      toast.success("Conta excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useBulkPayByAccount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ payment_account_id, competencia }: { payment_account_id: string; competencia: string }) =>
-      withSync(() => repo().bulkPayByAccount(payment_account_id, competencia)),
+    mutationFn: ({
+      payment_account_id,
+      competencia,
+    }: {
+      payment_account_id: string;
+      competencia: string;
+    }) => withSync(() => repo().bulkPayByAccount(payment_account_id, competencia)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Fatura marcada como paga");
@@ -108,7 +163,11 @@ function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
   return (t.template_id != null && t.template_id === tpl.template_id) || t.descricao === tpl.nome;
 }
 
-function resolveLastValue(txs: Transaction[], tpl: RecurrenceTemplate, beforeCompetencia: string): number {
+function resolveLastValue(
+  txs: Transaction[],
+  tpl: RecurrenceTemplate,
+  beforeCompetencia: string,
+): number {
   const lastTx = txs
     .filter((t) => t.competencia < beforeCompetencia && matchesTemplate(t, tpl))
     .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
@@ -119,8 +178,7 @@ function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia:
   const expectedId = transactionId(competencia, tpl.nome);
   return txs.some(
     (t) =>
-      t.competencia === competencia &&
-      (t.transaction_id === expectedId || matchesTemplate(t, tpl)),
+      t.competencia === competencia && (t.transaction_id === expectedId || matchesTemplate(t, tpl)),
   );
 }
 
@@ -130,10 +188,7 @@ export function useGenerateRecurring() {
   return useMutation({
     mutationFn: async () => {
       const competencia = useUiStore.getState().competencia;
-      const [txs, templates] = await Promise.all([
-        repo().getTransactions(),
-        repo().getTemplates(),
-      ]);
+      const [txs, templates] = await Promise.all([repo().getTransactions(), repo().getTemplates()]);
 
       const missing = templates.filter((tpl) => {
         if (!tpl.ativo) return false;

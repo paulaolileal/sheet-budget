@@ -1,6 +1,5 @@
-export function transactionId(competencia: string, descricao: string): string {
-  const [year, month] = competencia.split("-");
-  const slug = descricao
+function slugify(text: string, maxLen = 32): string {
+  return text
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
@@ -8,7 +7,15 @@ export function transactionId(competencia: string, descricao: string): string {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
-    .slice(0, 32)
+    .slice(0, maxLen)
     .replace(/-$/, "");
-  return `tx-${year}-${month}-${slug}`;
+}
+
+export function accountId(nome: string): string {
+  return `acc-${slugify(nome)}-${Date.now().toString(36)}`;
+}
+
+export function transactionId(competencia: string, descricao: string): string {
+  const [year, month] = competencia.split("-");
+  return `tx-${year}-${month}-${slugify(descricao)}`;
 }
