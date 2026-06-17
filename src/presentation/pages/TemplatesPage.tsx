@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   useCategories,
   useAccounts,
   useTemplates,
@@ -13,7 +21,7 @@ import {
   useCreateTransaction,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
-import { competenciaLabel } from "@/utils/format";
+import { brl, competenciaLabel } from "@/utils/format";
 import { Play, Repeat } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +34,7 @@ export function TemplatesPage() {
   const competencia = useUiStore((s) => s.competencia);
   const [filter, setFilter] = useState("");
   const [running, setRunning] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const catMap = useMemo(() => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c.nome])), [categories]);
   const accMap = useMemo(() => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a.nome])), [accounts]);
@@ -34,22 +43,29 @@ export function TemplatesPage() {
     !filter || t.nome.toLowerCase().includes(filter.toLowerCase()),
   );
 
+  const pendingTemplates = useMemo(() => {
+    if (!templates || !txs) return [];
+    const target = competencia;
+    const existingKeys = new Set(
+      txs.filter((t) => t.competencia === target && t.template_id).map((t) => t.template_id!),
+    );
+    return templates.filter((tpl) => {
+      if (!tpl.ativo) return false;
+      if (tpl.primeira_competencia > target) return false;
+      if (tpl.ultima_competencia && target > tpl.ultima_competencia) return false;
+      if (existingKeys.has(tpl.template_id)) return false;
+      return true;
+    });
+  }, [templates, txs, competencia]);
+
   async function gerarMes() {
-    if (!templates || !txs) return;
+    setConfirmOpen(false);
     setRunning(true);
     let criados = 0;
     try {
-      const target = competencia;
-      const existingKeys = new Set(
-        txs.filter((t) => t.competencia === target && t.template_id).map((t) => t.template_id!),
-      );
-      for (const tpl of templates) {
-        if (!tpl.ativo) continue;
-        if (tpl.primeira_competencia > target) continue;
-        if (tpl.ultima_competencia && target > tpl.ultima_competencia) continue;
-        if (existingKeys.has(tpl.template_id)) continue;
+      for (const tpl of pendingTemplates) {
         await create.mutateAsync({
-          competencia: target,
+          competencia,
           descricao: tpl.nome,
           categoria_id: tpl.categoria_id,
           valor_previsto: tpl.valor_padrao ?? 0,
@@ -57,15 +73,14 @@ export function TemplatesPage() {
           status: "PENDENTE",
           considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
-          payment_group_id: null,
           tipo_lancamento: "RECORRENTE",
           origem: `template:${tpl.template_id}`,
           template_id: tpl.template_id,
         });
         criados++;
       }
-      if (criados > 0) toast.success(`${criados} lançamento(s) gerados para ${competenciaLabel(target)}`);
-      else toast.info(`Todos os templates já estão gerados para ${competenciaLabel(target)}`);
+      if (criados > 0) toast.success(`${criados} lançamento(s) gerados para ${competenciaLabel(competencia)}`);
+      else toast.info(`Todos os templates já estão gerados para ${competenciaLabel(competencia)}`);
     } finally {
       setRunning(false);
     }
@@ -77,7 +92,7 @@ export function TemplatesPage() {
         title="Recorrências"
         description={`Templates ativos geram automaticamente lançamentos mensais.`}
         actions={
-          <Button onClick={gerarMes} disabled={running || isLoading}>
+          <Button onClick={() => setConfirmOpen(true)} disabled={running || isLoading}>
             <Play className="h-4 w-4 mr-1" />
             Gerar para {competenciaLabel(competencia)}
           </Button>
@@ -118,6 +133,50 @@ export function TemplatesPage() {
       <p className="text-xs text-muted-foreground mt-6">
         Lançamentos são gerados automaticamente ao entrar em um novo mês. Use o botão acima para forçar a geração manualmente.
       </p>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar lançamentos para {competenciaLabel(competencia)}</DialogTitle>
+            <DialogDescription>
+              {pendingTemplates.length === 0
+                ? "Todos os templates já foram gerados para este mês."
+                : `${pendingTemplates.length} lançamento(s) serão criados:`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingTemplates.length > 0 && (
+            <ul className="max-h-64 overflow-y-auto divide-y text-sm">
+              {pendingTemplates.map((tpl) => (
+                <li key={tpl.template_id} className="py-2 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{tpl.nome}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {catMap[tpl.categoria_id] ?? tpl.categoria_id}
+                      {tpl.payment_account_id ? ` · ${accMap[tpl.payment_account_id]}` : ""}
+                    </p>
+                  </div>
+                  {tpl.valor_padrao != null && (
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {brl(tpl.valor_padrao)}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={gerarMes} disabled={pendingTemplates.length === 0 || running}>
+              <Play className="h-4 w-4 mr-1" />
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

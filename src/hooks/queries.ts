@@ -12,7 +12,6 @@ const repo = () => getRepository();
 export const qk = {
   transactions: ["transactions"] as const,
   templates: ["templates"] as const,
-  groups: ["payment-groups"] as const,
   accounts: ["accounts"] as const,
   categories: ["categories"] as const,
 };
@@ -22,9 +21,6 @@ export const useTransactions = () =>
 
 export const useTemplates = () =>
   useQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates() });
-
-export const usePaymentGroups = () =>
-  useQuery({ queryKey: qk.groups, queryFn: () => repo().getPaymentGroups() });
 
 export const useAccounts = () =>
   useQuery({ queryKey: qk.accounts, queryFn: () => repo().getAccounts() });
@@ -95,12 +91,12 @@ export function useDeleteTransaction() {
   });
 }
 
-export function useMarkGroupPaid() {
+export function useBulkPayByAccount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => withSync(() => repo().markGroupPaid(id)),
+    mutationFn: ({ payment_account_id, competencia }: { payment_account_id: string; competencia: string }) =>
+      withSync(() => repo().bulkPayByAccount(payment_account_id, competencia)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.groups });
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Fatura marcada como paga");
     },
@@ -165,7 +161,6 @@ export function useGenerateRecurring() {
           status: "PENDENTE" as const,
           considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
-          payment_group_id: null,
           tipo_lancamento: "RECORRENTE" as const,
           origem: `template:${tpl.template_id}`,
           template_id: tpl.template_id,

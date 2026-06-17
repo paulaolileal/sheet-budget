@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   ACCOUNT_TIPO,
-  PAYMENT_GROUP_STATUS,
   TIPO_LANCAMENTO,
   TRANSACTION_STATUS,
 } from "./types";
@@ -31,7 +30,6 @@ export const transactionSchema = z.object({
   status: z.enum(TRANSACTION_STATUS),
   considerar_resumo: z.boolean(),
   payment_account_id: z.string().nullable(),
-  payment_group_id: z.string().nullable(),
   tipo_lancamento: z.enum(TIPO_LANCAMENTO),
   origem: safeString(60),
 });
@@ -66,14 +64,6 @@ export const accountSchema = z.object({
 export const categorySchema = z.object({
   category_id: z.string().min(1),
   nome: safeString(120),
-});
-
-export const paymentGroupSchema = z.object({
-  payment_group_id: z.string().min(1),
-  nome: safeString(120),
-  payment_account_id: z.string().min(1),
-  competencia: competenciaSchema,
-  status: z.enum(PAYMENT_GROUP_STATUS),
 });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;

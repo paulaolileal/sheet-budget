@@ -179,7 +179,6 @@ export function TransactionDialog({
           transaction_id: `tx-${comp}-${descSlug}`,
           competencia: comp,
           template_id: templateId,
-          payment_group_id: null,
           origem: templateId,
         });
       }
@@ -198,7 +197,6 @@ export function TransactionDialog({
           descricao: `${values.descricao} (${i + 1}/${numParcelas})`,
           competencia: comp,
           template_id: null,
-          payment_group_id: null,
           origem: groupOrigem,
         });
       }
@@ -209,7 +207,6 @@ export function TransactionDialog({
         transaction_id: `tx-${values.competencia}-${descSlug}`,
         competencia: values.competencia,
         template_id: null,
-        payment_group_id: null,
         origem: "manual",
       });
       toast.success("Lançamento criado");

@@ -18,9 +18,6 @@ export type TipoLancamento = (typeof TIPO_LANCAMENTO)[number];
 export const ACCOUNT_TIPO = ["CONTA", "CARTAO", "CARTEIRA"] as const;
 export type AccountTipo = (typeof ACCOUNT_TIPO)[number];
 
-export const PAYMENT_GROUP_STATUS = ["ABERTO", "PAGO"] as const;
-export type PaymentGroupStatus = (typeof PAYMENT_GROUP_STATUS)[number];
-
 export interface Transaction {
   transaction_id: string;
   template_id: string | null;
@@ -32,7 +29,6 @@ export interface Transaction {
   status: TransactionStatus;
   considerar_resumo: boolean;
   payment_account_id: string | null;
-  payment_group_id: string | null;
   tipo_lancamento: TipoLancamento;
   origem: string;
 }
@@ -61,10 +57,3 @@ export interface Account {
   tipo: AccountTipo;
 }
 
-export interface PaymentGroup {
-  payment_group_id: string;
-  nome: string;
-  payment_account_id: string;
-  competencia: Competencia;
-  status: PaymentGroupStatus;
-}

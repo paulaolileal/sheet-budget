@@ -21,7 +21,6 @@ import type { FinanceRepository } from "@/domain/repository";
 import type {
   Account,
   Category,
-  PaymentGroup,
   RecurrenceTemplate,
   Transaction,
 } from "@/domain/types";
@@ -39,7 +38,6 @@ const SHEETS = {
   templates: "recurrence_templates",
   accounts: "accounts",
   categories: "categories",
-  paymentGroups: "payment_groups",
 } as const;
 
 const TX_HEADERS = [
@@ -113,7 +111,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       status: r.status as Transaction["status"],
       considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       payment_account_id: r.payment_account_id || null,
-      payment_group_id: r.payment_group_id || null,
       tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
       origem: r.origem ?? "",
     }));
@@ -131,7 +128,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.status,
       t.considerar_resumo ? "TRUE" : "FALSE",
       t.payment_account_id ?? "",
-      t.payment_group_id ?? "",
+      "",
       t.tipo_lancamento,
       t.origem,
     ];
@@ -257,25 +254,11 @@ export class GoogleSheetsRepository implements FinanceRepository {
     return t;
   }
 
-  async getPaymentGroups(): Promise<PaymentGroup[]> {
-    const rows = await this.getValues(SHEETS.paymentGroups);
-    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
-      payment_group_id: r.payment_group_id,
-      nome: r.nome,
-      payment_account_id: r.payment_account_id,
-      competencia: r.competencia,
-      status: (r.status as PaymentGroup["status"]) ?? "ABERTO",
-    }));
-  }
-
-  async markGroupPaid(id: string) {
-    const idx = await this.findRowIndex(SHEETS.paymentGroups, "payment_group_id", id);
-    await this.request(
-      `/values/${SHEETS.paymentGroups}!E${idx}?valueInputOption=USER_ENTERED`,
-      { method: "PUT", body: JSON.stringify({ values: [["PAGO"]] }) },
-    );
+  async bulkPayByAccount(payment_account_id: string, competencia: string): Promise<void> {
     const txs = await this.getTransactions();
-    const affected = txs.filter((t) => t.payment_group_id === id);
+    const affected = txs.filter(
+      (t) => t.payment_account_id === payment_account_id && t.competencia === competencia,
+    );
     for (const t of affected) {
       await this.updateTransaction(t.transaction_id, {
         status: "PAGO",
