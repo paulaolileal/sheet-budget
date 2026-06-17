@@ -50,10 +50,10 @@ presentation → hooks → domain ← infrastructure
 | Path | Page |
 |---|---|
 | `/` | Dashboard (totals, charts) |
-| `/lancamentos` | Transactions table with filters |
-| `/cartoes` | Cards & invoices (PaymentGroups) |
-| `/recorrencias` | RecurrenceTemplates |
-| `/configuracoes` | Settings: Google auth, mock reset |
+| `/transactions` | Transactions table with filters |
+| `/cards` | Cards & invoices (PaymentGroups) |
+| `/recurrences` | RecurrenceTemplates |
+| `/settings` | Settings: Google auth, mock reset |
 
 ### Data conventions
 

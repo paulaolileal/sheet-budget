@@ -19,10 +19,10 @@ import { useAuthStore } from "@/store/authStore";
 import { clearAccessToken } from "@/services/googleAuth";
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/lancamentos", label: "Lançamentos", icon: Receipt },
-  { to: "/cartoes", label: "Cartões & Faturas", icon: CreditCard },
-  { to: "/recorrencias", label: "Recorrências", icon: Repeat },
-  { to: "/configuracoes", label: "Configurações", icon: Settings },
+  { to: "/transactions", label: "Lançamentos", icon: Receipt },
+  { to: "/cards", label: "Cartões & Faturas", icon: CreditCard },
+  { to: "/recurrences", label: "Recorrências", icon: Repeat },
+  { to: "/settings", label: "Configurações", icon: Settings },
 ];
 
 function SyncIndicator() {
