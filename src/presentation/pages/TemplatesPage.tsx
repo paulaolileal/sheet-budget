@@ -16,7 +16,8 @@ import {
 import { useCategories, useAccounts, useTemplates } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
 import { brl, competenciaLabel } from "@/utils/format";
-import { Pencil, Plus, Repeat } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
+import { ServiceLogo } from "../components/ServiceLogo";
 import { isTemplateActive } from "@/domain/types";
 import type { RecurrenceTemplate } from "@/domain/types";
 
@@ -154,31 +155,39 @@ export function TemplatesPage() {
               return (
                 <Card key={t.template_id} className="relative">
                   <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle className="text-base flex items-center gap-2 min-w-0">
-                        <Repeat className="h-4 w-4 shrink-0" />
-                        <span className="truncate">{t.nome}</span>
-                      </CardTitle>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Badge variant={active ? "default" : "outline"} className="text-[10px]">
-                          {active ? "ativo" : "inativo"}
-                        </Badge>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6"
-                          onClick={() => openEdit(t)}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
+                    <div className="flex items-start gap-3">
+                      <ServiceLogo
+                        logoUrl={t.logo_url}
+                        iconId={t.icon_id}
+                        nome={t.nome}
+                        size={36}
+                        className="mt-0.5 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <CardTitle className="text-base truncate">{t.nome}</CardTitle>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Badge variant={active ? "default" : "outline"} className="text-[10px]">
+                              {active ? "ativo" : "inativo"}
+                            </Badge>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => openEdit(t)}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        <CardDescription className="text-xs">
+                          {catMap[t.categoria_id] ?? t.categoria_id}
+                          {t.payment_account_id
+                            ? ` · ${accMap[t.payment_account_id] ?? t.payment_account_id}`
+                            : ""}
+                        </CardDescription>
                       </div>
                     </div>
-                    <CardDescription className="text-xs">
-                      {catMap[t.categoria_id] ?? t.categoria_id}
-                      {t.payment_account_id
-                        ? ` · ${accMap[t.payment_account_id] ?? t.payment_account_id}`
-                        : ""}
-                    </CardDescription>
                   </CardHeader>
                   <CardContent className="text-xs text-muted-foreground">
                     Desde {competenciaLabel(t.primeira_competencia)}

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useCreateAccount, useUpdateAccount } from "@/hooks/queries";
 import { accountInputSchema, type AccountInput } from "@/domain/schemas";
+import { IconPicker } from "./IconPicker";
 import type { Account, AccountTipo } from "@/domain/types";
 
 const TIPO_LABELS: Record<AccountTipo, string> = {
@@ -44,12 +45,16 @@ export function AccountDialog({
 
   const { control, handleSubmit, register, reset, formState } = useForm<AccountInput>({
     resolver: zodResolver(accountInputSchema),
-    defaultValues: { nome: "", tipo: "CONTA" },
+    defaultValues: { nome: "", tipo: "CONTA", icon_id: undefined },
   });
 
   useEffect(() => {
     if (open) {
-      reset(account ? { nome: account.nome, tipo: account.tipo } : { nome: "", tipo: "CONTA" });
+      reset(
+        account
+          ? { nome: account.nome, tipo: account.tipo, icon_id: account.icon_id }
+          : { nome: "", tipo: "CONTA", icon_id: undefined },
+      );
     }
   }, [open, account, reset]);
 
@@ -105,6 +110,17 @@ export function AccountDialog({
                     )}
                   </SelectContent>
                 </Select>
+              )}
+            />
+          </div>
+
+          <div>
+            <Label className="mb-1.5 block">Ícone</Label>
+            <Controller
+              control={control}
+              name="icon_id"
+              render={({ field }) => (
+                <IconPicker value={field.value} onChange={field.onChange} />
               )}
             />
           </div>

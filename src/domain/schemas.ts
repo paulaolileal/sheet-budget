@@ -47,6 +47,8 @@ export const templateSchema = z.object({
   primeira_competencia: competenciaSchema,
   ultima_competencia: competenciaSchema.optional(),
   valor_padrao: z.number().nonnegative().optional(),
+  logo_url: z.string().optional(),
+  icon_id: z.string().optional(),
 });
 
 export const templateInputSchema = templateSchema.omit({ template_id: true });
@@ -55,19 +57,28 @@ export const accountSchema = z.object({
   account_id: z.string().min(1),
   nome: safeString(80),
   tipo: z.enum(ACCOUNT_TIPO),
+  icon_id: z.string().optional(),
 });
 
 export const categorySchema = z.object({
   category_id: z.string().min(1),
   nome: safeString(120),
+  icon_id: z.string().optional(),
 });
 
 export const accountInputSchema = z.object({
   nome: safeString(80),
   tipo: z.enum(ACCOUNT_TIPO),
+  icon_id: z.string().optional(),
+});
+
+export const categoryInputSchema = z.object({
+  nome: safeString(120),
+  icon_id: z.string().optional(),
 });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
 export type TemplateFormInput = z.infer<typeof templateInputSchema>;
 export type AccountInput = z.infer<typeof accountInputSchema>;
+export type CategoryInput = z.infer<typeof categoryInputSchema>;

@@ -20,6 +20,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { IconPicker } from "./IconPicker";
+import { ServiceLogo } from "./ServiceLogo";
 import {
   useCreateTemplate,
   useUpdateTemplate,
@@ -48,7 +50,7 @@ export function TemplateDialog({
   const isEditing = template !== null;
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const { control, handleSubmit, register, reset, formState } = useForm<TemplateFormInput>({
+  const { control, handleSubmit, register, reset, watch, formState } = useForm<TemplateFormInput>({
     resolver: zodResolver(templateInputSchema),
     defaultValues: {
       nome: "",
@@ -58,8 +60,14 @@ export function TemplateDialog({
       primeira_competencia: "",
       ultima_competencia: undefined,
       valor_padrao: undefined,
+      logo_url: undefined,
+      icon_id: undefined,
     },
   });
+
+  const watchedLogoUrl = watch("logo_url");
+  const watchedIconId = watch("icon_id");
+  const watchedNome = watch("nome");
 
   useEffect(() => {
     if (open) {
@@ -74,6 +82,8 @@ export function TemplateDialog({
               primeira_competencia: template.primeira_competencia,
               ultima_competencia: template.ultima_competencia,
               valor_padrao: template.valor_padrao,
+              logo_url: template.logo_url,
+              icon_id: template.icon_id,
             }
           : {
               nome: "",
@@ -83,6 +93,8 @@ export function TemplateDialog({
               primeira_competencia: "",
               ultima_competencia: undefined,
               valor_padrao: undefined,
+              logo_url: undefined,
+              icon_id: undefined,
             },
       );
     }
@@ -238,6 +250,39 @@ export function TemplateDialog({
             <Label htmlFor="considerar_resumo" className="cursor-pointer font-normal">
               Considerar no resumo
             </Label>
+          </div>
+
+          <div className="space-y-3 border-t pt-3">
+            <div className="flex items-start gap-3">
+              <ServiceLogo
+                logoUrl={watchedLogoUrl}
+                iconId={watchedIconId}
+                nome={watchedNome || "?"}
+                size={40}
+              />
+              <div className="flex-1 space-y-2">
+                <div>
+                  <Label className="text-xs">URL da logo (opcional)</Label>
+                  <Input
+                    {...register("logo_url")}
+                    placeholder="https://exemplo.com/logo.png"
+                    className="h-8 text-sm mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Ícone (se sem logo)</Label>
+                  <div className="mt-1">
+                    <Controller
+                      control={control}
+                      name="icon_id"
+                      render={({ field }) => (
+                        <IconPicker value={field.value} onChange={field.onChange} />
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="gap-2">

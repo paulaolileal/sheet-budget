@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
+import { AppIcon } from "../components/AppIcon";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -170,7 +171,7 @@ export function TransactionsPage() {
   }
 
   const catMap = useMemo(
-    () => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c.nome])),
+    () => Object.fromEntries((categories ?? []).map((c) => [c.category_id, c])),
     [categories],
   );
   const accMap = useMemo(
@@ -236,8 +237,8 @@ export function TransactionsPage() {
         };
       })
       .sort((a, b) =>
-        (catMap[a.categoria_id] ?? a.categoria_id).localeCompare(
-          catMap[b.categoria_id] ?? b.categoria_id,
+        (catMap[a.categoria_id]?.nome ?? a.categoria_id).localeCompare(
+          catMap[b.categoria_id]?.nome ?? b.categoria_id,
         ),
       );
   }, [filtered, catMap]);
@@ -462,7 +463,12 @@ export function TransactionsPage() {
                           {group.allSettled && (
                             <CatChevron className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           )}
-                          {catMap[group.categoria_id] ?? group.categoria_id}
+                          <AppIcon
+                            iconId={catMap[group.categoria_id]?.icon_id}
+                            size={13}
+                            className="shrink-0"
+                          />
+                          {catMap[group.categoria_id]?.nome ?? group.categoria_id}
                           {catCollapsed && (
                             <span className="font-normal normal-case tracking-normal text-muted-foreground ml-1">
                               · {settledCount} {settledCount === 1 ? "item" : "itens"}
@@ -670,7 +676,7 @@ export function TransactionsPage() {
                   <div className="min-w-0">
                     <p className="font-medium truncate">{tpl.nome}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {catMap[tpl.categoria_id] ?? tpl.categoria_id}
+                      {catMap[tpl.categoria_id]?.nome ?? tpl.categoria_id}
                       {tpl.payment_account_id ? ` · ${accMap[tpl.payment_account_id]}` : ""}
                     </p>
                   </div>

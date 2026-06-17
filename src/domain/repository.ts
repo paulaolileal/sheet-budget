@@ -24,10 +24,13 @@ export interface FinanceRepository {
 
   // accounts
   getAccounts(): Promise<Account[]>;
-  createAccount(data: { nome: string; tipo: AccountTipo }): Promise<Account>;
-  updateAccount(id: string, data: { nome: string; tipo: AccountTipo }): Promise<Account>;
+  createAccount(data: { nome: string; tipo: AccountTipo; icon_id?: string }): Promise<Account>;
+  updateAccount(id: string, data: { nome: string; tipo: AccountTipo; icon_id?: string }): Promise<Account>;
   deleteAccount(id: string): Promise<void>;
 
-  // catálogos
+  // categories
   getCategories(): Promise<Category[]>;
+  createCategory(data: Omit<Category, "category_id">): Promise<Category>;
+  updateCategory(cat: Category): Promise<void>;
+  deleteCategory(id: string): Promise<void>;
 }

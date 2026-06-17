@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +23,6 @@ import {
 import { brl, competenciaLabel, currentCompetencia } from "@/utils/format";
 import type { Account, Transaction } from "@/domain/types";
 import {
-  CreditCard,
-  CheckCircle2,
   CalendarIcon,
   ChevronLeft,
   ChevronRight,
@@ -34,6 +31,8 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AppIcon } from "../components/AppIcon";
+import { CreditCardVisual } from "../components/CreditCardVisual";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -251,43 +250,34 @@ export function CardsPage() {
             <div
               className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}
             >
-              {monthFaturas.map((f) => (
-                <Card key={f.key} className={cn("transition-all", f.isPaid && "opacity-75")}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardDescription className="text-sm">
-                        {accMap[f.payment_account_id]?.nome ?? "Cartão"}
-                      </CardDescription>
-                      {f.isPaid ? (
-                        <Badge className="bg-[color:var(--color-success)]/15 text-[color:var(--color-success)] border-0 text-[11px]">
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Pago
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[11px]">
-                          Em aberto
-                        </Badge>
-                      )}
-                    </div>
-                    <CardTitle className="text-lg flex items-center gap-2 mt-1">
-                      <CreditCard className="h-5 w-5 shrink-0" />
-                      {f.nome}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-4xl font-bold tabular-nums mb-6">{brl(f.total)}</div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelected(f)}>
+              {monthFaturas.map((f) => {
+                const account = accMap[f.payment_account_id];
+                return (
+                  <div key={f.key} className={cn("space-y-2", f.isPaid && "opacity-80")}>
+                    <CreditCardVisual
+                      nome={account?.nome ?? "Cartão"}
+                      total={f.total}
+                      isPaid={f.isPaid}
+                      iconId={account?.icon_id}
+                    />
+                    <div className="flex gap-2 px-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => setSelected(f)}
+                      >
                         Ver transações
                       </Button>
                       {!f.isPaid && (
-                        <Button size="sm" onClick={() => setConfirming(f)}>
+                        <Button size="sm" className="flex-1" onClick={() => setConfirming(f)}>
                           Pagar fatura
                         </Button>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -330,7 +320,16 @@ export function CardsPage() {
                 <tbody>
                   {accounts.map((a) => (
                     <tr key={a.account_id} className="border-t">
-                      <td className="px-4 py-2.5 font-medium">{a.nome}</td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <AppIcon
+                            iconId={a.icon_id}
+                            size={15}
+                            className="text-muted-foreground shrink-0"
+                          />
+                          <span className="font-medium">{a.nome}</span>
+                        </div>
+                      </td>
                       <td className="px-4 py-2.5 text-muted-foreground text-xs">
                         {TIPO_LABELS[a.tipo] ?? a.tipo}
                       </td>

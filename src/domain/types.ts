@@ -42,6 +42,8 @@ export interface RecurrenceTemplate {
   /** Inclusive end month. Absent means the recurrence runs indefinitely. */
   ultima_competencia?: Competencia;
   valor_padrao?: number;
+  logo_url?: string;
+  icon_id?: string;
 }
 
 /** Derives active status from date range instead of a stored boolean. */
@@ -55,11 +57,13 @@ export function isTemplateActive(tpl: RecurrenceTemplate, competencia: Competenc
 export interface Category {
   category_id: string;
   nome: string;
+  icon_id?: string;
 }
 
 export interface Account {
   account_id: string;
   nome: string;
   tipo: AccountTipo;
+  icon_id?: string;
 }
 

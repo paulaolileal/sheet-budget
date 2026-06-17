@@ -15,6 +15,10 @@ export function accountId(nome: string): string {
   return `acc-${slugify(nome)}-${Date.now().toString(36)}`;
 }
 
+export function categoryId(nome: string): string {
+  return `cat-${slugify(nome)}-${Date.now().toString(36)}`;
+}
+
 export function templateId(nome: string): string {
   return `tpl-${slugify(nome)}-${Date.now().toString(36)}`;
 }

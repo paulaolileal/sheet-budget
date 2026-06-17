@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import { isTemplateActive } from "@/domain/types";
-import type { Transaction, RecurrenceTemplate } from "@/domain/types";
+import type { Category, Transaction, RecurrenceTemplate } from "@/domain/types";
 import {
   accountInputSchema,
+  categoryInputSchema,
   transactionInputSchema,
   type AccountInput,
+  type CategoryInput,
   type TransactionInput,
 } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
@@ -161,6 +163,47 @@ export function useDeleteAccount() {
       qc.invalidateQueries({ queryKey: qk.accounts });
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Conta excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CategoryInput) => {
+      const parsed = categoryInputSchema.parse(input);
+      return withSync(() => repo().createCategory(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.categories });
+      toast.success("Categoria criada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (cat: Category) => withSync(() => repo().updateCategory(cat)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.categories });
+      toast.success("Categoria atualizada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteCategory(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.categories });
+      qc.invalidateQueries({ queryKey: qk.transactions });
+      qc.invalidateQueries({ queryKey: qk.templates });
+      toast.success("Categoria excluída");
     },
     onError: (e: Error) => toast.error(e.message),
   });
