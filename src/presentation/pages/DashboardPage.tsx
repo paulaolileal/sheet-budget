@@ -6,15 +6,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Cell,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
@@ -34,7 +37,12 @@ export function DashboardPage() {
   const { data: accounts } = useAccounts();
 
   const filtered = useMemo(
-    () => (txs ?? []).filter((t) => t.competencia === competencia && t.status !== "IGNORADO"),
+    () =>
+      (txs ?? []).filter(
+        (t) =>
+          t.competencia === competencia &&
+          (t.status === "PAGO" || t.status === "PENDENTE"),
+      ),
     [txs, competencia],
   );
 
@@ -43,18 +51,25 @@ export function DashboardPage() {
     .filter((t) => t.status === "PAGO")
     .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
   const saldo = totalPrevisto - totalPago;
+  const pagoPercent =
+    totalPrevisto > 0 ? Math.round((totalPago / totalPrevisto) * 100) : 0;
 
-  const cartao = filtered
-    .filter((t) => accounts?.find((a) => a.account_id === t.payment_account_id)?.tipo === "CARTAO")
-    .reduce((s, t) => s + t.valor_previsto, 0);
+  const pendentes = filtered.filter((t) => t.status === "PENDENTE");
+  const totalPendente = pendentes.reduce((s, t) => s + t.valor_previsto, 0);
+
   const fixos = filtered
     .filter((t) => t.tipo_lancamento === "RECORRENTE")
     .reduce((s, t) => s + t.valor_previsto, 0);
-  const parcelados = filtered
-    .filter((t) => t.tipo_lancamento === "PARCELADO")
+
+  const cartao = filtered
+    .filter(
+      (t) =>
+        accounts?.find((a) => a.account_id === t.payment_account_id)?.tipo ===
+        "CARTAO",
+    )
     .reduce((s, t) => s + t.valor_previsto, 0);
 
-  const chartData = useMemo(() => {
+  const categoryChartData = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((t) => {
       map.set(t.categoria_id, (map.get(t.categoria_id) ?? 0) + t.valor_previsto);
@@ -67,6 +82,22 @@ export function DashboardPage() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
   }, [filtered, categories]);
+
+  const tipoChartData = useMemo(() => {
+    const map = new Map<string, number>([
+      ["RECORRENTE", 0],
+      ["PARCELADO", 0],
+      ["MANUAL", 0],
+    ]);
+    filtered.forEach((t) => {
+      map.set(t.tipo_lancamento, (map.get(t.tipo_lancamento) ?? 0) + t.valor_previsto);
+    });
+    return [
+      { nome: "Recorrente", total: Math.round((map.get("RECORRENTE") ?? 0) * 100) / 100 },
+      { nome: "Parcelado", total: Math.round((map.get("PARCELADO") ?? 0) * 100) / 100 },
+      { nome: "Manual", total: Math.round((map.get("MANUAL") ?? 0) * 100) / 100 },
+    ].filter((d) => d.total > 0);
+  }, [filtered]);
 
   const palette = [
     "var(--color-chart-1)",
@@ -84,55 +115,178 @@ export function DashboardPage() {
         actions={<CompetenciaSelector />}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         <SummaryCard label="Total previsto" value={totalPrevisto} loading={isLoading} />
         <SummaryCard label="Total pago" value={totalPago} loading={isLoading} tone="success" />
         <SummaryCard label="Saldo restante" value={saldo} loading={isLoading} tone={saldo < 0 ? "warning" : undefined} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <SummaryCard label="Gastos fixos (recorrentes)" value={fixos} loading={isLoading} variant="muted" />
-        <SummaryCard label="Parcelamentos" value={parcelados} loading={isLoading} variant="muted" />
-        <SummaryCard label="Cartão de crédito" value={cartao} loading={isLoading} variant="muted" />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Gastos por categoria</CardTitle>
-          <CardDescription>Top 8 categorias do mês</CardDescription>
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardDescription className="text-xs uppercase tracking-wide">
+            Progresso de pagamento
+          </CardDescription>
         </CardHeader>
-        <CardContent className="h-[340px]">
+        <CardContent>
           {isLoading ? (
-            <Skeleton className="h-full w-full" />
-          ) : chartData.length === 0 ? (
-            <div className="h-full grid place-items-center text-sm text-muted-foreground">
-              Sem lançamentos neste mês.
-            </div>
+            <Skeleton className="h-4 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: -10, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-                <XAxis dataKey="nome" angle={-25} textAnchor="end" tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} interval={0} />
-                <YAxis tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }} tickFormatter={(v) => brl(v).replace("R$", "")} />
-                <Tooltip
-                  formatter={(v: number) => brl(v)}
-                  contentStyle={{
-                    background: "var(--color-popover)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill={palette[i % palette.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-1.5">
+              <Progress value={pagoPercent} className="h-3" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{pagoPercent}% pago</span>
+                <span>
+                  {brl(totalPago)} de {brl(totalPrevisto)}
+                </span>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <SummaryCard
+          label={`Pendentes (${pendentes.length})`}
+          value={totalPendente}
+          loading={isLoading}
+          variant="muted"
+          tone={pendentes.length > 0 ? "warning" : undefined}
+        />
+        <SummaryCard
+          label="Gastos fixos (recorrentes)"
+          value={fixos}
+          loading={isLoading}
+          variant="muted"
+        />
+        <SummaryCard
+          label="Cartão de crédito"
+          value={cartao}
+          loading={isLoading}
+          variant="muted"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Gastos por categoria</CardTitle>
+            <CardDescription>Top 8 categorias do mês</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[340px]">
+            {isLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : categoryChartData.length === 0 ? (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground">
+                Sem lançamentos neste mês.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={categoryChartData}
+                  margin={{ top: 8, right: 8, left: -10, bottom: 60 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--color-border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="nome"
+                    angle={-25}
+                    textAnchor="end"
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    interval={0}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tickFormatter={(v) => brl(v).replace("R$", "")}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--color-popover)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                    {categoryChartData.map((_, i) => (
+                      <Cell key={i} fill={palette[i % palette.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Tipo de lançamento</CardTitle>
+            <CardDescription>Distribuição por origem</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[340px]">
+            {isLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : tipoChartData.length === 0 ? (
+              <div className="h-full grid place-items-center text-sm text-muted-foreground">
+                Sem lançamentos neste mês.
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={tipoChartData}
+                    dataKey="total"
+                    nameKey="nome"
+                    cx="50%"
+                    cy="42%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={3}
+                  >
+                    {tipoChartData.map((_, i) => (
+                      <Cell key={i} fill={palette[i % palette.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={{
+                      background: "var(--color-popover)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <text
+                    x="50%"
+                    y="42%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-sm font-semibold"
+                    style={{ fontSize: 13, fontWeight: 600, fill: "var(--color-foreground)" }}
+                  >
+                    {filtered.length} itens
+                  </text>
+                  {tipoChartData.map((d, i) => (
+                    <text
+                      key={i}
+                      x="50%"
+                      y={`${72 + i * 16}%`}
+                      textAnchor="middle"
+                      style={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    >
+                      <tspan style={{ fill: palette[i % palette.length] }}>● </tspan>
+                      {d.nome}: {brl(d.total)}
+                    </text>
+                  ))}
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
