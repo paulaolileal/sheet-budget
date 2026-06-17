@@ -208,7 +208,10 @@ export function DashboardPage() {
                       border: "1px solid var(--color-border)",
                       borderRadius: 8,
                       fontSize: 12,
+                      color: "var(--color-popover-foreground)",
                     }}
+                    labelStyle={{ color: "var(--color-popover-foreground)" }}
+                    itemStyle={{ color: "var(--color-popover-foreground)" }}
                   />
                   <Bar dataKey="total" radius={[6, 6, 0, 0]}>
                     {categoryChartData.map((_, i) => (
@@ -226,63 +229,62 @@ export function DashboardPage() {
             <CardTitle className="text-base">Tipo de lançamento</CardTitle>
             <CardDescription>Distribuição por origem</CardDescription>
           </CardHeader>
-          <CardContent className="h-[340px]">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="h-full w-full" />
+              <Skeleton className="h-[200px] w-full" />
             ) : tipoChartData.length === 0 ? (
-              <div className="h-full grid place-items-center text-sm text-muted-foreground">
+              <div className="h-[200px] grid place-items-center text-sm text-muted-foreground">
                 Sem lançamentos neste mês.
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={tipoChartData}
-                    dataKey="total"
-                    nameKey="nome"
-                    cx="50%"
-                    cy="42%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={3}
-                  >
-                    {tipoChartData.map((_, i) => (
-                      <Cell key={i} fill={palette[i % palette.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v: number) => brl(v)}
-                    contentStyle={{
-                      background: "var(--color-popover)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                    }}
-                  />
-                  <text
-                    x="50%"
-                    y="42%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fill-foreground text-sm font-semibold"
-                    style={{ fontSize: 13, fontWeight: 600, fill: "var(--color-foreground)" }}
-                  >
-                    {filtered.length} itens
-                  </text>
+              <div className="flex flex-col gap-4">
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={tipoChartData}
+                        dataKey="total"
+                        nameKey="nome"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                      >
+                        {tipoChartData.map((_, i) => (
+                          <Cell key={i} fill={palette[i % palette.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v: number) => brl(v)}
+                        contentStyle={{
+                          background: "var(--color-popover)",
+                          border: "1px solid var(--color-border)",
+                          borderRadius: 8,
+                          fontSize: 12,
+                          color: "var(--color-popover-foreground)",
+                        }}
+                        labelStyle={{ color: "var(--color-popover-foreground)" }}
+                        itemStyle={{ color: "var(--color-popover-foreground)" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <ul className="flex flex-col gap-2">
                   {tipoChartData.map((d, i) => (
-                    <text
-                      key={i}
-                      x="50%"
-                      y={`${72 + i * 16}%`}
-                      textAnchor="middle"
-                      style={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                    >
-                      <tspan style={{ fill: palette[i % palette.length] }}>● </tspan>
-                      {d.nome}: {brl(d.total)}
-                    </text>
+                    <li key={i} className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ background: palette[i % palette.length] }}
+                        />
+                        <span className="text-muted-foreground">{d.nome}</span>
+                      </span>
+                      <span className="tabular-nums font-medium">{brl(d.total)}</span>
+                    </li>
                   ))}
-                </PieChart>
-              </ResponsiveContainer>
+                </ul>
+              </div>
             )}
           </CardContent>
         </Card>

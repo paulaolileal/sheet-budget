@@ -224,6 +224,16 @@ export function CardsPage() {
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
+
+            <div className="w-px h-5 bg-border mx-0.5" />
+            <Button
+              variant={competencia === currentCompetencia() ? "default" : "ghost"}
+              size="sm"
+              className="text-xs px-2.5 h-8"
+              onClick={() => setCompetencia(currentCompetencia())}
+            >
+              Hoje
+            </Button>
           </div>
 
           {isLoading ? (
