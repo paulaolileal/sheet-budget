@@ -235,11 +235,14 @@ export function TransactionsPage() {
         );
         const paid = transactions.filter((t) => t.status === "PAGO");
         const unpaid = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
+        const adiantado = active.filter((t) => t.status === "ADIANTADO");
+        const aPagarBruto = unpaid.reduce((s, t) => s + t.valor_previsto, 0);
+        const adiantadoTotal = adiantado.reduce((s, t) => s + t.valor_previsto, 0);
         return {
           categoria_id,
           transactions,
           total: active.reduce((s, t) => s + t.valor_previsto, 0),
-          aPagar: unpaid.reduce((s, t) => s + t.valor_previsto, 0),
+          aPagar: Math.max(0, aPagarBruto - adiantadoTotal),
           pago: paid.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
           allSettled: active.length > 0 && active.every(isSettled),
         };
@@ -253,16 +256,18 @@ export function TransactionsPage() {
 
   const { globalAPagar, globalPago, globalAdiantado } = useMemo(() => {
     const active = filtered.filter((t) => t.status !== "CANCELADO" && t.status !== "IGNORADO");
+    const adiantado = active
+      .filter((t) => t.status === "ADIANTADO")
+      .reduce((s, t) => s + t.valor_previsto, 0);
+    const aPagarBruto = active
+      .filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO")
+      .reduce((s, t) => s + t.valor_previsto, 0);
     return {
-      globalAPagar: active
-        .filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO")
-        .reduce((s, t) => s + t.valor_previsto, 0),
+      globalAPagar: Math.max(0, aPagarBruto - adiantado),
       globalPago: active
         .filter((t) => t.status === "PAGO")
         .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
-      globalAdiantado: active
-        .filter((t) => t.status === "ADIANTADO")
-        .reduce((s, t) => s + t.valor_previsto, 0),
+      globalAdiantado: adiantado,
     };
   }, [filtered]);
 
