@@ -90,15 +90,16 @@ const ACTIONABLE_STATUSES: TransactionStatus[] = [
 ];
 
 // Palette for category group header rows — full class strings for Tailwind JIT
+// Avoids green/yellow/red to prevent confusion with status colors (PAGO/PENDENTE/CANCELADO)
 const CAT_PALETTE = [
   "border-l-blue-400 bg-blue-500/10",
   "border-l-violet-400 bg-violet-500/10",
   "border-l-orange-400 bg-orange-500/10",
-  "border-l-emerald-400 bg-emerald-500/10",
+  "border-l-sky-400 bg-sky-500/10",
   "border-l-pink-400 bg-pink-500/10",
   "border-l-cyan-400 bg-cyan-500/10",
-  "border-l-amber-400 bg-amber-500/10",
-  "border-l-rose-400 bg-rose-500/10",
+  "border-l-indigo-400 bg-indigo-500/10",
+  "border-l-fuchsia-400 bg-fuchsia-500/10",
 ] as const;
 
 const COL_COUNT = 6;
