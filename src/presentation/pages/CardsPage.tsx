@@ -248,7 +248,12 @@ export function CardsPage() {
             </Card>
           ) : (
             <div
-              className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}
+              className={cn(
+                "grid gap-4",
+                monthFaturas.length === 1
+                  ? "justify-items-center"
+                  : "grid-cols-1 sm:grid-cols-2",
+              )}
             >
               {monthFaturas.map((f) => {
                 const account = accMap[f.payment_account_id];

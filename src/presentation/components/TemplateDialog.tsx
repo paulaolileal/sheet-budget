@@ -129,8 +129,8 @@ export function TemplateDialog({
         if (!o) setConfirmingDelete(false);
       }}
     >
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md flex flex-col max-h-[90vh]">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{isEditing ? "Editar recorrência" : "Nova recorrência"}</DialogTitle>
           <DialogDescription>
             {isEditing
@@ -139,7 +139,8 @@ export function TemplateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div>
             <Label>Nome</Label>
             <Input {...register("nome")} autoFocus placeholder="Ex: Aluguel, Streaming..." />
@@ -213,7 +214,13 @@ export function TemplateDialog({
             </div>
             <div>
               <Label>Fim (YYYY-MM, opcional)</Label>
-              <Input {...register("ultima_competencia")} placeholder="2024-12" maxLength={7} />
+              <Input
+                {...register("ultima_competencia", {
+                  setValueAs: (v: string) => (v === "" ? undefined : v),
+                })}
+                placeholder="2024-12"
+                maxLength={7}
+              />
               {formState.errors.ultima_competencia && (
                 <p className="text-xs text-destructive mt-1">
                   {formState.errors.ultima_competencia.message}
@@ -285,7 +292,9 @@ export function TemplateDialog({
             </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          </div>
+
+          <DialogFooter className="gap-2 shrink-0 pt-4 border-t mt-2">
             {isEditing && (
               <Button
                 type="button"

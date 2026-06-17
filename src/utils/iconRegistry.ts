@@ -9,6 +9,8 @@ import {
   CircleDollarSign,
   Home,
   Building2,
+  Lamp,
+  Paintbrush,
   Car,
   Bus,
   Train,
@@ -46,6 +48,9 @@ import {
   Zap,
   Baby,
   PawPrint,
+  Users,
+  Smile,
+  Flower2,
   Tag,
   Star,
   Repeat2,
@@ -69,9 +74,11 @@ export const ICON_REGISTRY: Record<string, IconComponent> = {
   CircleDollarSign,
   // PIX (custom)
   Pix: PixIcon as IconComponent,
-  // Casa / moradia
+  // Casa / moradia / decoração
   Home,
   Building2,
+  Lamp,
+  Paintbrush,
   // Transporte
   Car,
   Bus,
@@ -114,9 +121,12 @@ export const ICON_REGISTRY: Record<string, IconComponent> = {
   Phone,
   Wrench,
   Zap,
-  // Pessoas / animais
+  // Pessoas / família / estética
   Baby,
   PawPrint,
+  Users,
+  Smile,
+  Flower2,
   // Genérico
   Tag,
   Star,

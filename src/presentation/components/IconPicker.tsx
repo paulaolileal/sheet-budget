@@ -39,15 +39,15 @@ export function IconPicker({ value, onChange, placeholder = "Escolher ícone" }:
       <PopoverTrigger asChild>
         <Button variant="outline" type="button" className="h-9 gap-2 px-3 justify-start">
           {CurrentIcon ? (
-            <CurrentIcon size={15} />
+            <CurrentIcon size={16} />
           ) : (
-            <Tag size={15} className="text-muted-foreground" />
+            <Tag size={16} className="text-muted-foreground" />
           )}
           <span className="text-sm text-muted-foreground">{value ?? placeholder}</span>
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-72 p-3" align="start">
+      <PopoverContent className="w-[360px] p-3" align="start">
         <div className="space-y-2">
           <Input
             placeholder="Buscar ícone..."
@@ -70,24 +70,28 @@ export function IconPicker({ value, onChange, placeholder = "Escolher ícone" }:
             </Button>
           )}
 
-          <div className="grid grid-cols-7 gap-0.5 max-h-52 overflow-y-auto">
+          {/* 6 colunas × 54px = 324px < 360px−24px (padding) = 336px */}
+          <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto overflow-x-hidden">
             {filtered.map(({ id, component: Icon }) => (
               <button
                 key={id}
                 type="button"
                 title={id}
                 className={cn(
-                  "flex items-center justify-center h-9 w-9 rounded-md transition-colors hover:bg-accent",
+                  "flex flex-col items-center justify-center gap-1 h-14 w-full rounded-md transition-colors hover:bg-accent",
                   value === id && "bg-primary text-primary-foreground hover:bg-primary/90",
                 )}
                 onClick={() => select(id)}
               >
-                <Icon size={16} />
+                <Icon size={20} />
+                <span className="text-[9px] leading-none opacity-60 truncate w-full text-center px-0.5">
+                  {id}
+                </span>
               </button>
             ))}
 
             {filtered.length === 0 && (
-              <p className="col-span-7 py-4 text-center text-xs text-muted-foreground">
+              <p className="col-span-6 py-4 text-center text-xs text-muted-foreground">
                 Nenhum ícone encontrado
               </p>
             )}

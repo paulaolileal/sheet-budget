@@ -28,64 +28,72 @@ export function CreditCardVisual({ nome, total, isPaid, iconId }: CreditCardVisu
 
   return (
     <div
-      className={`relative w-full bg-gradient-to-br ${gradient} text-white rounded-2xl p-5 overflow-hidden select-none`}
+      className={`relative w-full max-w-sm bg-gradient-to-br ${gradient} text-white rounded-2xl overflow-hidden select-none`}
       style={{ aspectRatio: "1.586" }}
     >
-      {/* decorative circle */}
-      <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/5" />
-      <div className="absolute -right-4 -bottom-10 w-52 h-52 rounded-full bg-white/5" />
+      {/* decorative circles */}
+      <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
+      <div className="absolute right-2 -bottom-16 w-60 h-60 rounded-full bg-white/[0.07] pointer-events-none" />
 
-      {/* top row */}
-      <div className="relative flex items-start justify-between mb-auto">
-        {/* chip SVG */}
-        <svg width="32" height="24" viewBox="0 0 32 24" fill="none" aria-hidden="true">
-          <rect width="32" height="24" rx="4" fill="#d4a843" />
-          <rect x="1" y="8" width="30" height="8" fill="#b8922e" />
-          <rect x="10" y="1" width="12" height="22" fill="#b8922e" />
-          <rect x="10" y="8" width="12" height="8" fill="#c9a33a" />
-        </svg>
+      {/* content fills card with even distribution */}
+      <div className="absolute inset-0 p-5 flex flex-col justify-between">
 
-        <div className="flex items-center gap-1.5 opacity-80">
-          {iconId ? (
-            <AppIcon iconId={iconId} size={18} className="text-white/90" />
-          ) : (
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-              className="opacity-80"
-            >
-              <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-              <path d="M1.42 9a16 16 0 0 1 21.16 0" />
-              <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-              <circle cx="12" cy="20" r="1" fill="currentColor" />
-            </svg>
+        {/* top: chip + account icon */}
+        <div className="flex items-start justify-between">
+          <svg width="46" height="36" viewBox="0 0 46 36" fill="none" aria-hidden="true">
+            <rect width="46" height="36" rx="5" fill="#d4a843" />
+            <rect x="1" y="12" width="44" height="12" fill="#b8922e" />
+            <rect x="14" y="1" width="18" height="34" fill="#b8922e" />
+            <rect x="14" y="12" width="18" height="12" fill="#c9a33a" />
+            <rect x="1" y="12" width="13" height="12" fill="#c8962c" />
+            <rect x="32" y="12" width="13" height="12" fill="#c8962c" />
+          </svg>
+
+          <div className="opacity-70">
+            {iconId ? (
+              <AppIcon iconId={iconId} size={24} className="text-white" />
+            ) : (
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                aria-hidden="true"
+              >
+                <path d="M5 12.55a11 11 0 0 1 14.08 0" />
+                <path d="M1.42 9a16 16 0 0 1 21.16 0" />
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
+                <circle cx="12" cy="20" r="1" fill="currentColor" />
+              </svg>
+            )}
+          </div>
+        </div>
+
+        {/* middle: account name */}
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-widest opacity-60 mb-1">
+            Fatura
+          </p>
+          <p className="text-base font-bold truncate leading-tight">{nome}</p>
+        </div>
+
+        {/* bottom: total + status badge */}
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] opacity-50 mb-1">Total</p>
+            <p className="text-2xl font-bold tabular-nums tracking-tight leading-none">
+              {brl(total)}
+            </p>
+          </div>
+          {isPaid && (
+            <div className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 rounded-full px-3 py-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Pago
+            </div>
           )}
         </div>
-      </div>
-
-      {/* account name */}
-      <div className="relative mt-6 mb-2">
-        <p className="text-xs font-medium uppercase tracking-widest text-white/60">Fatura</p>
-        <p className="text-sm font-semibold truncate text-white/90">{nome}</p>
-      </div>
-
-      {/* bottom row: total + status */}
-      <div className="relative flex items-end justify-between">
-        <div>
-          <p className="text-xs text-white/50 mb-0.5">Total</p>
-          <p className="text-2xl font-bold tabular-nums tracking-tight">{brl(total)}</p>
-        </div>
-        {isPaid && (
-          <div className="flex items-center gap-1 text-xs font-medium bg-white/20 rounded-full px-2.5 py-1">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            Pago
-          </div>
-        )}
       </div>
     </div>
   );
