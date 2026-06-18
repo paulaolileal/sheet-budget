@@ -43,10 +43,23 @@ export function IncomePage() {
       <PageHeader
         title="Receitas"
         description="Salários, bônus e outras entradas positivas."
-        actions={<CompetenciaSelector />}
+        actions={
+          <>
+            <CompetenciaSelector />
+            <Button
+              onClick={() => {
+                setEditingIncome(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nova receita
+            </Button>
+          </>
+        }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription className="text-xs uppercase tracking-wide">
@@ -78,18 +91,6 @@ export function IncomePage() {
             )}
           </CardContent>
         </Card>
-
-        <div className="flex items-center justify-end md:justify-start">
-          <Button
-            onClick={() => {
-              setEditingIncome(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Nova receita
-          </Button>
-        </div>
       </div>
 
       {isLoading ? (
