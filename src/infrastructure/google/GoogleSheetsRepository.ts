@@ -102,7 +102,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     const [headers, ...body] = rows;
     return body.map((r) => {
       const obj: Record<string, string> = {};
-      headers.forEach((h, i) => (obj[h] = r[i] ?? ""));
+      headers.forEach((h, i) => (obj[h.trim()] = r[i] ?? ""));
       return obj as unknown as T;
     });
   }
@@ -488,7 +488,8 @@ export class GoogleSheetsRepository implements FinanceRepository {
       const rows = await this.getValues(SHEETS.invoice_amounts);
       return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
         invoice_id: r.invoice_id,
-        payment_account_id: r.payment_account_id,
+        // spreadsheets created before the rename may have "account_id" instead of "payment_account_id"
+        payment_account_id: r.payment_account_id || r.account_id,
         competencia: r.competencia,
         valor_real: parseCurrency(r.valor_real),
       }));
