@@ -41,14 +41,30 @@ export function ServiceLogo({ logoUrl, iconId, nome, size = 40, className }: Ser
   if (logoUrl && !imgError) {
     return (
       <div
-        className={`flex items-center justify-center overflow-hidden bg-white border border-border/40 ${className ?? ""}`}
+        className={`relative flex items-center justify-center overflow-hidden border border-border/40 ${className ?? ""}`}
         style={containerStyle}
       >
+        <img
+          src={logoUrl}
+          aria-hidden
+          alt=""
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            filter: "blur(6px) saturate(1.5)",
+            transform: "scale(1.4)",
+          }}
+        />
         <img
           src={logoUrl}
           alt={nome}
           onError={() => setImgError(true)}
           style={{
+            position: "relative",
+            zIndex: 1,
             width: size - 8,
             height: size - 8,
             objectFit: "contain",

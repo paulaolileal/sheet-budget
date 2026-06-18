@@ -52,8 +52,8 @@ export function IncomePage() {
                 setDialogOpen(true);
               }}
             >
-              <Plus className="h-4 w-4 mr-1" />
-              Nova receita
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Nova</span>
             </Button>
           </>
         }
