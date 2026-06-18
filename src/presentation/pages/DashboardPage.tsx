@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+
+const MONTH_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 import {
   Card,
   CardContent,
@@ -155,7 +157,7 @@ export function DashboardPage() {
         .reduce((s, ia) => s + ia.valor_real, 0);
       const extra = Math.max(0, invoiceTotal - cardTxTotal);
       return {
-        mes: month.slice(5),
+        mes: MONTH_ABBR[Number(month.slice(5)) - 1] ?? month.slice(5),
         entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
         saidas:
           Math.round(

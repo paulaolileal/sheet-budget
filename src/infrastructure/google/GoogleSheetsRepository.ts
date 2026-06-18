@@ -51,6 +51,21 @@ const TX_HEADERS = [
   "tipo_lancamento",
 ];
 
+/**
+ * Returns true when the Sheets API error indicates the requested range/sheet
+ * does not exist yet (HTTP 400 "Unable to parse range" or HTTP 404).
+ * Used to silently return empty arrays for optional sheets.
+ */
+function isMissingSheetError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message;
+  return (
+    msg.includes("Sheets API 400") ||
+    msg.includes("Sheets API 404") ||
+    msg.includes("Unable to parse range")
+  );
+}
+
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
   getAccessToken: () => string | null;
@@ -407,14 +422,19 @@ export class GoogleSheetsRepository implements FinanceRepository {
   }
 
   async getIncomes(): Promise<Income[]> {
-    const rows = await this.getValues(SHEETS.incomes);
-    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
-      income_id: r.income_id,
-      competencia: r.competencia,
-      descricao: r.descricao,
-      valor: parseCurrency(r.valor),
-      icon_id: r.icon_id || undefined,
-    }));
+    try {
+      const rows = await this.getValues(SHEETS.incomes);
+      return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+        income_id: r.income_id,
+        competencia: r.competencia,
+        descricao: r.descricao,
+        valor: parseCurrency(r.valor),
+        icon_id: r.icon_id || undefined,
+      }));
+    } catch (err) {
+      if (isMissingSheetError(err)) return [];
+      throw err;
+    }
   }
 
   private incomeToRow(i: Income): (string | number)[] {
@@ -464,13 +484,18 @@ export class GoogleSheetsRepository implements FinanceRepository {
   }
 
   async getInvoiceAmounts(): Promise<InvoiceAmount[]> {
-    const rows = await this.getValues(SHEETS.invoice_amounts);
-    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
-      invoice_id: r.invoice_id,
-      payment_account_id: r.payment_account_id,
-      competencia: r.competencia,
-      valor_real: parseCurrency(r.valor_real),
-    }));
+    try {
+      const rows = await this.getValues(SHEETS.invoice_amounts);
+      return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+        invoice_id: r.invoice_id,
+        payment_account_id: r.payment_account_id,
+        competencia: r.competencia,
+        valor_real: parseCurrency(r.valor_real),
+      }));
+    } catch (err) {
+      if (isMissingSheetError(err)) return [];
+      throw err;
+    }
   }
 
   async saveInvoiceAmount(data: Omit<InvoiceAmount, "invoice_id">): Promise<InvoiceAmount> {
@@ -482,7 +507,13 @@ export class GoogleSheetsRepository implements FinanceRepository {
         `/values/${SHEETS.invoice_amounts}!A${rowIdx}:D${rowIdx}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
-    } catch {
+    } catch (err) {
+      if (isMissingSheetError(err)) {
+        throw new Error(
+          "Crie a aba 'invoice_amounts' no Google Sheets com as colunas: invoice_id | payment_account_id | competencia | valor_real",
+        );
+      }
+      // Row not found: append as new record
       await this.request(
         `/values/${SHEETS.invoice_amounts}!A:D:append?valueInputOption=USER_ENTERED`,
         { method: "POST", body: JSON.stringify({ values: [row] }) },
