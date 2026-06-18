@@ -302,15 +302,15 @@ export function TransactionsPage() {
             <CompetenciaSelector />
             <Button variant="outline" onClick={() => setConfirmOpen(true)} disabled={isGenerating}>
               {isGenerating ? (
-                <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                <RefreshCw className="h-4 w-4 sm:mr-1 animate-spin" />
               ) : (
-                <Repeat className="h-4 w-4 mr-1" />
+                <Repeat className="h-4 w-4 sm:mr-1" />
               )}
-              Recorrências
+              <span className="hidden sm:inline">Recorrências</span>
             </Button>
             <Button onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Novo
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Novo</span>
             </Button>
           </div>
         }
@@ -397,17 +397,18 @@ export function TransactionsPage() {
         />
       </div>
 
-      <div className="border rounded-lg overflow-hidden bg-card">
+      {/* Desktop table */}
+      <div className="hidden md:block border rounded-lg overflow-hidden bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted/40 border-b">
             <tr>
               <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Descrição
               </th>
-              <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Conta
               </th>
-              <th className="hidden md:table-cell text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20">
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-20">
                 Tipo
               </th>
               <th className="text-right px-4 py-2.5 text-xs font-medium text-muted-foreground uppercase tracking-wide w-32">
@@ -424,7 +425,7 @@ export function TransactionsPage() {
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b last:border-0">
                   {Array.from({ length: COL_COUNT }).map((_, j) => (
-                    <td key={j} className={cn("px-4 py-3", (j === 1 || j === 2) && "hidden md:table-cell")}>
+                    <td key={j} className="px-4 py-3">
                       <Skeleton className="h-4 w-full max-w-[160px]" />
                     </td>
                   ))}
@@ -476,8 +477,8 @@ export function TransactionsPage() {
                           )}
                         </span>
                       </td>
-                      <td className="hidden md:table-cell" />
-                      <td className="hidden md:table-cell" />
+                      <td />
+                      <td />
                       <td className="px-4 py-2 text-right">
                         <span className="text-xs text-muted-foreground">Total </span>
                         <span className="text-xs font-medium tabular-nums">{brl(group.total)}</span>
@@ -510,12 +511,10 @@ export function TransactionsPage() {
                         const parcela = parcelaMap.get(tx.transaction_id) ?? parseParcela(tx.descricao, tx.tipo_lancamento);
                         const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
                         const settled = isSettled(tx);
-                        // txExpanded = user manually opened a settled row; we can re-collapse on click
                         const txExpanded = expandedTxs.has(tx.transaction_id);
                         const txCollapsed = settled && !txExpanded;
                         const isIgnored = tx.status === "IGNORADO";
 
-                        // Thin collapsed row for settled transactions
                         if (txCollapsed) {
                           return (
                             <tr
@@ -527,10 +526,10 @@ export function TransactionsPage() {
                               <td className="px-4 py-0.5 text-xs text-muted-foreground">
                                 {descricao}
                               </td>
-                              <td className="hidden md:table-cell px-4 py-0.5 text-xs text-muted-foreground">
+                              <td className="px-4 py-0.5 text-xs text-muted-foreground">
                                 {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "") : ""}
                               </td>
-                              <td className="hidden md:table-cell px-4 py-0.5">
+                              <td className="px-4 py-0.5">
                                 <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                               </td>
                               <td className="px-4 py-0.5 text-right text-xs tabular-nums text-muted-foreground">
@@ -552,7 +551,6 @@ export function TransactionsPage() {
                           );
                         }
 
-                        // Full row — settled+expanded rows collapse on click; others open edit
                         const rowClick = settled && txExpanded
                           ? () => toggleTx(tx.transaction_id)
                           : () => setEditing(tx);
@@ -567,10 +565,10 @@ export function TransactionsPage() {
                             onClick={rowClick}
                           >
                             <td className="px-4 py-2.5 font-medium">{descricao}</td>
-                            <td className="hidden md:table-cell px-4 py-2.5 text-muted-foreground text-xs">
+                            <td className="px-4 py-2.5 text-muted-foreground text-xs">
                               {tx.payment_account_id ? (accMap[tx.payment_account_id] ?? "—") : "—"}
                             </td>
-                            <td className="hidden md:table-cell px-4 py-2.5">
+                            <td className="px-4 py-2.5">
                               <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                             </td>
                             <td className="px-4 py-2.5 text-right tabular-nums">
@@ -649,6 +647,192 @@ export function TransactionsPage() {
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile card list */}
+      <div className="md:hidden space-y-2">
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-lg border p-3 space-y-2 bg-card">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : grouped.length === 0 ? (
+          <div className="py-12 text-center text-sm text-muted-foreground">
+            Nenhum lançamento encontrado para este filtro.
+          </div>
+        ) : (
+          grouped.map((group, idx) => {
+            const catCollapsed = group.allSettled && !expandedCats.has(group.categoria_id);
+            const CatChevron = catCollapsed ? ChevronRight : ChevronDown;
+            const settledCount = group.transactions.filter(isSettled).length;
+            const [borderCls, bgCls] = CAT_PALETTE[idx % CAT_PALETTE.length].split(" ");
+
+            return (
+              <div key={group.categoria_id} className={cn("rounded-lg border-l-4 overflow-hidden", borderCls)}>
+                {/* Category header */}
+                <div
+                  className={cn(
+                    "px-3 py-2.5 flex items-center justify-between gap-2",
+                    bgCls,
+                    group.allSettled && "cursor-pointer active:brightness-95 select-none",
+                  )}
+                  onClick={group.allSettled ? () => toggleCat(group.categoria_id) : undefined}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {group.allSettled && (
+                      <CatChevron className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    )}
+                    <AppIcon
+                      iconId={catMap[group.categoria_id]?.icon_id}
+                      size={13}
+                      className="shrink-0"
+                    />
+                    <span className="font-semibold text-xs uppercase tracking-wide text-foreground/80 truncate">
+                      {catMap[group.categoria_id]?.nome ?? group.categoria_id}
+                      {catCollapsed && (
+                        <span className="font-normal normal-case tracking-normal text-muted-foreground ml-1">
+                          · {settledCount} {settledCount === 1 ? "item" : "itens"}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs font-medium tabular-nums">{brl(group.total)}</p>
+                    <div className="flex gap-2 justify-end text-xs tabular-nums">
+                      {group.aPagar > 0 && (
+                        <span className="text-[color:var(--color-warning)]">{brl(group.aPagar)}</span>
+                      )}
+                      {group.pago > 0 && (
+                        <span className="text-[color:var(--color-success)]">{brl(group.pago)}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transaction items */}
+                {!catCollapsed && (
+                  <div className="divide-y bg-card">
+                    {group.transactions.map((tx) => {
+                      const parcela = parcelaMap.get(tx.transaction_id) ?? parseParcela(tx.descricao, tx.tipo_lancamento);
+                      const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
+                      const settled = isSettled(tx);
+                      const txExpanded = expandedTxs.has(tx.transaction_id);
+                      const txCollapsed = settled && !txExpanded;
+                      const isIgnored = tx.status === "IGNORADO";
+
+                      if (txCollapsed) {
+                        return (
+                          <div
+                            key={tx.transaction_id}
+                            className="px-3 py-1.5 flex items-center justify-between gap-2 opacity-40 active:opacity-70 transition-opacity cursor-pointer"
+                            onClick={() => toggleTx(tx.transaction_id)}
+                          >
+                            <span className="text-xs text-muted-foreground truncate flex-1">{descricao}</span>
+                            <span className="text-xs tabular-nums text-muted-foreground shrink-0">
+                              {brl(tx.valor_final ?? tx.valor_previsto)}
+                            </span>
+                          </div>
+                        );
+                      }
+
+                      const rowClick = settled && txExpanded
+                        ? () => toggleTx(tx.transaction_id)
+                        : () => setEditing(tx);
+
+                      return (
+                        <div
+                          key={tx.transaction_id}
+                          className={cn(
+                            "px-3 py-3 flex items-center gap-2 cursor-pointer active:bg-muted/40 transition-colors",
+                            isIgnored && "opacity-50",
+                          )}
+                          onClick={rowClick}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate leading-snug">{descricao}</p>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              <Badge
+                                variant="outline"
+                                className={cn("font-normal border-0 text-xs", STATUS_TONES[tx.status])}
+                              >
+                                {tx.status}
+                              </Badge>
+                              {tx.tipo_lancamento === "RECORRENTE" && (
+                                <Repeat className="h-3 w-3 text-muted-foreground" />
+                              )}
+                              {parcela && (
+                                <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>
+                              )}
+                              {tx.payment_account_id && accMap[tx.payment_account_id] && (
+                                <span className="text-xs text-muted-foreground truncate">
+                                  · {accMap[tx.payment_account_id]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold tabular-nums shrink-0">
+                            {brl(tx.valor_final ?? tx.valor_previsto)}
+                          </p>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 shrink-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuLabel className="text-xs py-1">
+                                Alterar status
+                              </DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              {ACTIONABLE_STATUSES.filter((s) => s !== tx.status).map((status) => (
+                                <DropdownMenuItem
+                                  key={status}
+                                  className="text-xs gap-2 cursor-pointer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStatusChange(tx, status);
+                                  }}
+                                >
+                                  <Badge
+                                    variant="outline"
+                                    className={cn("font-normal border-0 text-xs", STATUS_TONES[status])}
+                                  >
+                                    {status}
+                                  </Badge>
+                                </DropdownMenuItem>
+                              ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-xs gap-2 cursor-pointer"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditing(tx);
+                                }}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Editar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       <TransactionDialog open={creating} onOpenChange={(o) => !o && setCreating(false)} />
