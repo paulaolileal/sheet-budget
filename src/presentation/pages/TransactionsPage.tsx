@@ -343,8 +343,8 @@ export function TransactionsPage() {
         )}
       </div>
 
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
-        <div className="relative flex-1 min-w-[200px] md:min-w-[220px]">
+      <div className="flex flex-col gap-2 mb-4 md:flex-row md:flex-wrap md:items-center">
+        <div className="relative w-full md:flex-1 md:min-w-[220px]">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Buscar descrição..."
@@ -353,48 +353,50 @@ export function TransactionsPage() {
             className="pl-9"
           />
         </div>
-        <FilterSelect
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          placeholder="Categoria"
-          options={[
-            { value: "all", label: "Todas categorias" },
-            ...(categories ?? []).map((c) => ({ value: c.category_id, label: c.nome })),
-          ]}
-        />
-        <FilterSelect
-          value={accountFilter}
-          onChange={setAccountFilter}
-          placeholder="Conta"
-          options={[
-            { value: "all", label: "Todas contas" },
-            ...(accounts ?? []).map((a) => ({ value: a.account_id, label: a.nome })),
-          ]}
-        />
-        <FilterSelect
-          value={statusFilter}
-          onChange={setStatusFilter}
-          placeholder="Status"
-          options={[
-            { value: "all", label: "Todos status" },
-            ...(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as TransactionStatus[]).map((s) => ({
-              value: s,
-              label: s,
-            })),
-          ]}
-        />
-        <FilterSelect
-          value={tipoFilter}
-          onChange={setTipoFilter}
-          placeholder="Tipo"
-          options={[
-            { value: "all", label: "Todos tipos" },
-            ...(["RECORRENTE", "PARCELADO", "MANUAL"] as TipoLancamento[]).map((t) => ({
-              value: t,
-              label: t,
-            })),
-          ]}
-        />
+        <div className="flex gap-2 overflow-x-auto pb-0.5 md:contents">
+          <FilterSelect
+            value={categoryFilter}
+            onChange={setCategoryFilter}
+            placeholder="Categoria"
+            options={[
+              { value: "all", label: "Todas categorias" },
+              ...(categories ?? []).map((c) => ({ value: c.category_id, label: c.nome })),
+            ]}
+          />
+          <FilterSelect
+            value={accountFilter}
+            onChange={setAccountFilter}
+            placeholder="Conta"
+            options={[
+              { value: "all", label: "Todas contas" },
+              ...(accounts ?? []).map((a) => ({ value: a.account_id, label: a.nome })),
+            ]}
+          />
+          <FilterSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            placeholder="Status"
+            options={[
+              { value: "all", label: "Todos status" },
+              ...(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as TransactionStatus[]).map((s) => ({
+                value: s,
+                label: s,
+              })),
+            ]}
+          />
+          <FilterSelect
+            value={tipoFilter}
+            onChange={setTipoFilter}
+            placeholder="Tipo"
+            options={[
+              { value: "all", label: "Todos tipos" },
+              ...(["RECORRENTE", "PARCELADO", "MANUAL"] as TipoLancamento[]).map((t) => ({
+                value: t,
+                label: t,
+              })),
+            ]}
+          />
+        </div>
       </div>
 
       {/* Desktop table */}

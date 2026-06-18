@@ -132,7 +132,7 @@ export function AppShell() {
         </div>
       </aside>
 
-      <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-x-hidden">
         {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
         <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
           <div>
