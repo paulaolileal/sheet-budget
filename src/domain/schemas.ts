@@ -13,7 +13,10 @@ const safeString = (max = 500) =>
     .string()
     .trim()
     .max(max)
-    .transform((v) => v.replace(/<[^>]*>/g, "").replace(/[\u0000-\u001F\u007F]/g, ""));
+    .transform((v) => {
+      const noTags = v.replace(/<[^>]*>/g, "");
+      return [...noTags].filter((c) => c.charCodeAt(0) > 31 && c.charCodeAt(0) !== 127).join("");
+    });
 
 export const transactionSchema = z.object({
   transaction_id: z.string().min(1),
