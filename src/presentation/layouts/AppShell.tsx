@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -31,7 +32,6 @@ const NAV = [
   { to: "/incomes", label: "Receitas", icon: TrendingUp },
   { to: "/cards", label: "Cartões", icon: CreditCard },
   { to: "/recurrences", label: "Recorrências", icon: Repeat },
-  { to: "/settings", label: "Config", icon: Settings },
 ];
 
 function SyncIndicator() {
@@ -112,6 +112,14 @@ export function AppShell() {
                 <div className="text-[11px] text-muted-foreground truncate">{user.email}</div>
               </div>
               <button
+                onClick={() => navigate("/settings")}
+                className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="Configurações"
+                title="Configurações"
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </button>
+              <button
                 onClick={handleLogout}
                 className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                 aria-label="Sair"
@@ -167,6 +175,14 @@ export function AppShell() {
                   <div className="px-2 py-1.5 text-xs text-muted-foreground truncate">
                     {user.email}
                   </div>
+                  <DropdownMenuItem
+                    className="text-xs gap-2 cursor-pointer"
+                    onClick={() => navigate("/settings")}
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    Configurações
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-xs gap-2 cursor-pointer text-destructive focus:text-destructive"
                     onClick={handleLogout}
