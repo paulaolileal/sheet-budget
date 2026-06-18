@@ -38,6 +38,7 @@ Este app foi construído com esse foco:
 ## Funcionalidades
 
 ### Dashboard
+
 - Cards de resumo: Total de Receitas, Total Previsto, Total Pago, Saldo Restante
 - Barra de progresso de pagamento do mês
 - Cards rápidos: pendentes, fixos (recorrentes), cartão
@@ -47,6 +48,7 @@ Este app foi construído com esse foco:
 - Gráfico de linhas: tendência mensal dos últimos 6 meses
 
 ### Lançamentos
+
 - Tabela agrupada por categoria com filtros de mês, categoria, conta, status e tipo
 - Busca textual por descrição
 - Botão **"Gerar Recorrências"** — cria lançamentos para o mês selecionado com base nos templates ativos (idempotente)
@@ -54,12 +56,14 @@ Este app foi construído com esse foco:
 - Ações por linha: editar, deletar, marcar como pago / pendente / adiantado
 
 ### Receitas
+
 - Registro de receitas por competência (salários, freelances, outras entradas)
 - Tabela com ícone customizável por receita
 - Cards: total do mês e quantidade de entradas
 - CRUD completo
 
 ### Cartões & Faturas
+
 - Navegação por mês com month picker
 - Abas separadas por cartão
 - Tabela de transações vinculadas à fatura
@@ -67,6 +71,7 @@ Este app foi construído com esse foco:
 - Botão **"Pagar Fatura"** com confirmação — propaga `status=PAGO` para todas as transações vinculadas
 
 ### Recorrências (Templates)
+
 - Cadastro de templates com nome, categoria, conta, período de vigência e ícone
 - Filtros por categoria, conta e status (ativo/inativo)
 - Paginação (12 por página)
@@ -74,12 +79,14 @@ Este app foi construído com esse foco:
 - Templates com `ultima_competencia` encerram automaticamente
 
 ### Configurações
+
 - CRUD completo de **Categorias** (com ícone customizável)
 - CRUD completo de **Contas / Cartões** (tipo: conta, cartão, carteira)
 - Indicador de sincronização (sincronizando / salvo / erro)
 - Status da conexão Google
 
 ### UX transversal
+
 - Tema claro/escuro persistido
 - Indicador de sincronização global em todas as mutações
 - Skeleton loading em tabelas e cards
@@ -88,16 +95,16 @@ Este app foi construído com esse foco:
 
 ## Rotas da aplicação
 
-| Rota | Página |
-|---|---|
-| `/login` | Login com Google OAuth |
-| `/` | Dashboard — resumo financeiro do mês |
-| `/transactions` | Tabela de lançamentos com filtros |
-| `/incomes` | Gestão de receitas |
-| `/cards` | Cartões e faturas |
-| `/recurrences` | Templates de recorrência |
-| `/settings` | Categorias, contas e configurações |
-| `/404` | Página não encontrada |
+| Rota            | Página                               |
+| --------------- | ------------------------------------ |
+| `/login`        | Login com Google OAuth               |
+| `/`             | Dashboard — resumo financeiro do mês |
+| `/transactions` | Tabela de lançamentos com filtros    |
+| `/incomes`      | Gestão de receitas                   |
+| `/cards`        | Cartões e faturas                    |
+| `/recurrences`  | Templates de recorrência             |
+| `/settings`     | Categorias, contas e configurações   |
+| `/404`          | Página não encontrada                |
 
 ---
 
@@ -163,30 +170,31 @@ src/
 
 ### Arquivos-chave
 
-| Arquivo | Papel |
-|---|---|
-| `src/domain/types.ts` | Todos os tipos (Transaction, Income, RecurrenceTemplate, Account, Category, InvoiceAmount) |
-| `src/domain/schemas.ts` | Schemas Zod — gate de validação de toda mutação |
-| `src/domain/repository.ts` | Interface `FinanceRepository` — contrato único |
-| `src/application/repositoryProvider.ts` | Decide Mock vs Google Sheets em runtime |
-| `src/hooks/queries.ts` | Todos os hooks de query e mutation; `withSync()` aciona o indicador de sync |
-| `src/store/uiStore.ts` | Zustand: competência ativa (YYYY-MM) + estado de sync |
-| `src/services/config.ts` | Lê `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; expõe `useMock` |
-| `src/services/googleAuth.ts` | OAuth implícito Google; token vive apenas em closure — jamais em storage |
-| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD contra a Sheets API v4 |
+| Arquivo                                               | Papel                                                                                      |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/domain/types.ts`                                 | Todos os tipos (Transaction, Income, RecurrenceTemplate, Account, Category, InvoiceAmount) |
+| `src/domain/schemas.ts`                               | Schemas Zod — gate de validação de toda mutação                                            |
+| `src/domain/repository.ts`                            | Interface `FinanceRepository` — contrato único                                             |
+| `src/application/repositoryProvider.ts`               | Decide Mock vs Google Sheets em runtime                                                    |
+| `src/hooks/queries.ts`                                | Todos os hooks de query e mutation; `withSync()` aciona o indicador de sync                |
+| `src/store/uiStore.ts`                                | Zustand: competência ativa (YYYY-MM) + estado de sync                                      |
+| `src/services/config.ts`                              | Lê `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; expõe `useMock`                        |
+| `src/services/googleAuth.ts`                          | OAuth implícito Google; token vive apenas em closure — jamais em storage                   |
+| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD contra a Sheets API v4                                                                |
 
 ### Entidades e convenções de dados
 
-| Entidade | Campos principais |
-|---|---|
-| **Transaction** | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final?`, `status`, `considerar_resumo`, `payment_account_id?`, `tipo_lancamento` |
-| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?` |
-| **Income** | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?` |
-| **Account** | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?` |
-| **Category** | `category_id`, `nome`, `icon_id?` |
-| **InvoiceAmount** | `invoice_id`, `payment_account_id`, `competencia`, `valor_real` |
+| Entidade               | Campos principais                                                                                                                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final?`, `status`, `considerar_resumo`, `payment_account_id?`, `tipo_lancamento` |
+| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`                               |
+| **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                                                                            |
+| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                                                                        |
+| **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                                                                       |
+| **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                                                         |
 
 **Regras de negócio:**
+
 - `competencia` é sempre `YYYY-MM` (string)
 - `status=PAGO` exige `valor_final` — validado por Zod
 - Registros nunca são deletados fisicamente — `status=CANCELADO` é o cancelamento
@@ -195,20 +203,20 @@ src/
 
 ### Status de transação
 
-| Status | Descrição |
-|---|---|
-| `PENDENTE` | Lançamento previsto, ainda não pago |
-| `PAGO` | Pago — exige `valor_final` |
-| `ADIANTADO` | Pago antecipadamente |
-| `IGNORADO` | Excluído do resumo sem cancelar |
+| Status      | Descrição                           |
+| ----------- | ----------------------------------- |
+| `PENDENTE`  | Lançamento previsto, ainda não pago |
+| `PAGO`      | Pago — exige `valor_final`          |
+| `ADIANTADO` | Pago antecipadamente                |
+| `IGNORADO`  | Excluído do resumo sem cancelar     |
 
 ### Tipo de lançamento
 
-| Tipo | Descrição |
-|---|---|
+| Tipo         | Descrição                          |
+| ------------ | ---------------------------------- |
 | `RECORRENTE` | Gerado por um template fixo mensal |
-| `PARCELADO` | Parcela de uma compra parcelada |
-| `MANUAL` | Lançamento avulso |
+| `PARCELADO`  | Parcela de uma compra parcelada    |
+| `MANUAL`     | Lançamento avulso                  |
 
 ---
 
@@ -240,16 +248,17 @@ npm run format     # Prettier
 
 Crie uma planilha com **6 abas**, com os cabeçalhos exatamente como listados abaixo:
 
-| Aba | Colunas |
-|---|---|
-| `transactions` | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final`, `status`, `considerar_resumo`, `payment_account_id`, `tipo_lancamento` |
-| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id` |
-| `accounts` | `account_id`, `nome`, `tipo`, `icon_id` |
-| `categories` | `category_id`, `nome`, `icon_id` |
-| `incomes` | `income_id`, `competencia`, `descricao`, `valor`, `icon_id` |
-| `invoice_amounts` | `invoice_id`, `payment_account_id`, `competencia`, `valor_real` |
+| Aba                    | Colunas                                                                                                                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `transactions`         | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final`, `status`, `considerar_resumo`, `payment_account_id`, `tipo_lancamento` |
+| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`                                |
+| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                                                              |
+| `categories`           | `category_id`, `nome`, `icon_id`                                                                                                                                                     |
+| `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                                                                          |
+| `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                                                      |
 
 Copie o `spreadsheetId` da URL:
+
 ```
 https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
 ```
@@ -322,10 +331,10 @@ O token de acesso fica **somente em memória** (closure em `src/services/googleA
 
 Em **Settings → Environment Variables**, adicione:
 
-| Variável | Valor |
-|---|---|
+| Variável                | Valor                              |
+| ----------------------- | ---------------------------------- |
 | `VITE_GOOGLE_CLIENT_ID` | `xxxxx.apps.googleusercontent.com` |
-| `VITE_SPREADSHEET_ID` | `1AbC...XyZ` |
+| `VITE_SPREADSHEET_ID`   | `1AbC...XyZ`                       |
 
 **Passo 3 — Configurar roteamento SPA**
 
@@ -342,6 +351,7 @@ Para que o React Router funcione em rotas internas (ex: `/transactions`), config
 **Passo 4 — Deploy**
 
 O Digital Ocean faz deploy automático a cada push na branch `main`. A URL temporária ficará disponível em:
+
 ```
 https://sheet-budget-XXXXX.ondigitalocean.app
 ```
