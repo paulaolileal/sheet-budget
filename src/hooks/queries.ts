@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
 import { isTemplateActive } from "@/domain/types";
-import type { Category, Transaction, RecurrenceTemplate } from "@/domain/types";
+import type { Category, Income, InvoiceAmount, Transaction, RecurrenceTemplate } from "@/domain/types";
 import {
   accountInputSchema,
   categoryInputSchema,
+  incomeInputSchema,
+  invoiceAmountInputSchema,
   transactionInputSchema,
   type AccountInput,
   type CategoryInput,
+  type IncomeInput,
+  type InvoiceAmountInput,
   type TransactionInput,
 } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
@@ -22,6 +26,8 @@ export const qk = {
   templates: ["templates"] as const,
   accounts: ["accounts"] as const,
   categories: ["categories"] as const,
+  incomes: ["incomes"] as const,
+  invoice_amounts: ["invoice_amounts"] as const,
 };
 
 export const useTransactions = () =>
@@ -35,6 +41,12 @@ export const useAccounts = () =>
 
 export const useCategories = () =>
   useQuery({ queryKey: qk.categories, queryFn: () => repo().getCategories() });
+
+export const useIncomes = () =>
+  useQuery({ queryKey: qk.incomes, queryFn: () => repo().getIncomes() });
+
+export const useInvoiceAmounts = () =>
+  useQuery({ queryKey: qk.invoice_amounts, queryFn: () => repo().getInvoiceAmounts() });
 
 function withSync<T>(fn: () => Promise<T>): Promise<T> {
   useUiStore.getState().setSync("syncing");
@@ -204,6 +216,61 @@ export function useDeleteCategory() {
       qc.invalidateQueries({ queryKey: qk.transactions });
       qc.invalidateQueries({ queryKey: qk.templates });
       toast.success("Categoria excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCreateIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: IncomeInput) => {
+      const parsed = incomeInputSchema.parse(input);
+      return withSync(() => repo().createIncome(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.incomes });
+      toast.success("Receita adicionada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Omit<Income, "income_id">> }) =>
+      withSync(() => repo().updateIncome(id, patch)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.incomes });
+      toast.success("Receita atualizada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteIncome() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteIncome(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.incomes });
+      toast.success("Receita excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useSaveInvoiceAmount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: InvoiceAmountInput) => {
+      const parsed = invoiceAmountInputSchema.parse(input);
+      return withSync(() => repo().saveInvoiceAmount(parsed as Omit<InvoiceAmount, "invoice_id">));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.invoice_amounts });
+      toast.success("Valor da fatura salvo");
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -1,4 +1,4 @@
-import type { Account, AccountTipo, Category, RecurrenceTemplate, Transaction } from "./types";
+import type { Account, AccountTipo, Category, Income, InvoiceAmount, RecurrenceTemplate, Transaction } from "./types";
 
 /**
  * Contrato do repositório. A camada de infraestrutura implementa
@@ -33,4 +33,14 @@ export interface FinanceRepository {
   createCategory(data: Omit<Category, "category_id">): Promise<Category>;
   updateCategory(cat: Category): Promise<void>;
   deleteCategory(id: string): Promise<void>;
+
+  // incomes
+  getIncomes(): Promise<Income[]>;
+  createIncome(data: Omit<Income, "income_id">): Promise<Income>;
+  updateIncome(id: string, patch: Partial<Omit<Income, "income_id">>): Promise<Income>;
+  deleteIncome(id: string): Promise<void>;
+
+  // invoice amounts
+  getInvoiceAmounts(): Promise<InvoiceAmount[]>;
+  saveInvoiceAmount(data: Omit<InvoiceAmount, "invoice_id">): Promise<InvoiceAmount>;
 }

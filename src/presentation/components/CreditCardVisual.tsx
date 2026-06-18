@@ -21,9 +21,10 @@ interface CreditCardVisualProps {
   total: number;
   isPaid: boolean;
   iconId?: string;
+  extraAmount?: number;
 }
 
-export function CreditCardVisual({ nome, total, isPaid, iconId }: CreditCardVisualProps) {
+export function CreditCardVisual({ nome, total, isPaid, iconId, extraAmount }: CreditCardVisualProps) {
   const gradient = pickGradient(nome);
 
   return (
@@ -86,6 +87,11 @@ export function CreditCardVisual({ nome, total, isPaid, iconId }: CreditCardVisu
             <p className="text-2xl font-bold tabular-nums tracking-tight leading-none">
               {brl(total)}
             </p>
+            {extraAmount != null && extraAmount > 0 && (
+              <p className="text-xs font-semibold text-amber-300 mt-0.5">
+                + {brl(extraAmount)} não catalogado
+              </p>
+            )}
           </div>
           {isPaid && (
             <div className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 rounded-full px-3 py-1.5">

@@ -27,3 +27,8 @@ export function transactionId(competencia: string, descricao: string): string {
   const [year, month] = competencia.split("-");
   return `tx-${year}-${month}-${slugify(descricao)}`;
 }
+
+export function incomeId(competencia: string, descricao: string): string {
+  const [year, month] = competencia.split("-");
+  return `inc-${year}-${month}-${slugify(descricao)}-${Date.now().toString(36)}`;
+}

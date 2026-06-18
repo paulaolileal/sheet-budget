@@ -66,3 +66,18 @@ export interface Account {
   icon_id?: string;
 }
 
+export interface Income {
+  income_id: string;
+  competencia: Competencia;
+  descricao: string;
+  valor: number;
+  icon_id?: string;
+}
+
+export interface InvoiceAmount {
+  invoice_id: string;
+  payment_account_id: string;
+  competencia: Competencia;
+  valor_real: number;
+}
+

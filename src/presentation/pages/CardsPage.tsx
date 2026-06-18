@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,8 @@ import {
   useAccounts,
   useBulkPayByAccount,
   useDeleteAccount,
+  useInvoiceAmounts,
+  useSaveInvoiceAmount,
   useTransactions,
 } from "@/hooks/queries";
 import { brl, competenciaLabel, currentCompetencia } from "@/utils/format";
@@ -44,6 +47,8 @@ interface DerivedFatura {
   isPaid: boolean;
   total: number;
   transactions: Transaction[];
+  valorReal: number | null;
+  extraAmount: number;
 }
 
 function addMonths(competencia: string, delta: number): string {
@@ -119,8 +124,10 @@ const TIPO_LABELS: Record<string, string> = {
 export function CardsPage() {
   const { data: txs, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
+  const { data: invoiceAmounts } = useInvoiceAmounts();
   const bulkPay = useBulkPayByAccount();
   const deleteAccount = useDeleteAccount();
+  const saveInvoiceAmount = useSaveInvoiceAmount();
 
   const [competencia, setCompetencia] = useState(() => currentCompetencia());
   const [selected, setSelected] = useState<DerivedFatura | null>(null);
@@ -128,6 +135,8 @@ export function CardsPage() {
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
+  const [editingInvoiceKey, setEditingInvoiceKey] = useState<string | null>(null);
+  const [invoiceInputValue, setInvoiceInputValue] = useState("");
 
   const accMap = useMemo(
     () => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a])),
@@ -138,6 +147,14 @@ export function CardsPage() {
     () => new Set((accounts ?? []).filter((a) => a.tipo === "CARTAO").map((a) => a.account_id)),
     [accounts],
   );
+
+  const invoiceAmountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const ia of invoiceAmounts ?? []) {
+      map.set(`${ia.payment_account_id}:${ia.competencia}`, ia.valor_real);
+    }
+    return map;
+  }, [invoiceAmounts]);
 
   const installmentLabels = useMemo(() => {
     const groups = new Map<string, Transaction[]>();
@@ -166,6 +183,9 @@ export function CardsPage() {
       .map(([key, txList]) => {
         const [accountId, comp] = key.split(":");
         const account = accMap[accountId];
+        const total = txList.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+        const valorReal = invoiceAmountMap.get(key) ?? null;
+        const extraAmount = valorReal != null ? Math.max(0, valorReal - total) : 0;
         return {
           key,
           payment_account_id: accountId,
@@ -174,12 +194,14 @@ export function CardsPage() {
           isPaid: txList.every(
             (t) => t.status === "PAGO" || t.status === "ADIANTADO" || t.status === "IGNORADO",
           ),
-          total: txList.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+          total,
           transactions: txList,
+          valorReal,
+          extraAmount,
         };
       })
       .sort((a, b) => b.competencia.localeCompare(a.competencia));
-  }, [txs, cardAccountIds, accMap]);
+  }, [txs, cardAccountIds, accMap, invoiceAmountMap]);
 
   const allMonths = useMemo(
     () => [...new Set(faturas.map((f) => f.competencia))].sort(),
@@ -192,6 +214,18 @@ export function CardsPage() {
   );
 
   const canGoPrev = allMonths.length > 0 && competencia > allMonths[0];
+
+  async function handleSaveInvoiceAmount(fatura: DerivedFatura) {
+    const valor = parseFloat(invoiceInputValue.replace(",", "."));
+    if (isNaN(valor) || valor < 0) return;
+    await saveInvoiceAmount.mutateAsync({
+      payment_account_id: fatura.payment_account_id,
+      competencia: fatura.competencia,
+      valor_real: valor,
+    });
+    setEditingInvoiceKey(null);
+    setInvoiceInputValue("");
+  }
 
   return (
     <div className="px-4 py-4 md:p-8 max-w-2xl mx-auto">
@@ -255,6 +289,7 @@ export function CardsPage() {
             >
               {monthFaturas.map((f) => {
                 const account = accMap[f.payment_account_id];
+                const isEditingThis = editingInvoiceKey === f.key;
                 return (
                   <div
                     key={f.key}
@@ -269,7 +304,82 @@ export function CardsPage() {
                       total={f.total}
                       isPaid={f.isPaid}
                       iconId={account?.icon_id}
+                      extraAmount={f.extraAmount}
                     />
+
+                    {/* Invoice real amount section */}
+                    <div className="px-1">
+                      {isEditingThis ? (
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Valor real da fatura"
+                            value={invoiceInputValue}
+                            onChange={(e) => setInvoiceInputValue(e.target.value)}
+                            className="h-8 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleSaveInvoiceAmount(f);
+                              if (e.key === "Escape") {
+                                setEditingInvoiceKey(null);
+                                setInvoiceInputValue("");
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 px-3 shrink-0"
+                            onClick={() => handleSaveInvoiceAmount(f)}
+                            disabled={saveInvoiceAmount.isPending}
+                          >
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2 shrink-0"
+                            onClick={() => {
+                              setEditingInvoiceKey(null);
+                              setInvoiceInputValue("");
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        </div>
+                      ) : f.valorReal != null ? (
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            Fatura real: <span className="font-medium text-foreground">{brl(f.valorReal)}</span>
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => {
+                              setEditingInvoiceKey(f.key);
+                              setInvoiceInputValue(String(f.valorReal));
+                            }}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full text-xs h-7 text-muted-foreground"
+                          onClick={() => {
+                            setEditingInvoiceKey(f.key);
+                            setInvoiceInputValue("");
+                          }}
+                        >
+                          + Informar valor real da fatura
+                        </Button>
+                      )}
+                    </div>
+
                     <div className="flex gap-2 px-1">
                       <Button
                         variant="outline"

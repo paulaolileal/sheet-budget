@@ -5,6 +5,7 @@ import {
   CreditCard,
   Repeat,
   Settings,
+  TrendingUp,
   Moon,
   Sun,
   CloudCheck,
@@ -27,6 +28,7 @@ import {
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/transactions", label: "Lançamentos", icon: Receipt },
+  { to: "/incomes", label: "Receitas", icon: TrendingUp },
   { to: "/cards", label: "Cartões", icon: CreditCard },
   { to: "/recurrences", label: "Recorrências", icon: Repeat },
   { to: "/settings", label: "Config", icon: Settings },
@@ -185,7 +187,7 @@ export function AppShell() {
 
         {/* Mobile bottom nav — shrink-0 keeps it fixed-height at the bottom of the flex column */}
         <nav className="shrink-0 md:hidden h-16 bg-background/95 backdrop-blur-sm border-t z-50">
-          <div className="grid grid-cols-5 h-full">
+          <div className="grid grid-cols-6 h-full">
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
@@ -193,14 +195,14 @@ export function AppShell() {
                 end={end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors",
+                    "flex flex-col items-center justify-center gap-0.5 text-[9px] font-medium transition-colors",
                     isActive
                       ? "text-primary"
                       : "text-muted-foreground hover:text-foreground",
                   )
                 }
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
                 <span>{label}</span>
               </NavLink>
             ))}

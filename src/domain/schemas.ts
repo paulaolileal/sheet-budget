@@ -76,8 +76,29 @@ export const categoryInputSchema = z.object({
   icon_id: z.string().optional(),
 });
 
+export const incomeSchema = z.object({
+  income_id: z.string().min(1),
+  competencia: competenciaSchema,
+  descricao: safeString(200),
+  valor: z.number().positive(),
+  icon_id: z.string().optional(),
+});
+
+export const incomeInputSchema = incomeSchema.omit({ income_id: true });
+
+export const invoiceAmountSchema = z.object({
+  invoice_id: z.string().min(1),
+  payment_account_id: z.string().min(1),
+  competencia: competenciaSchema,
+  valor_real: z.number().nonnegative(),
+});
+
+export const invoiceAmountInputSchema = invoiceAmountSchema.omit({ invoice_id: true });
+
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
 export type TemplateFormInput = z.infer<typeof templateInputSchema>;
 export type AccountInput = z.infer<typeof accountInputSchema>;
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
+export type IncomeInput = z.infer<typeof incomeInputSchema>;
+export type InvoiceAmountInput = z.infer<typeof invoiceAmountInputSchema>;

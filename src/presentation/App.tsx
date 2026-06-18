@@ -7,6 +7,7 @@ import { TransactionsPage } from "./pages/TransactionsPage";
 import { CardsPage } from "./pages/CardsPage";
 import { TemplatesPage } from "./pages/TemplatesPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { IncomePage } from "./pages/IncomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="incomes" element={<IncomePage />} />
           <Route path="cards" element={<CardsPage />} />
           <Route path="recurrences" element={<TemplatesPage />} />
           <Route path="settings" element={<SettingsPage />} />

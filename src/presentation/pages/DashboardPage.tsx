@@ -12,12 +12,15 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Line,
+  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  Legend,
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
@@ -26,15 +29,19 @@ import { useUiStore } from "@/store/uiStore";
 import {
   useAccounts,
   useCategories,
+  useIncomes,
+  useInvoiceAmounts,
   useTransactions,
 } from "@/hooks/queries";
-import { brl, competenciaLabel } from "@/utils/format";
+import { brl, competenciaLabel, monthRange } from "@/utils/format";
 
 export function DashboardPage() {
   const competencia = useUiStore((s) => s.competencia);
   const { data: txs, isLoading } = useTransactions();
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
+  const { data: incomes } = useIncomes();
+  const { data: invoiceAmounts } = useInvoiceAmounts();
 
   const filtered = useMemo(
     () =>
@@ -69,6 +76,31 @@ export function DashboardPage() {
     )
     .reduce((s, t) => s + t.valor_previsto, 0);
 
+  const totalReceitas = useMemo(
+    () =>
+      (incomes ?? [])
+        .filter((i) => i.competencia === competencia)
+        .reduce((s, i) => s + i.valor, 0),
+    [incomes, competencia],
+  );
+
+  const cardIds = useMemo(
+    () => new Set((accounts ?? []).filter((a) => a.tipo === "CARTAO").map((a) => a.account_id)),
+    [accounts],
+  );
+
+  const extraFatura = useMemo(() => {
+    const cardTxTotal = filtered
+      .filter((t) => cardIds.has(t.payment_account_id ?? ""))
+      .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+    const invoiceTotal = (invoiceAmounts ?? [])
+      .filter((ia) => ia.competencia === competencia)
+      .reduce((s, ia) => s + ia.valor_real, 0);
+    return Math.max(0, invoiceTotal - cardTxTotal);
+  }, [filtered, invoiceAmounts, cardIds, competencia]);
+
+  const totalSaidasReais = totalPrevisto + extraFatura;
+
   const categoryChartData = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((t) => {
@@ -99,6 +131,40 @@ export function DashboardPage() {
     ].filter((d) => d.total > 0);
   }, [filtered]);
 
+  const entradasSaidasData = useMemo(
+    () => [
+      { nome: "Receitas", total: Math.round(totalReceitas * 100) / 100 },
+      { nome: "Saídas", total: Math.round(totalSaidasReais * 100) / 100 },
+    ],
+    [totalReceitas, totalSaidasReais],
+  );
+
+  const trendData = useMemo(() => {
+    const months = monthRange(6, new Date(`${competencia}-15`));
+    return months.map((month) => {
+      const monthTxs = (txs ?? []).filter(
+        (t) =>
+          t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
+      );
+      const monthIncomes = (incomes ?? []).filter((i) => i.competencia === month);
+      const cardTxTotal = monthTxs
+        .filter((t) => cardIds.has(t.payment_account_id ?? ""))
+        .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+      const invoiceTotal = (invoiceAmounts ?? [])
+        .filter((ia) => ia.competencia === month)
+        .reduce((s, ia) => s + ia.valor_real, 0);
+      const extra = Math.max(0, invoiceTotal - cardTxTotal);
+      return {
+        mes: month.slice(5),
+        entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
+        saidas:
+          Math.round(
+            (monthTxs.reduce((s, t) => s + t.valor_previsto, 0) + extra) * 100,
+          ) / 100,
+      };
+    });
+  }, [txs, incomes, invoiceAmounts, cardIds, competencia]);
+
   const palette = [
     "var(--color-chart-1)",
     "var(--color-chart-2)",
@@ -106,6 +172,14 @@ export function DashboardPage() {
     "var(--color-chart-4)",
     "var(--color-chart-5)",
   ];
+
+  const tooltipStyle = {
+    background: "var(--color-popover)",
+    border: "1px solid var(--color-border)",
+    borderRadius: 8,
+    fontSize: 12,
+    color: "var(--color-popover-foreground)",
+  };
 
   return (
     <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
@@ -115,7 +189,8 @@ export function DashboardPage() {
         actions={<CompetenciaSelector />}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <SummaryCard label="Total de receitas" value={totalReceitas} loading={isLoading} tone="success" />
         <SummaryCard label="Total previsto" value={totalPrevisto} loading={isLoading} />
         <SummaryCard label="Total pago" value={totalPago} loading={isLoading} tone="success" />
         <SummaryCard label="Saldo restante" value={saldo} loading={isLoading} tone={saldo < 0 ? "warning" : undefined} />
@@ -166,7 +241,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Gastos por categoria</CardTitle>
@@ -203,13 +278,7 @@ export function DashboardPage() {
                   />
                   <Tooltip
                     formatter={(v: number) => brl(v)}
-                    contentStyle={{
-                      background: "var(--color-popover)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      color: "var(--color-popover-foreground)",
-                    }}
+                    contentStyle={tooltipStyle}
                     labelStyle={{ color: "var(--color-popover-foreground)" }}
                     itemStyle={{ color: "var(--color-popover-foreground)" }}
                   />
@@ -257,13 +326,7 @@ export function DashboardPage() {
                       </Pie>
                       <Tooltip
                         formatter={(v: number) => brl(v)}
-                        contentStyle={{
-                          background: "var(--color-popover)",
-                          border: "1px solid var(--color-border)",
-                          borderRadius: 8,
-                          fontSize: 12,
-                          color: "var(--color-popover-foreground)",
-                        }}
+                        contentStyle={tooltipStyle}
                         labelStyle={{ color: "var(--color-popover-foreground)" }}
                         itemStyle={{ color: "var(--color-popover-foreground)" }}
                       />
@@ -285,6 +348,110 @@ export function DashboardPage() {
                   ))}
                 </ul>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Entradas vs Saídas</CardTitle>
+            <CardDescription>Comparativo do mês atual</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[240px]">
+            {isLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={entradasSaidasData}
+                  margin={{ top: 8, right: 8, left: -10, bottom: 8 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--color-border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="nome"
+                    tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tickFormatter={(v) => brl(v).replace("R$", "")}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={tooltipStyle}
+                    labelStyle={{ color: "var(--color-popover-foreground)" }}
+                    itemStyle={{ color: "var(--color-popover-foreground)" }}
+                  />
+                  <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                    <Cell fill="var(--color-chart-2)" />
+                    <Cell fill="var(--color-chart-3)" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Tendência mensal</CardTitle>
+            <CardDescription>Últimos 6 meses — receitas e saídas</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[240px]">
+            {isLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={trendData}
+                  margin={{ top: 8, right: 8, left: -10, bottom: 8 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--color-border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="mes"
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                    tickFormatter={(v) => brl(v).replace("R$", "")}
+                  />
+                  <Tooltip
+                    formatter={(v: number) => brl(v)}
+                    contentStyle={tooltipStyle}
+                    labelStyle={{ color: "var(--color-popover-foreground)" }}
+                    itemStyle={{ color: "var(--color-popover-foreground)" }}
+                  />
+                  <Legend
+                    formatter={(value) => (value === "entradas" ? "Receitas" : "Saídas")}
+                    wrapperStyle={{ fontSize: 12 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="entradas"
+                    stroke="var(--color-chart-2)"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="saidas"
+                    stroke="var(--color-chart-3)"
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             )}
           </CardContent>
         </Card>

@@ -18,8 +18,8 @@
  */
 
 import type { FinanceRepository } from "@/domain/repository";
-import type { Account, Category, RecurrenceTemplate, Transaction } from "@/domain/types";
-import { accountId, categoryId, transactionId } from "@/lib/idgen";
+import type { Account, Category, Income, InvoiceAmount, RecurrenceTemplate, Transaction } from "@/domain/types";
+import { accountId, categoryId, incomeId, transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
@@ -33,6 +33,8 @@ const SHEETS = {
   templates: "recurrence_templates",
   accounts: "accounts",
   categories: "categories",
+  incomes: "incomes",
+  invoice_amounts: "invoice_amounts",
 } as const;
 
 const TX_HEADERS = [
@@ -402,6 +404,91 @@ export class GoogleSheetsRepository implements FinanceRepository {
         ],
       }),
     });
+  }
+
+  async getIncomes(): Promise<Income[]> {
+    const rows = await this.getValues(SHEETS.incomes);
+    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+      income_id: r.income_id,
+      competencia: r.competencia,
+      descricao: r.descricao,
+      valor: parseCurrency(r.valor),
+      icon_id: r.icon_id || undefined,
+    }));
+  }
+
+  private incomeToRow(i: Income): (string | number)[] {
+    return [i.income_id, i.competencia, i.descricao, i.valor, i.icon_id ?? ""];
+  }
+
+  async createIncome(data: Omit<Income, "income_id">): Promise<Income> {
+    const income: Income = {
+      ...data,
+      income_id: incomeId(data.competencia, data.descricao),
+    };
+    await this.request(`/values/${SHEETS.incomes}!A:E:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [this.incomeToRow(income)] }),
+    });
+    return income;
+  }
+
+  async updateIncome(id: string, patch: Partial<Omit<Income, "income_id">>): Promise<Income> {
+    const all = await this.getIncomes();
+    const current = all.find((i) => i.income_id === id);
+    if (!current) throw new Error(`Receita ${id} não encontrada`);
+    const updated: Income = { ...current, ...patch, income_id: id };
+    const rowIdx = await this.findRowIndex(SHEETS.incomes, "income_id", id);
+    await this.request(
+      `/values/${SHEETS.incomes}!A${rowIdx}:E${rowIdx}?valueInputOption=USER_ENTERED`,
+      { method: "PUT", body: JSON.stringify({ values: [this.incomeToRow(updated)] }) },
+    );
+    return updated;
+  }
+
+  async deleteIncome(id: string): Promise<void> {
+    const rowIdx = await this.findRowIndex(SHEETS.incomes, "income_id", id);
+    const sheetId = await this.getSheetId(SHEETS.incomes);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: { sheetId, dimension: "ROWS", startIndex: rowIdx - 1, endIndex: rowIdx },
+            },
+          },
+        ],
+      }),
+    });
+  }
+
+  async getInvoiceAmounts(): Promise<InvoiceAmount[]> {
+    const rows = await this.getValues(SHEETS.invoice_amounts);
+    return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+      invoice_id: r.invoice_id,
+      payment_account_id: r.payment_account_id,
+      competencia: r.competencia,
+      valor_real: parseCurrency(r.valor_real),
+    }));
+  }
+
+  async saveInvoiceAmount(data: Omit<InvoiceAmount, "invoice_id">): Promise<InvoiceAmount> {
+    const invoice_id = `inv-${data.payment_account_id}-${data.competencia}`;
+    const row = [invoice_id, data.payment_account_id, data.competencia, data.valor_real];
+    try {
+      const rowIdx = await this.findRowIndex(SHEETS.invoice_amounts, "invoice_id", invoice_id);
+      await this.request(
+        `/values/${SHEETS.invoice_amounts}!A${rowIdx}:D${rowIdx}?valueInputOption=USER_ENTERED`,
+        { method: "PUT", body: JSON.stringify({ values: [row] }) },
+      );
+    } catch {
+      await this.request(
+        `/values/${SHEETS.invoice_amounts}!A:D:append?valueInputOption=USER_ENTERED`,
+        { method: "POST", body: JSON.stringify({ values: [row] }) },
+      );
+    }
+    return { invoice_id, ...data };
   }
 }
 
