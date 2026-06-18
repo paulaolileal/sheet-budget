@@ -10,6 +10,43 @@ let accessToken: string | null = null;
 let expiresAt = 0;
 let scriptPromise: Promise<void> | null = null;
 
+const SESSION_KEY = "gauth_token";
+
+interface StoredToken {
+  token: string;
+  expiresAt: number;
+}
+
+function saveTokenToSession(token: string, expiry: number) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, expiresAt: expiry }));
+  } catch {
+    // sessionStorage unavailable (private mode edge cases) — token stays in memory only
+  }
+}
+
+function loadTokenFromSession(): StoredToken | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as StoredToken;
+    if (Date.now() >= stored.expiresAt) {
+      sessionStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+function setToken(token: string, expiresIn: number) {
+  const expiry = Date.now() + expiresIn * 1000 - 30_000;
+  accessToken = token;
+  expiresAt = expiry;
+  saveTokenToSession(token, expiry);
+}
+
 declare global {
   interface Window {
     google?: {
@@ -51,17 +88,27 @@ async function fetchUserInfo(token: string): Promise<UserInfo> {
 }
 
 export function getAccessToken(): string | null {
-  if (!accessToken) return null;
-  if (Date.now() >= expiresAt) {
-    accessToken = null;
-    return null;
+  if (accessToken && Date.now() < expiresAt) return accessToken;
+
+  const stored = loadTokenFromSession();
+  if (stored) {
+    accessToken = stored.token;
+    expiresAt = stored.expiresAt;
+    return accessToken;
   }
-  return accessToken;
+
+  accessToken = null;
+  return null;
 }
 
 export function clearAccessToken() {
   accessToken = null;
   expiresAt = 0;
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export async function silentSignIn(): Promise<UserInfo | null> {
@@ -76,8 +123,7 @@ export async function silentSignIn(): Promise<UserInfo | null> {
           if (resp.error || !resp.access_token) {
             return reject(new Error(resp.error ?? "silent_failed"));
           }
-          accessToken = resp.access_token;
-          expiresAt = Date.now() + (resp.expires_in ?? 3600) * 1000 - 30_000;
+          setToken(resp.access_token, resp.expires_in ?? 3600);
           resolve(resp.access_token);
         },
       });
@@ -102,8 +148,7 @@ export async function signIn(): Promise<UserInfo> {
         if (resp.error || !resp.access_token) {
           return reject(new Error(resp.error ?? "Login cancelado"));
         }
-        accessToken = resp.access_token;
-        expiresAt = Date.now() + (resp.expires_in ?? 3600) * 1000 - 30_000;
+        setToken(resp.access_token, resp.expires_in ?? 3600);
         resolve(resp.access_token);
       },
     });

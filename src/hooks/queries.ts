@@ -30,23 +30,29 @@ export const qk = {
   invoice_amounts: ["invoice_amounts"] as const,
 };
 
+const STALE = {
+  reference: 10 * 60 * 1000, // accounts, categories — rarely change
+  template: 5 * 60 * 1000,   // recurrence templates — change occasionally
+  transactional: 2 * 60 * 1000, // transactions, incomes, invoices — default
+} as const;
+
 export const useTransactions = () =>
-  useQuery({ queryKey: qk.transactions, queryFn: () => repo().getTransactions() });
+  useQuery({ queryKey: qk.transactions, queryFn: () => repo().getTransactions(), staleTime: STALE.transactional });
 
 export const useTemplates = () =>
-  useQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates() });
+  useQuery({ queryKey: qk.templates, queryFn: () => repo().getTemplates(), staleTime: STALE.template });
 
 export const useAccounts = () =>
-  useQuery({ queryKey: qk.accounts, queryFn: () => repo().getAccounts() });
+  useQuery({ queryKey: qk.accounts, queryFn: () => repo().getAccounts(), staleTime: STALE.reference });
 
 export const useCategories = () =>
-  useQuery({ queryKey: qk.categories, queryFn: () => repo().getCategories() });
+  useQuery({ queryKey: qk.categories, queryFn: () => repo().getCategories(), staleTime: STALE.reference });
 
 export const useIncomes = () =>
-  useQuery({ queryKey: qk.incomes, queryFn: () => repo().getIncomes() });
+  useQuery({ queryKey: qk.incomes, queryFn: () => repo().getIncomes(), staleTime: STALE.transactional });
 
 export const useInvoiceAmounts = () =>
-  useQuery({ queryKey: qk.invoice_amounts, queryFn: () => repo().getInvoiceAmounts() });
+  useQuery({ queryKey: qk.invoice_amounts, queryFn: () => repo().getInvoiceAmounts(), staleTime: STALE.transactional });
 
 function withSync<T>(fn: () => Promise<T>): Promise<T> {
   useUiStore.getState().setSync("syncing");
