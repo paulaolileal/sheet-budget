@@ -4,7 +4,6 @@ import {
   Plus,
   Repeat,
   RefreshCw,
-  CalendarCheck,
   ChevronRight,
   ChevronDown,
   MoreHorizontal,
@@ -97,10 +96,6 @@ const CAT_PALETTE = [
 
 const COL_COUNT = 6;
 
-function currentCompetencia(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function parseParcela(descricao: string, tipo: TipoLancamento): string | null {
   if (tipo !== "PARCELADO") return null;
@@ -284,8 +279,6 @@ export function TransactionsPage() {
     updateTransaction({ id: tx.transaction_id, patch });
   }
 
-  const today = currentCompetencia();
-
   return (
     <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
       <PageHeader
@@ -293,12 +286,6 @@ export function TransactionsPage() {
         description={`${filtered.length} lançamentos em ${competenciaLabel(competencia)}`}
         actions={
           <div className="flex items-center gap-2">
-            {competencia !== today && (
-              <Button variant="outline" size="sm" onClick={() => setCompetencia(today)}>
-                <CalendarCheck className="h-4 w-4 mr-1" />
-                Mês atual
-              </Button>
-            )}
             <CompetenciaSelector />
             <Button variant="outline" onClick={() => setConfirmOpen(true)} disabled={isGenerating}>
               {isGenerating ? (
