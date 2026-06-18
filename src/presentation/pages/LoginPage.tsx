@@ -53,11 +53,16 @@ export function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
       <div className="w-full max-w-sm px-8 py-12 space-y-8">
-        <div className="text-center space-y-1">
-          <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-            lealtek
-          </p>
-          <h1 className="text-3xl font-bold tracking-tight">Budget</h1>
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-3">
+            <img src="/logo-ltek.png" alt="LTEK" className="h-14 w-14 object-contain" />
+            <div className="text-left">
+              <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                lealtek
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight">Budget</h1>
+            </div>
+          </div>
           <p className="text-sm text-muted-foreground">Gestão de finanças pessoais</p>
         </div>
 

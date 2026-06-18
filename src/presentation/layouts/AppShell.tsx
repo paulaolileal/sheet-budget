@@ -72,12 +72,15 @@ export function AppShell() {
     <div className="fixed inset-0 flex bg-background text-foreground">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
-        <div className="px-5 py-5 border-b">
-          <div className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
-            lealtek
+        <div className="px-5 py-5 border-b flex items-center gap-3">
+          <img src="/logo-ltek.png" alt="LTEK" className="h-10 w-10 object-contain shrink-0" />
+          <div>
+            <div className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
+              lealtek
+            </div>
+            <div className="text-sm font-bold tracking-tight mt-0.5">Budget</div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">Google Sheets</div>
           </div>
-          <div className="text-sm font-bold tracking-tight mt-0.5">Budget</div>
-          <div className="text-[11px] text-muted-foreground mt-0.5">Google Sheets</div>
         </div>
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           {NAV.map(({ to, label, icon: Icon, end }) => (
@@ -145,11 +148,14 @@ export function AppShell() {
       <div className="flex flex-col flex-1 min-h-0 min-w-0 overflow-x-hidden">
         {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
         <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
-          <div>
-            <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
-              lealtek
+          <div className="flex items-center gap-2">
+            <img src="/logo-ltek.png" alt="LTEK" className="h-8 w-8 object-contain shrink-0" />
+            <div>
+              <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
+                lealtek
+              </div>
+              <div className="text-sm font-bold tracking-tight leading-tight">Budget</div>
             </div>
-            <div className="text-sm font-bold tracking-tight leading-tight">Budget</div>
           </div>
           <div className="flex items-center gap-2">
             <SyncIndicator />
