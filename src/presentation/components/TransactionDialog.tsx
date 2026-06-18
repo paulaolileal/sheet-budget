@@ -49,7 +49,8 @@ const formSchema = z
     parcelas: z.coerce.number().int().min(1).max(120).optional(),
   })
   .refine(
-    (v) => v.status !== "PAGO" || (typeof v.valor_final === "number" && !Number.isNaN(v.valor_final)),
+    (v) =>
+      v.status !== "PAGO" || (typeof v.valor_final === "number" && !Number.isNaN(v.valor_final)),
     { message: "valor_final é obrigatório quando status = PAGO", path: ["valor_final"] },
   );
 
@@ -219,7 +220,9 @@ export function TransactionDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar lançamento" : "Novo lançamento"}</DialogTitle>
           <DialogDescription>
-            {isEditing ? "Alterações são salvas direto na fonte." : "Crie despesa única, recorrente ou parcelada."}
+            {isEditing
+              ? "Alterações são salvas direto na fonte."
+              : "Crie despesa única, recorrente ou parcelada."}
           </DialogDescription>
         </DialogHeader>
 
@@ -237,7 +240,9 @@ export function TransactionDialog({
               <Label>Competência</Label>
               <Input type="month" {...register("competencia")} disabled={isEditing} />
               {formState.errors.competencia && (
-                <p className="text-xs text-destructive mt-1">{formState.errors.competencia.message}</p>
+                <p className="text-xs text-destructive mt-1">
+                  {formState.errors.competencia.message}
+                </p>
               )}
             </div>
             <div>
@@ -251,7 +256,9 @@ export function TransactionDialog({
                     onValueChange={(v) => field.onChange(v as TipoLancamento)}
                     disabled={isEditing}
                   >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="MANUAL">Manual</SelectItem>
                       <SelectItem value="RECORRENTE">Recorrente</SelectItem>
@@ -265,7 +272,9 @@ export function TransactionDialog({
 
           {(tipo === "PARCELADO" || tipo === "RECORRENTE") && !isEditing && (
             <div>
-              <Label>{tipo === "RECORRENTE" ? "Gerar instâncias (meses)" : "Número de parcelas"}</Label>
+              <Label>
+                {tipo === "RECORRENTE" ? "Gerar instâncias (meses)" : "Número de parcelas"}
+              </Label>
               <Input type="number" min={1} max={120} {...register("parcelas")} />
               <p className="text-xs text-muted-foreground mt-1">
                 {tipo === "RECORRENTE"
@@ -283,10 +292,14 @@ export function TransactionDialog({
                 name="categoria_id"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
                     <SelectContent className="max-h-[260px]">
                       {(categories ?? []).map((c) => (
-                        <SelectItem key={c.category_id} value={c.category_id}>{c.nome}</SelectItem>
+                        <SelectItem key={c.category_id} value={c.category_id}>
+                          {c.nome}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -300,10 +313,14 @@ export function TransactionDialog({
                 name="payment_account_id"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
                     <SelectContent>
                       {(accounts ?? []).map((a) => (
-                        <SelectItem key={a.account_id} value={a.account_id}>{a.nome}</SelectItem>
+                        <SelectItem key={a.account_id} value={a.account_id}>
+                          {a.nome}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -343,10 +360,14 @@ export function TransactionDialog({
                 name="status"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {statusOptions.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

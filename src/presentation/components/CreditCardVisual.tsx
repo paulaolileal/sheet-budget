@@ -24,7 +24,13 @@ interface CreditCardVisualProps {
   extraAmount?: number;
 }
 
-export function CreditCardVisual({ nome, total, isPaid, iconId, extraAmount }: CreditCardVisualProps) {
+export function CreditCardVisual({
+  nome,
+  total,
+  isPaid,
+  iconId,
+  extraAmount,
+}: CreditCardVisualProps) {
   const gradient = pickGradient(nome);
 
   return (
@@ -38,7 +44,6 @@ export function CreditCardVisual({ nome, total, isPaid, iconId, extraAmount }: C
 
       {/* content fills card with even distribution */}
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
-
         {/* top: chip + account icon */}
         <div className="flex items-start justify-between">
           <svg width="46" height="36" viewBox="0 0 46 36" fill="none" aria-hidden="true">

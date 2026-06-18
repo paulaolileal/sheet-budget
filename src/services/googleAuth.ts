@@ -55,7 +55,11 @@ declare global {
           initTokenClient: (cfg: {
             client_id: string;
             scope: string;
-            callback: (resp: { access_token?: string; expires_in?: number; error?: string }) => void;
+            callback: (resp: {
+              access_token?: string;
+              expires_in?: number;
+              error?: string;
+            }) => void;
           }) => { requestAccessToken: (opts?: { prompt?: string }) => void };
         };
       };

@@ -25,14 +25,7 @@ import {
 } from "@/hooks/queries";
 import { brl, competenciaLabel, currentCompetencia } from "@/utils/format";
 import type { Account, Transaction } from "@/domain/types";
-import {
-  CalendarIcon,
-  ChevronLeft,
-  ChevronRight,
-  Pencil,
-  Trash2,
-  Plus,
-} from "lucide-react";
+import { CalendarIcon, ChevronLeft, ChevronRight, Pencil, Trash2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "../components/AppIcon";
 import { CreditCardVisual } from "../components/CreditCardVisual";
@@ -282,10 +275,7 @@ export function CardsPage() {
             </Card>
           ) : (
             <div
-              className={cn(
-                "grid gap-4",
-                monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2",
-              )}
+              className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}
             >
               {monthFaturas.map((f) => {
                 const account = accMap[f.payment_account_id];
@@ -351,7 +341,8 @@ export function CardsPage() {
                       ) : f.valorReal != null ? (
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span>
-                            Fatura real: <span className="font-medium text-foreground">{brl(f.valorReal)}</span>
+                            Fatura real:{" "}
+                            <span className="font-medium text-foreground">{brl(f.valorReal)}</span>
                           </span>
                           <Button
                             variant="ghost"

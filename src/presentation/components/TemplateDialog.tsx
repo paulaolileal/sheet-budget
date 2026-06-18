@@ -138,144 +138,143 @@ export function TemplateDialog({
 
         <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="space-y-4 overflow-y-auto flex-1 pr-1">
-          <div>
-            <Label>Nome</Label>
-            <Input {...register("nome")} autoFocus placeholder="Ex: Aluguel, Streaming..." />
-            {formState.errors.nome && (
-              <p className="text-xs text-destructive mt-1">{formState.errors.nome.message}</p>
-            )}
-          </div>
-
-          <div>
-            <Label>Categoria</Label>
-            <Controller
-              control={control}
-              name="categoria_id"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(categories ?? []).map((c) => (
-                      <SelectItem key={c.category_id} value={c.category_id}>
-                        {c.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {formState.errors.categoria_id && (
-              <p className="text-xs text-destructive mt-1">
-                {formState.errors.categoria_id.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <Label>Conta de pagamento</Label>
-            <Controller
-              control={control}
-              name="payment_account_id"
-              render={({ field }) => (
-                <Select
-                  value={field.value ?? "__none__"}
-                  onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Nenhuma" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">Nenhuma</SelectItem>
-                    {(accounts ?? []).map((a) => (
-                      <SelectItem key={a.account_id} value={a.account_id}>
-                        {a.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Início (YYYY-MM)</Label>
-              <Input {...register("primeira_competencia")} placeholder="2024-01" maxLength={7} />
-              {formState.errors.primeira_competencia && (
-                <p className="text-xs text-destructive mt-1">
-                  {formState.errors.primeira_competencia.message}
-                </p>
+              <Label>Nome</Label>
+              <Input {...register("nome")} autoFocus placeholder="Ex: Aluguel, Streaming..." />
+              {formState.errors.nome && (
+                <p className="text-xs text-destructive mt-1">{formState.errors.nome.message}</p>
               )}
             </div>
+
             <div>
-              <Label>Fim (YYYY-MM, opcional)</Label>
-              <Input
-                {...register("ultima_competencia", {
-                  setValueAs: (v: string) => (v === "" ? undefined : v),
-                })}
-                placeholder="2024-12"
-                maxLength={7}
+              <Label>Categoria</Label>
+              <Controller
+                control={control}
+                name="categoria_id"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(categories ?? []).map((c) => (
+                        <SelectItem key={c.category_id} value={c.category_id}>
+                          {c.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
-              {formState.errors.ultima_competencia && (
+              {formState.errors.categoria_id && (
                 <p className="text-xs text-destructive mt-1">
-                  {formState.errors.ultima_competencia.message}
+                  {formState.errors.categoria_id.message}
                 </p>
               )}
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <Controller
-              control={control}
-              name="considerar_resumo"
-              render={({ field }) => (
-                <Checkbox
-                  id="considerar_resumo"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
+            <div>
+              <Label>Conta de pagamento</Label>
+              <Controller
+                control={control}
+                name="payment_account_id"
+                render={({ field }) => (
+                  <Select
+                    value={field.value ?? "__none__"}
+                    onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Nenhuma" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Nenhuma</SelectItem>
+                      {(accounts ?? []).map((a) => (
+                        <SelectItem key={a.account_id} value={a.account_id}>
+                          {a.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Início (YYYY-MM)</Label>
+                <Input {...register("primeira_competencia")} placeholder="2024-01" maxLength={7} />
+                {formState.errors.primeira_competencia && (
+                  <p className="text-xs text-destructive mt-1">
+                    {formState.errors.primeira_competencia.message}
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label>Fim (YYYY-MM, opcional)</Label>
+                <Input
+                  {...register("ultima_competencia", {
+                    setValueAs: (v: string) => (v === "" ? undefined : v),
+                  })}
+                  placeholder="2024-12"
+                  maxLength={7}
                 />
-              )}
-            />
-            <Label htmlFor="considerar_resumo" className="cursor-pointer font-normal">
-              Considerar no resumo
-            </Label>
-          </div>
+                {formState.errors.ultima_competencia && (
+                  <p className="text-xs text-destructive mt-1">
+                    {formState.errors.ultima_competencia.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
-          <div className="space-y-3 border-t pt-3">
-            <div className="flex items-start gap-3">
-              <ServiceLogo
-                logoUrl={watchedLogoUrl}
-                iconId={watchedIconId}
-                nome={watchedNome || "?"}
-                size={40}
-              />
-              <div className="flex-1 space-y-2">
-                <div>
-                  <Label className="text-xs">URL da logo (opcional)</Label>
-                  <Input
-                    {...register("logo_url")}
-                    placeholder="https://exemplo.com/logo.png"
-                    className="h-8 text-sm mt-1"
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name="considerar_resumo"
+                render={({ field }) => (
+                  <Checkbox
+                    id="considerar_resumo"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
                   />
-                </div>
-                <div>
-                  <Label className="text-xs">Ícone (se sem logo)</Label>
-                  <div className="mt-1">
-                    <Controller
-                      control={control}
-                      name="icon_id"
-                      render={({ field }) => (
-                        <IconPicker value={field.value} onChange={field.onChange} />
-                      )}
+                )}
+              />
+              <Label htmlFor="considerar_resumo" className="cursor-pointer font-normal">
+                Considerar no resumo
+              </Label>
+            </div>
+
+            <div className="space-y-3 border-t pt-3">
+              <div className="flex items-start gap-3">
+                <ServiceLogo
+                  logoUrl={watchedLogoUrl}
+                  iconId={watchedIconId}
+                  nome={watchedNome || "?"}
+                  size={40}
+                />
+                <div className="flex-1 space-y-2">
+                  <div>
+                    <Label className="text-xs">URL da logo (opcional)</Label>
+                    <Input
+                      {...register("logo_url")}
+                      placeholder="https://exemplo.com/logo.png"
+                      className="h-8 text-sm mt-1"
                     />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Ícone (se sem logo)</Label>
+                    <div className="mt-1">
+                      <Controller
+                        control={control}
+                        name="icon_id"
+                        render={({ field }) => (
+                          <IconPicker value={field.value} onChange={field.onChange} />
+                        )}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-
           </div>
 
           <DialogFooter className="gap-2 shrink-0 pt-4 border-t mt-2">

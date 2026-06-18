@@ -78,11 +78,7 @@ export function IncomeDialog({
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
             <Label>Competência</Label>
-            <Input
-              {...register("competencia")}
-              placeholder="YYYY-MM"
-              maxLength={7}
-            />
+            <Input {...register("competencia")} placeholder="YYYY-MM" maxLength={7} />
             {formState.errors.competencia && (
               <p className="text-xs text-destructive mt-1">
                 {formState.errors.competencia.message}
@@ -98,9 +94,7 @@ export function IncomeDialog({
               placeholder="Ex: Salário, Freelance, Bônus..."
             />
             {formState.errors.descricao && (
-              <p className="text-xs text-destructive mt-1">
-                {formState.errors.descricao.message}
-              </p>
+              <p className="text-xs text-destructive mt-1">{formState.errors.descricao.message}</p>
             )}
           </div>
 
@@ -123,9 +117,7 @@ export function IncomeDialog({
             <Controller
               control={control}
               name="icon_id"
-              render={({ field }) => (
-                <IconPicker value={field.value} onChange={field.onChange} />
-              )}
+              render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
             />
           </div>
 

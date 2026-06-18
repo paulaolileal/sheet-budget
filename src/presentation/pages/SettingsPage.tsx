@@ -68,7 +68,11 @@ function CategoriesTab() {
                 <tr key={cat.category_id} className="border-t">
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">
-                      <AppIcon iconId={cat.icon_id} size={15} className="text-muted-foreground shrink-0" />
+                      <AppIcon
+                        iconId={cat.icon_id}
+                        size={15}
+                        className="text-muted-foreground shrink-0"
+                      />
                       <span className="font-medium">{cat.nome}</span>
                     </div>
                   </td>

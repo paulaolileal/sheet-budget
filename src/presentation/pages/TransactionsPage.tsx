@@ -74,12 +74,7 @@ const TIPO_ORDER: Record<TipoLancamento, number> = {
   MANUAL: 2,
 };
 
-const ACTIONABLE_STATUSES: TransactionStatus[] = [
-  "PENDENTE",
-  "PAGO",
-  "ADIANTADO",
-  "IGNORADO",
-];
+const ACTIONABLE_STATUSES: TransactionStatus[] = ["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"];
 
 // Palette for category group header rows — full class strings for Tailwind JIT
 // Avoids green/yellow/red to prevent confusion with status colors (PAGO/PENDENTE)
@@ -95,7 +90,6 @@ const CAT_PALETTE = [
 ] as const;
 
 const COL_COUNT = 6;
-
 
 function parseParcela(descricao: string, tipo: TipoLancamento): string | null {
   if (tipo !== "PARCELADO") return null;
@@ -177,9 +171,7 @@ export function TransactionsPage() {
   const pendingTemplates = useMemo(() => {
     if (!templates || !txs) return [];
     const existingKeys = new Set(
-      txs
-        .filter((t) => t.competencia === competencia && t.template_id)
-        .map((t) => t.template_id!),
+      txs.filter((t) => t.competencia === competencia && t.template_id).map((t) => t.template_id!),
     );
     return templates.filter((tpl) => {
       if (!isTemplateActive(tpl, competencia)) return false;
@@ -255,21 +247,27 @@ export function TransactionsPage() {
     return map;
   }, [txs]);
 
-  const { globalAPagar, globalAPagarCount, globalPago, globalPagoCount, globalAdiantado, globalAdiantadoCount } =
-    useMemo(() => {
-      const active = filtered.filter((t) => t.status !== "IGNORADO");
-      const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
-      const pagoItems = active.filter((t) => t.status === "PAGO");
-      const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
-      return {
-        globalAPagar: aPagarItems.reduce((s, t) => s + t.valor_previsto, 0),
-        globalAPagarCount: aPagarItems.length,
-        globalPago: pagoItems.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
-        globalPagoCount: pagoItems.length,
-        globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor_previsto, 0),
-        globalAdiantadoCount: adiantadoItems.length,
-      };
-    }, [filtered]);
+  const {
+    globalAPagar,
+    globalAPagarCount,
+    globalPago,
+    globalPagoCount,
+    globalAdiantado,
+    globalAdiantadoCount,
+  } = useMemo(() => {
+    const active = filtered.filter((t) => t.status !== "IGNORADO");
+    const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
+    const pagoItems = active.filter((t) => t.status === "PAGO");
+    const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
+    return {
+      globalAPagar: aPagarItems.reduce((s, t) => s + t.valor_previsto, 0),
+      globalAPagarCount: aPagarItems.length,
+      globalPago: pagoItems.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+      globalPagoCount: pagoItems.length,
+      globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor_previsto, 0),
+      globalAdiantadoCount: adiantadoItems.length,
+    };
+  }, [filtered]);
 
   function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
     const patch: Partial<Transaction> = { status: newStatus };
@@ -365,10 +363,12 @@ export function TransactionsPage() {
             placeholder="Status"
             options={[
               { value: "all", label: "Todos status" },
-              ...(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as TransactionStatus[]).map((s) => ({
-                value: s,
-                label: s,
-              })),
+              ...(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as TransactionStatus[]).map(
+                (s) => ({
+                  value: s,
+                  label: s,
+                }),
+              ),
             ]}
           />
           <FilterSelect
@@ -497,7 +497,9 @@ export function TransactionsPage() {
                     {/* Transaction rows */}
                     {!catCollapsed &&
                       group.transactions.map((tx) => {
-                        const parcela = parcelaMap.get(tx.transaction_id) ?? parseParcela(tx.descricao, tx.tipo_lancamento);
+                        const parcela =
+                          parcelaMap.get(tx.transaction_id) ??
+                          parseParcela(tx.descricao, tx.tipo_lancamento);
                         const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
                         const settled = isSettled(tx);
                         const txExpanded = expandedTxs.has(tx.transaction_id);
@@ -540,9 +542,10 @@ export function TransactionsPage() {
                           );
                         }
 
-                        const rowClick = settled && txExpanded
-                          ? () => toggleTx(tx.transaction_id)
-                          : () => setEditing(tx);
+                        const rowClick =
+                          settled && txExpanded
+                            ? () => toggleTx(tx.transaction_id)
+                            : () => setEditing(tx);
 
                         return (
                           <tr
@@ -662,7 +665,10 @@ export function TransactionsPage() {
             const [borderCls, bgCls] = CAT_PALETTE[idx % CAT_PALETTE.length].split(" ");
 
             return (
-              <div key={group.categoria_id} className={cn("rounded-lg border-l-4 overflow-hidden", borderCls)}>
+              <div
+                key={group.categoria_id}
+                className={cn("rounded-lg border-l-4 overflow-hidden", borderCls)}
+              >
                 {/* Category header */}
                 <div
                   className={cn(
@@ -694,7 +700,9 @@ export function TransactionsPage() {
                     <p className="text-xs font-medium tabular-nums">{brl(group.total)}</p>
                     <div className="flex gap-2 justify-end text-xs tabular-nums">
                       {group.aPagar > 0 && (
-                        <span className="text-[color:var(--color-warning)]">{brl(group.aPagar)}</span>
+                        <span className="text-[color:var(--color-warning)]">
+                          {brl(group.aPagar)}
+                        </span>
                       )}
                       {group.pago > 0 && (
                         <span className="text-[color:var(--color-success)]">{brl(group.pago)}</span>
@@ -707,7 +715,9 @@ export function TransactionsPage() {
                 {!catCollapsed && (
                   <div className="divide-y bg-card">
                     {group.transactions.map((tx) => {
-                      const parcela = parcelaMap.get(tx.transaction_id) ?? parseParcela(tx.descricao, tx.tipo_lancamento);
+                      const parcela =
+                        parcelaMap.get(tx.transaction_id) ??
+                        parseParcela(tx.descricao, tx.tipo_lancamento);
                       const descricao = parcela ? stripParcela(tx.descricao) : tx.descricao;
                       const settled = isSettled(tx);
                       const txExpanded = expandedTxs.has(tx.transaction_id);
@@ -721,7 +731,9 @@ export function TransactionsPage() {
                             className="px-3 py-1.5 flex items-center justify-between gap-2 opacity-40 active:opacity-70 transition-opacity cursor-pointer"
                             onClick={() => toggleTx(tx.transaction_id)}
                           >
-                            <span className="text-xs text-muted-foreground truncate flex-1">{descricao}</span>
+                            <span className="text-xs text-muted-foreground truncate flex-1">
+                              {descricao}
+                            </span>
                             <span className="text-xs tabular-nums text-muted-foreground shrink-0">
                               {brl(tx.valor_final ?? tx.valor_previsto)}
                             </span>
@@ -729,9 +741,10 @@ export function TransactionsPage() {
                         );
                       }
 
-                      const rowClick = settled && txExpanded
-                        ? () => toggleTx(tx.transaction_id)
-                        : () => setEditing(tx);
+                      const rowClick =
+                        settled && txExpanded
+                          ? () => toggleTx(tx.transaction_id)
+                          : () => setEditing(tx);
 
                       return (
                         <div
@@ -747,7 +760,10 @@ export function TransactionsPage() {
                             <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                               <Badge
                                 variant="outline"
-                                className={cn("font-normal border-0 text-xs", STATUS_TONES[tx.status])}
+                                className={cn(
+                                  "font-normal border-0 text-xs",
+                                  STATUS_TONES[tx.status],
+                                )}
                               >
                                 {tx.status}
                               </Badge>
@@ -755,7 +771,9 @@ export function TransactionsPage() {
                                 <Repeat className="h-3 w-3 text-muted-foreground" />
                               )}
                               {parcela && (
-                                <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>
+                                <span className="text-xs text-muted-foreground tabular-nums">
+                                  {parcela}
+                                </span>
                               )}
                               {tx.payment_account_id && accMap[tx.payment_account_id] && (
                                 <span className="text-xs text-muted-foreground truncate">
@@ -794,7 +812,10 @@ export function TransactionsPage() {
                                 >
                                   <Badge
                                     variant="outline"
-                                    className={cn("font-normal border-0 text-xs", STATUS_TONES[status])}
+                                    className={cn(
+                                      "font-normal border-0 text-xs",
+                                      STATUS_TONES[status],
+                                    )}
                                   >
                                     {status}
                                   </Badge>

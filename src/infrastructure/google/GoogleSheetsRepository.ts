@@ -18,7 +18,14 @@
  */
 
 import type { FinanceRepository } from "@/domain/repository";
-import type { Account, Category, Income, InvoiceAmount, RecurrenceTemplate, Transaction } from "@/domain/types";
+import type {
+  Account,
+  Category,
+  Income,
+  InvoiceAmount,
+  RecurrenceTemplate,
+  Transaction,
+} from "@/domain/types";
 import { accountId, categoryId, incomeId, transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
@@ -314,7 +321,11 @@ export class GoogleSheetsRepository implements FinanceRepository {
     }));
   }
 
-  async createAccount(data: { nome: string; tipo: Account["tipo"]; icon_id?: string }): Promise<Account> {
+  async createAccount(data: {
+    nome: string;
+    tipo: Account["tipo"];
+    icon_id?: string;
+  }): Promise<Account> {
     const account: Account = {
       account_id: accountId(data.nome),
       nome: data.nome,

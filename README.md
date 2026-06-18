@@ -1,140 +1,396 @@
-# Finanças — Gestão Pessoal com Google Sheets
+# Finanças — Gestão Financeira Pessoal com Google Sheets
 
-App de gestão financeira pessoal construído em **React + Vite + TypeScript + Tailwind + shadcn/ui**.
-Usa **Google Sheets como banco de dados** (zero backend próprio) e funciona em **modo local mock** por padrão.
+Você anota suas contas no papel, numa planilha gigante, ou simplesmente não anota? A maioria das pessoas perde o controle financeiro não por falta de vontade, mas porque as ferramentas são complexas demais ou pedem cadastro em mais um serviço.
+
+**Sheet Budget resolve isso de forma diferente:** usa a sua própria planilha do Google Sheets como banco de dados. Zero backend, zero mensalidade, zero dado seu em servidor de terceiro. Você já tem uma conta Google — isso é suficiente.
+
+## Por que usar este sistema
+
+### O problema que ele resolve
+
+A maior parte dos gastos pessoais se repete todo mês: aluguel, assinaturas, academia, parcelas de cartão. São **recorrentes e parcelados** — e é exatamente aí que as pessoas perdem o controle: esquecem de lançar, perdem a conta de quantas parcelas restam, ou não percebem que o total fixo já compromete 80% do salário.
+
+Este app foi construído com esse foco:
+
+- **Templates de recorrência** — cadastre uma vez (Netflix, aluguel, parcela do carro) e o sistema gera os lançamentos mensais automaticamente, sem duplicar se você gerar duas vezes
+- **Parcelados com visibilidade** — cada parcela é um lançamento com `tipo_lancamento=PARCELADO`, então você vê em qual mês cada parcela cai e quanto ainda vai pagar no futuro
+- **Faturas de cartão** — lançamentos vinculados ao cartão se agrupam numa fatura; você registra o valor real cobrado e paga tudo de uma vez, propagando o status para cada item
+- **Dashboard de tendências** — gráfico de 6 meses mostra se seus gastos estão subindo, e a comparação Receitas vs Saídas revela se você está no azul ou no vermelho antes do mês acabar
+
+### Por que Google Sheets
+
+- **Sem servidor próprio** — zero custo de infraestrutura para o app de finanças em si
+- **Você controla os dados** — a planilha é sua, no seu Google Drive, exportável a qualquer momento
+- **Auditável** — você pode abrir a planilha e ver, editar ou corrigir qualquer dado diretamente
+- **Backup automático** — o Google já faz isso por você
+- **Funciona sem internet** — em modo mock local, sem precisar conectar
+
+### O que você ganha de UI que uma planilha não te dá
+
+- Dashboard visual com gráficos de tendência e distribuição por categoria
+- Geração automática de lançamentos recorrentes com um clique
+- Indicador de sync em tempo real (você vê quando o dado foi salvo na planilha)
+- Tema claro/escuro, filtros rápidos, busca textual
+- Controle de status: pendente, pago, adiantado, ignorado
+
+---
+
+## Funcionalidades
+
+### Dashboard
+- Cards de resumo: Total de Receitas, Total Previsto, Total Pago, Saldo Restante
+- Barra de progresso de pagamento do mês
+- Cards rápidos: pendentes, fixos (recorrentes), cartão
+- Gráfico de barras: top 8 categorias de gasto
+- Gráfico de pizza: distribuição por tipo (Recorrente / Parcelado / Manual)
+- Gráfico de barras: Entradas vs Saídas do mês
+- Gráfico de linhas: tendência mensal dos últimos 6 meses
+
+### Lançamentos
+- Tabela agrupada por categoria com filtros de mês, categoria, conta, status e tipo
+- Busca textual por descrição
+- Botão **"Gerar Recorrências"** — cria lançamentos para o mês selecionado com base nos templates ativos (idempotente)
+- Edição via modal com validação Zod
+- Ações por linha: editar, deletar, marcar como pago / pendente / adiantado
+
+### Receitas
+- Registro de receitas por competência (salários, freelances, outras entradas)
+- Tabela com ícone customizável por receita
+- Cards: total do mês e quantidade de entradas
+- CRUD completo
+
+### Cartões & Faturas
+- Navegação por mês com month picker
+- Abas separadas por cartão
+- Tabela de transações vinculadas à fatura
+- Campo para registrar o **valor real da fatura** (diferente do previsto)
+- Botão **"Pagar Fatura"** com confirmação — propaga `status=PAGO` para todas as transações vinculadas
+
+### Recorrências (Templates)
+- Cadastro de templates com nome, categoria, conta, período de vigência e ícone
+- Filtros por categoria, conta e status (ativo/inativo)
+- Paginação (12 por página)
+- Geração de lançamentos on-demand para o mês desejado (idempotente — nunca duplica)
+- Templates com `ultima_competencia` encerram automaticamente
+
+### Configurações
+- CRUD completo de **Categorias** (com ícone customizável)
+- CRUD completo de **Contas / Cartões** (tipo: conta, cartão, carteira)
+- Indicador de sincronização (sincronizando / salvo / erro)
+- Status da conexão Google
+
+### UX transversal
+- Tema claro/escuro persistido
+- Indicador de sincronização global em todas as mutações
+- Skeleton loading em tabelas e cards
+- Toast notifications
+- Rota `/404` customizada
+
+## Rotas da aplicação
+
+| Rota | Página |
+|---|---|
+| `/login` | Login com Google OAuth |
+| `/` | Dashboard — resumo financeiro do mês |
+| `/transactions` | Tabela de lançamentos com filtros |
+| `/incomes` | Gestão de receitas |
+| `/cards` | Cartões e faturas |
+| `/recurrences` | Templates de recorrência |
+| `/settings` | Categorias, contas e configurações |
+| `/404` | Página não encontrada |
+
+---
 
 ## Stack
 
-- React 19 + TypeScript + Vite
-- Tailwind v4 + shadcn/ui
-- React Router v7
-- TanStack Query + TanStack Table
-- React Hook Form + Zod
-- Zustand (UI store)
-- Recharts
-- Google Identity Services (OAuth do client, **token em memória**)
+- **React 19** + TypeScript + Vite 8
+- **Tailwind v4** + shadcn/ui (Radix-based)
+- **React Router v7** (SPA)
+- **TanStack Query v5** + TanStack Table v8
+- **React Hook Form** + Zod (validação e sanitização)
+- **Zustand** (estado de UI: mês ativo + indicador de sync)
+- **Recharts** (gráficos de barras, linhas e pizza)
+- **Google Identity Services** (OAuth implícito, token em memória)
+
+---
 
 ## Arquitetura
 
 ```
-src/
-  domain/          Tipos e schemas Zod (regras de negócio puras)
-  application/     Orquestração (repositoryProvider)
-  infrastructure/  Implementações: MockRepository, GoogleSheetsRepository
-  presentation/    UI: layouts, pages, components
-  components/ui    shadcn primitives
-  hooks/           React Query hooks
-  services/        Config + Google Auth
-  store/           Zustand
-  utils/           Formatação
-  types/
+presentation → hooks → domain ← infrastructure
+                     ↑
+              application (repositoryProvider)
 ```
 
-A regra é simples: **UI depende de `domain` e `hooks`, nunca de infraestrutura diretamente.**
-O `repositoryProvider` decide em runtime entre `MockRepository` e `GoogleSheetsRepository`.
+**Regra de dependência:** UI e hooks dependem de `domain` (tipos e contratos). Nunca importam diretamente de `infrastructure`.
+
+O `repositoryProvider.ts` é o único ponto de decisão em runtime: retorna `MockRepository` (mock local) ou `GoogleSheetsRepository` dependendo das variáveis de ambiente.
+
+### Estrutura de pastas
+
+```
+src/
+  domain/
+    types.ts              Tipos de domínio (Transaction, Income, Template, Account, Category, InvoiceAmount)
+    schemas.ts            Schemas Zod — validação e sanitização de input
+    repository.ts         Interface FinanceRepository — contrato que toda implementação deve seguir
+  application/
+    repositoryProvider.ts Singleton factory — escolhe Mock vs Google Sheets em runtime
+  infrastructure/
+    google/
+      GoogleSheetsRepository.ts  CRUD via Sheets API v4
+    repositories/                Pronto para novas implementações (API, Supabase, etc.)
+  hooks/
+    queries.ts            Todos os useQuery e useMutation com TanStack Query
+  services/
+    config.ts             Lê variáveis de ambiente, expõe useMock flag
+    googleAuth.ts         Fluxo OAuth2 — token em memória (closure), nunca em localStorage
+  store/
+    uiStore.ts            Zustand: competência ativa + estado de sync
+    authStore.ts          Zustand: informações do usuário autenticado
+  presentation/
+    App.tsx               Router raiz
+    layouts/AppShell.tsx  Sidebar + outlet principal
+    pages/                8 páginas (Dashboard, Transactions, Income, Cards, Recurrences, Settings, Login, 404)
+    components/           Dialogs e componentes de domínio
+  components/ui/          Primitivos shadcn/ui — não modificar diretamente
+  utils/
+    format.ts             brl(), competenciaLabel(), monthRange()
+    iconRegistry.ts       Mapeamento icon_id → SVG
+  lib/
+    idgen.ts              Geração determinística de IDs
+```
+
+### Arquivos-chave
+
+| Arquivo | Papel |
+|---|---|
+| `src/domain/types.ts` | Todos os tipos (Transaction, Income, RecurrenceTemplate, Account, Category, InvoiceAmount) |
+| `src/domain/schemas.ts` | Schemas Zod — gate de validação de toda mutação |
+| `src/domain/repository.ts` | Interface `FinanceRepository` — contrato único |
+| `src/application/repositoryProvider.ts` | Decide Mock vs Google Sheets em runtime |
+| `src/hooks/queries.ts` | Todos os hooks de query e mutation; `withSync()` aciona o indicador de sync |
+| `src/store/uiStore.ts` | Zustand: competência ativa (YYYY-MM) + estado de sync |
+| `src/services/config.ts` | Lê `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; expõe `useMock` |
+| `src/services/googleAuth.ts` | OAuth implícito Google; token vive apenas em closure — jamais em storage |
+| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD contra a Sheets API v4 |
+
+### Entidades e convenções de dados
+
+| Entidade | Campos principais |
+|---|---|
+| **Transaction** | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final?`, `status`, `considerar_resumo`, `payment_account_id?`, `tipo_lancamento` |
+| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?` |
+| **Income** | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?` |
+| **Account** | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?` |
+| **Category** | `category_id`, `nome`, `icon_id?` |
+| **InvoiceAmount** | `invoice_id`, `payment_account_id`, `competencia`, `valor_real` |
+
+**Regras de negócio:**
+- `competencia` é sempre `YYYY-MM` (string)
+- `status=PAGO` exige `valor_final` — validado por Zod
+- Registros nunca são deletados fisicamente — `status=CANCELADO` é o cancelamento
+- Pagar uma fatura propaga `status=PAGO` e `valor_final ??= valor_previsto` para todas as transações vinculadas
+- Geração de recorrências é idempotente: gerar para o mesmo mês duas vezes não duplica
+
+### Status de transação
+
+| Status | Descrição |
+|---|---|
+| `PENDENTE` | Lançamento previsto, ainda não pago |
+| `PAGO` | Pago — exige `valor_final` |
+| `ADIANTADO` | Pago antecipadamente |
+| `IGNORADO` | Excluído do resumo sem cancelar |
+
+### Tipo de lançamento
+
+| Tipo | Descrição |
+|---|---|
+| `RECORRENTE` | Gerado por um template fixo mensal |
+| `PARCELADO` | Parcela de uma compra parcelada |
+| `MANUAL` | Lançamento avulso |
+
+---
 
 ## Rodando localmente
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:5173
 ```
 
-Sem variáveis de ambiente o app sobe em **modo mock** com os CSVs em `public/seed/`
-(transactions, templates, accounts, categories, payment_groups). Mutações ficam no `localStorage`.
+Sem variáveis de ambiente o app sobe em **modo mock** — dados de demonstração em `localStorage` para mutações. Nenhuma configuração extra necessária.
+
+### Scripts disponíveis
+
+```bash
+npm run dev        # Dev server
+npm run build      # Build de produção (output: dist/)
+npm run build:dev  # Build em modo development
+npm run preview    # Preview do build local
+npm run lint       # ESLint
+npm run format     # Prettier
+```
+
+---
 
 ## Conectando ao Google Sheets
 
-### 1. Preparar a planilha
+### Passo 1 — Preparar a planilha
 
-Crie uma planilha com **5 abas**, com exatamente os mesmos cabeçalhos dos CSVs em `public/seed/`:
+Crie uma planilha com **6 abas**, com os cabeçalhos exatamente como listados abaixo:
 
-- `transactions` — colunas A:M
-- `recurrence_templates` — colunas A:G
-- `accounts` — colunas A:C
-- `categories` — colunas A:B
-- `payment_groups` — colunas A:E
+| Aba | Colunas |
+|---|---|
+| `transactions` | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final`, `status`, `considerar_resumo`, `payment_account_id`, `tipo_lancamento` |
+| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id` |
+| `accounts` | `account_id`, `nome`, `tipo`, `icon_id` |
+| `categories` | `category_id`, `nome`, `icon_id` |
+| `incomes` | `income_id`, `competencia`, `descricao`, `valor`, `icon_id` |
+| `invoice_amounts` | `invoice_id`, `payment_account_id`, `competencia`, `valor_real` |
 
-Copie o `spreadsheetId` da URL: `https://docs.google.com/spreadsheets/d/<ID>/edit`.
-
-### 2. Criar OAuth Client ID (Google Cloud Console)
-
-1. Acesse https://console.cloud.google.com/ → crie um projeto.
-2. Em **APIs & Services → Library**, habilite **Google Sheets API**.
-3. **OAuth consent screen**: tipo *External*, preencha o mínimo, adicione seu e-mail em *Test users*.
-4. **Credentials → Create credentials → OAuth Client ID**:
-   - Application type: **Web application**
-   - Authorized JavaScript origins: `http://localhost:8080` (dev) e a URL pública (`https://seu-app.vercel.app`)
-5. Copie o **Client ID**.
-
-### 3. Configurar variáveis
-
-Crie `.env.local`:
-
+Copie o `spreadsheetId` da URL:
 ```
+https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
+```
+
+### Passo 2 — Criar projeto no Google Cloud Console
+
+1. Acesse https://console.cloud.google.com → crie um projeto
+2. Em **APIs & Services → Library**, pesquise e habilite **Google Sheets API**
+3. Em **APIs & Services → OAuth consent screen**:
+   - Tipo: **External**
+   - Preencha nome do app, e-mail de suporte e e-mail do desenvolvedor
+   - Em **Test users**, adicione seu e-mail (obrigatório enquanto o app estiver em modo de teste)
+   - Salvar e continuar (pode pular Escopos por ora)
+
+### Passo 3 — Criar credencial OAuth Client ID
+
+1. **Credentials → Create credentials → OAuth Client ID**
+2. Tipo: **Web application**
+3. Nome: ex. `Sheet Budget Web`
+4. **Authorized JavaScript origins** — adicione:
+   ```
+   http://localhost:5173
+   https://seudominio.com
+   ```
+5. Criar → copie o **Client ID** (formato: `xxxxx.apps.googleusercontent.com`)
+
+> URIs de redirecionamento não são necessários para o fluxo implícito.
+
+### Passo 4 — Configurar variáveis de ambiente
+
+Crie `.env.local` na raiz do projeto:
+
+```env
 VITE_GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
 VITE_SPREADSHEET_ID=1AbC...XyZ
 ```
 
 Reinicie o dev server. O app passa a usar `GoogleSheetsRepository`.
-Em **Configurações** clique **Conectar com Google** — uma popup pede consentimento e
-o token de acesso fica **somente em memória** (closure em `src/services/googleAuth.ts`).
-Nunca gravamos `access_token` em `localStorage` nem `cookies`.
+
+### Passo 5 — Autenticar no app
+
+Em **Configurações**, clique **Conectar com Google** — uma popup abre pedindo consentimento.
+O token de acesso fica **somente em memória** (closure em `src/services/googleAuth.ts`). Nunca é gravado em `localStorage` ou cookies.
 
 ### Segurança — o que NÃO fazemos
 
-- Não armazenamos `client_secret`, service account, nem private keys (são desnecessárias para o fluxo *implicit*).
-- Não confiamos em payloads vindos da UI — toda mutação passa por `Zod`.
-- Descrições são sanitizadas (HTML/tags removidos).
-- `spreadsheetId` vive apenas em `src/services/config.ts`.
+- Não armazenamos `client_secret`, service account ou private keys (desnecessários para o fluxo implícito)
+- Não confiamos em payloads da UI — toda mutação passa por Zod antes de chegar ao repositório
+- Descrições são sanitizadas (HTML e tags removidos)
+- `spreadsheetId` vive apenas em `src/services/config.ts`
+- `access_token` jamais persiste entre sessões
 
-## Publicar no Vercel
+---
 
-1. `git push` para um repo no GitHub.
-2. New Project no Vercel → import.
-3. **Environment Variables** → adicione `VITE_GOOGLE_CLIENT_ID` e `VITE_SPREADSHEET_ID`.
-4. Adicione a URL Vercel (`https://<projeto>.vercel.app`) em **Authorized JavaScript origins** no Google Cloud Console.
-5. Deploy. Não há SSR — é SPA puro, build com `vite build`.
+## Deploy
 
-> Para SPA com React Router, o Vercel já trata fallback `index.html` automaticamente
-> via `vercel.json` simples ou pelo build do Vite. Caso necessário, crie `vercel.json`:
-> ```json
-> { "rewrites": [{ "source": "/(.*)", "destination": "/" }] }
-> ```
+### Digital Ocean App Platform
+
+**Passo 1 — Criar o app**
+
+1. Acesse https://cloud.digitalocean.com/apps → **Create App**
+2. Conecte ao GitHub e selecione o repositório
+3. Configure o componente:
+   - **Type:** Static Site
+   - **Build command:** `npm run build`
+   - **Output directory:** `dist`
+   - **Plan:** Starter ($0)
+
+**Passo 2 — Configurar variáveis de ambiente**
+
+Em **Settings → Environment Variables**, adicione:
+
+| Variável | Valor |
+|---|---|
+| `VITE_GOOGLE_CLIENT_ID` | `xxxxx.apps.googleusercontent.com` |
+| `VITE_SPREADSHEET_ID` | `1AbC...XyZ` |
+
+**Passo 3 — Configurar roteamento SPA**
+
+Para que o React Router funcione em rotas internas (ex: `/transactions`), configure o documento de fallback no App Platform:
+
+1. Em **Settings → App Spec**, edite o YAML e adicione `catchall_document`:
+   ```yaml
+   static_sites:
+     - name: sheet-budget
+       catchall_document: index.html
+   ```
+2. Ou via UI: **Settings → Components → seu site → Error Document** → informe `index.html`
+
+**Passo 4 — Deploy**
+
+O Digital Ocean faz deploy automático a cada push na branch `main`. A URL temporária ficará disponível em:
+```
+https://sheet-budget-XXXXX.ondigitalocean.app
+```
+
+---
+
+## Domínio personalizado (Cloudflare + Digital Ocean)
+
+### Passo 1 — Adicionar domínio no Digital Ocean
+
+1. Acesse o app → **Settings → Domains → Add Domain**
+2. Digite o domínio (ex: `financas.meusite.com`) → **Add**
+3. O Digital Ocean mostrará o registro DNS necessário (CNAME)
+
+### Passo 2 — Configurar DNS no Cloudflare
+
+1. Acesse https://dash.cloudflare.com → selecione o domínio
+2. Vá em **DNS → Add Record**:
+
+```
+Type:    CNAME
+Name:    financas        (ou @ para domínio raiz)
+Target:  sheet-budget-XXXXX.ondigitalocean.app
+Proxy:   ON (laranja)
+TTL:     Auto
+```
+
+> Com proxy Cloudflare ativado, o SSL é gerenciado automaticamente.
+
+### Passo 3 — Atualizar origens autorizadas no Google Cloud Console
+
+Em **Credentials → seu OAuth Client ID → Authorized JavaScript origins**, adicione:
+
+```
+https://financas.meusite.com
+```
+
+Sem isso, o login com Google será bloqueado no domínio personalizado.
+
+### Passo 4 — Verificar
+
+Aguarde a propagação DNS (geralmente < 5 min com Cloudflare) e acesse o domínio. HTTPS estará ativo automaticamente.
+
+---
 
 ## Trocando para uma API futura
 
 Para migrar para um backend próprio (Express, Hono, Supabase, etc.):
 
-1. Crie `src/infrastructure/api/ApiRepository.ts` implementando `FinanceRepository`
-   (`src/domain/repository.ts`).
-2. Edite `src/application/repositoryProvider.ts` e retorne a nova implementação.
-3. UI e hooks **não precisam mudar** — eles dependem do contrato, não da implementação.
-
-## Convenções de dados
-
-- `competencia`: `YYYY-MM` (string).
-- Valores: número JS. Os CSVs seed usam vírgula BR; o parser converte na carga.
-- `status=PAGO` exige `valor_final` (validado por Zod no input).
-- Cancelar = mudar status para `CANCELADO`. **Nunca apaga histórico.**
-- Editar = manter `transaction_id`.
-- Marcar grupo (`fatura`) como PAGO → propaga para todas as transações vinculadas
-  (`status=PAGO`, `valor_final ??= valor_previsto`).
-
-## Funcionalidades incluídas
-
-- **Dashboard**: totais previsto/pago/saldo + cards (fixos, parcelados, cartão) + gráfico por categoria.
-- **Lançamentos**: tabela com filtros (mês, categoria, conta, status, tipo) + busca textual + edição inline em modal.
-- **Cartões & Faturas**: faturas abertas, detalhes, "Pagar fatura" com confirmação.
-- **Recorrências**: lista de templates + botão "Gerar para esta competência" (idempotente).
-- **Configurações**: status da conexão, conectar Google, resetar mock.
-- Tema claro/escuro, indicador de sincronização (sincronizando/salvo/erro), skeleton loading.
-
-## Scripts
-
-```bash
-bun run dev       # dev server
-bun run build     # build produção
-bun run preview   # preview build
-bun run lint
-```
+1. Crie `src/infrastructure/api/ApiRepository.ts` implementando `FinanceRepository` (`src/domain/repository.ts`)
+2. Edite `src/application/repositoryProvider.ts` para retornar a nova implementação
+3. UI e hooks **não precisam mudar** — dependem do contrato, não da implementação

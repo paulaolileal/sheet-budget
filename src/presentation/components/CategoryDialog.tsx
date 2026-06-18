@@ -80,9 +80,7 @@ export function CategoryDialog({
             <Controller
               control={control}
               name="icon_id"
-              render={({ field }) => (
-                <IconPicker value={field.value} onChange={field.onChange} />
-              )}
+              render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
             />
           </div>
 

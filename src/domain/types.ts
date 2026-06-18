@@ -4,12 +4,7 @@
 
 export type Competencia = string; // formato YYYY-MM
 
-export const TRANSACTION_STATUS = [
-  "PENDENTE",
-  "PAGO",
-  "ADIANTADO",
-  "IGNORADO",
-] as const;
+export const TRANSACTION_STATUS = ["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"] as const;
 export type TransactionStatus = (typeof TRANSACTION_STATUS)[number];
 
 export const TIPO_LANCAMENTO = ["RECORRENTE", "PARCELADO", "MANUAL"] as const;
@@ -80,4 +75,3 @@ export interface InvoiceAmount {
   competencia: Competencia;
   valor_real: number;
 }
-

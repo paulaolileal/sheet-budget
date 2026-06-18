@@ -32,28 +32,28 @@ presentation → hooks → domain ← infrastructure
 
 ### Key files
 
-| Path | Role |
-|---|---|
-| `src/domain/types.ts` | All domain types (Transaction, RecurrenceTemplate, Account, Category, PaymentGroup) |
-| `src/domain/schemas.ts` | Zod schemas — input validation and sanitization gate |
-| `src/domain/repository.ts` | `FinanceRepository` interface — the contract every backend must implement |
-| `src/application/repositoryProvider.ts` | Singleton factory — picks Mock vs Google Sheets at runtime |
-| `src/hooks/queries.ts` | All TanStack Query hooks + mutations; `withSync()` drives the sync indicator |
-| `src/store/uiStore.ts` | Zustand: active `competencia` (YYYY-MM) + sync state (`idle/syncing/saved/error`) |
-| `src/services/config.ts` | Reads `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; exposes `useMock` flag |
-| `src/services/googleAuth.ts` | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage |
-| `src/infrastructure/repositories/MockRepository.ts` | Seeds from `public/seed/*.csv` via PapaParse; mutations persist to `localStorage` |
-| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4 |
+| Path                                                  | Role                                                                                                         |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `src/domain/types.ts`                                 | All domain types (Transaction, RecurrenceTemplate, Account, Category, PaymentGroup)                          |
+| `src/domain/schemas.ts`                               | Zod schemas — input validation and sanitization gate                                                         |
+| `src/domain/repository.ts`                            | `FinanceRepository` interface — the contract every backend must implement                                    |
+| `src/application/repositoryProvider.ts`               | Singleton factory — picks Mock vs Google Sheets at runtime                                                   |
+| `src/hooks/queries.ts`                                | All TanStack Query hooks + mutations; `withSync()` drives the sync indicator                                 |
+| `src/store/uiStore.ts`                                | Zustand: active `competencia` (YYYY-MM) + sync state (`idle/syncing/saved/error`)                            |
+| `src/services/config.ts`                              | Reads `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; exposes `useMock` flag                                |
+| `src/services/googleAuth.ts`                          | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage |
+| `src/infrastructure/repositories/MockRepository.ts`   | Seeds from `public/seed/*.csv` via PapaParse; mutations persist to `localStorage`                            |
+| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4                                                                                   |
 
 ### Routes
 
-| Path | Page |
-|---|---|
-| `/` | Dashboard (totals, charts) |
-| `/transactions` | Transactions table with filters |
-| `/cards` | Cards & invoices (PaymentGroups) |
-| `/recurrences` | RecurrenceTemplates |
-| `/settings` | Settings: Google auth, mock reset |
+| Path            | Page                              |
+| --------------- | --------------------------------- |
+| `/`             | Dashboard (totals, charts)        |
+| `/transactions` | Transactions table with filters   |
+| `/cards`        | Cards & invoices (PaymentGroups)  |
+| `/recurrences`  | RecurrenceTemplates               |
+| `/settings`     | Settings: Google auth, mock reset |
 
 ### Data conventions
 

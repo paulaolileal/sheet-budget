@@ -1,4 +1,12 @@
-import type { Account, AccountTipo, Category, Income, InvoiceAmount, RecurrenceTemplate, Transaction } from "./types";
+import type {
+  Account,
+  AccountTipo,
+  Category,
+  Income,
+  InvoiceAmount,
+  RecurrenceTemplate,
+  Transaction,
+} from "./types";
 
 /**
  * Contrato do repositório. A camada de infraestrutura implementa
@@ -25,7 +33,10 @@ export interface FinanceRepository {
   // accounts
   getAccounts(): Promise<Account[]>;
   createAccount(data: { nome: string; tipo: AccountTipo; icon_id?: string }): Promise<Account>;
-  updateAccount(id: string, data: { nome: string; tipo: AccountTipo; icon_id?: string }): Promise<Account>;
+  updateAccount(
+    id: string,
+    data: { nome: string; tipo: AccountTipo; icon_id?: string },
+  ): Promise<Account>;
   deleteAccount(id: string): Promise<void>;
 
   // categories

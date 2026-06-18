@@ -170,11 +170,7 @@ export function AppShell() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    <img
-                      src={user.picture}
-                      alt={user.name}
-                      className="h-7 w-7 rounded-full"
-                    />
+                    <img src={user.picture} alt={user.name} className="h-7 w-7 rounded-full" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -218,9 +214,7 @@ export function AppShell() {
                 className={({ isActive }) =>
                   cn(
                     "flex flex-col items-center justify-center gap-0.5 text-[9px] font-medium transition-colors",
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground hover:text-foreground",
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )
                 }
               >

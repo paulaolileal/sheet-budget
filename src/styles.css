@@ -119,8 +119,12 @@
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body, #root {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body,
+  #root {
     height: 100%;
     overflow: hidden; /* App controls its own scroll — prevents body-level scroll on mobile */
   }

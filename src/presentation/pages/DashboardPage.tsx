@@ -1,13 +1,20 @@
 import { useMemo } from "react";
 
-const MONTH_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+const MONTH_ABBR = [
+  "jan",
+  "fev",
+  "mar",
+  "abr",
+  "mai",
+  "jun",
+  "jul",
+  "ago",
+  "set",
+  "out",
+  "nov",
+  "dez",
+];
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Bar,
@@ -48,9 +55,7 @@ export function DashboardPage() {
   const filtered = useMemo(
     () =>
       (txs ?? []).filter(
-        (t) =>
-          t.competencia === competencia &&
-          (t.status === "PAGO" || t.status === "PENDENTE"),
+        (t) => t.competencia === competencia && (t.status === "PAGO" || t.status === "PENDENTE"),
       ),
     [txs, competencia],
   );
@@ -60,8 +65,7 @@ export function DashboardPage() {
     .filter((t) => t.status === "PAGO")
     .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
   const saldo = totalPrevisto - totalPago;
-  const pagoPercent =
-    totalPrevisto > 0 ? Math.round((totalPago / totalPrevisto) * 100) : 0;
+  const pagoPercent = totalPrevisto > 0 ? Math.round((totalPago / totalPrevisto) * 100) : 0;
 
   const pendentes = filtered.filter((t) => t.status === "PENDENTE");
   const totalPendente = pendentes.reduce((s, t) => s + t.valor_previsto, 0);
@@ -71,18 +75,12 @@ export function DashboardPage() {
     .reduce((s, t) => s + t.valor_previsto, 0);
 
   const cartao = filtered
-    .filter(
-      (t) =>
-        accounts?.find((a) => a.account_id === t.payment_account_id)?.tipo ===
-        "CARTAO",
-    )
+    .filter((t) => accounts?.find((a) => a.account_id === t.payment_account_id)?.tipo === "CARTAO")
     .reduce((s, t) => s + t.valor_previsto, 0);
 
   const totalReceitas = useMemo(
     () =>
-      (incomes ?? [])
-        .filter((i) => i.competencia === competencia)
-        .reduce((s, i) => s + i.valor, 0),
+      (incomes ?? []).filter((i) => i.competencia === competencia).reduce((s, i) => s + i.valor, 0),
     [incomes, competencia],
   );
 
@@ -145,8 +143,7 @@ export function DashboardPage() {
     const months = monthRange(6, new Date(`${competencia}-15`));
     return months.map((month) => {
       const monthTxs = (txs ?? []).filter(
-        (t) =>
-          t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
+        (t) => t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
       );
       const monthIncomes = (incomes ?? []).filter((i) => i.competencia === month);
       const cardTxTotal = monthTxs
@@ -160,9 +157,7 @@ export function DashboardPage() {
         mes: MONTH_ABBR[Number(month.slice(5)) - 1] ?? month.slice(5),
         entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
         saidas:
-          Math.round(
-            (monthTxs.reduce((s, t) => s + t.valor_previsto, 0) + extra) * 100,
-          ) / 100,
+          Math.round((monthTxs.reduce((s, t) => s + t.valor_previsto, 0) + extra) * 100) / 100,
       };
     });
   }, [txs, incomes, invoiceAmounts, cardIds, competencia]);
@@ -192,10 +187,20 @@ export function DashboardPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <SummaryCard label="Total de receitas" value={totalReceitas} loading={isLoading} tone="success" />
+        <SummaryCard
+          label="Total de receitas"
+          value={totalReceitas}
+          loading={isLoading}
+          tone="success"
+        />
         <SummaryCard label="Total previsto" value={totalPrevisto} loading={isLoading} />
         <SummaryCard label="Total pago" value={totalPago} loading={isLoading} tone="success" />
-        <SummaryCard label="Saldo restante" value={saldo} loading={isLoading} tone={saldo < 0 ? "warning" : undefined} />
+        <SummaryCard
+          label="Saldo restante"
+          value={saldo}
+          loading={isLoading}
+          tone={saldo < 0 ? "warning" : undefined}
+        />
       </div>
 
       <Card className="mb-4">
@@ -235,12 +240,7 @@ export function DashboardPage() {
           loading={isLoading}
           variant="muted"
         />
-        <SummaryCard
-          label="Cartão de crédito"
-          value={cartao}
-          loading={isLoading}
-          variant="muted"
-        />
+        <SummaryCard label="Cartão de crédito" value={cartao} loading={isLoading} variant="muted" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
@@ -409,10 +409,7 @@ export function DashboardPage() {
               <Skeleton className="h-full w-full" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={trendData}
-                  margin={{ top: 8, right: 8, left: -10, bottom: 8 }}
-                >
+                <LineChart data={trendData} margin={{ top: 8, right: 8, left: -10, bottom: 8 }}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="var(--color-border)"

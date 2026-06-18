@@ -1,11 +1,5 @@
 import { useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -33,10 +27,7 @@ export function IncomePage() {
     [incomes, competencia],
   );
 
-  const totalReceitas = useMemo(
-    () => filtered.reduce((s, i) => s + i.valor, 0),
-    [filtered],
-  );
+  const totalReceitas = useMemo(() => filtered.reduce((s, i) => s + i.valor, 0), [filtered]);
 
   return (
     <div className="px-4 py-4 md:p-8 max-w-4xl mx-auto">

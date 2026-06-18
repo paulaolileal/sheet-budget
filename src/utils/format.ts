@@ -3,7 +3,20 @@ export const brl = (n: number | null | undefined) =>
 
 export const competenciaLabel = (c: string) => {
   const [y, m] = c.split("-");
-  const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const months = [
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+  ];
   return `${months[Number(m) - 1] ?? m}/${y}`;
 };
 
