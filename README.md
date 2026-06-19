@@ -106,8 +106,10 @@ O dashboard é dividido em duas abas:
 ### Cartões & Faturas
 
 - Navegação por mês com month picker
-- Abas separadas por cartão
-- Tabela de transações vinculadas à fatura
+- **Stack carousel horizontal** de cartões com setas de navegação e loop infinito
+- Exibe todas as contas que possuem transações no mês (não apenas cartões de crédito)
+- Visual do cartão com gradiente derivado da **cor customizada** da conta; contraste de texto (claro/escuro) calculado automaticamente
+- Tabela de transações vinculadas à fatura da conta selecionada
 - Campo para registrar o **valor real da fatura** (diferente do previsto)
 - Botão **"Pagar Fatura"** com confirmação — propaga `status=PAGO` para todas as transações vinculadas
 
@@ -124,7 +126,7 @@ O dashboard é dividido em duas abas:
 ### Configurações
 
 - CRUD completo de **Categorias** (com ícone customizável)
-- CRUD completo de **Contas / Cartões** (tipo: conta, cartão, carteira)
+- CRUD completo de **Contas / Cartões** (tipo: conta, cartão, carteira; cor customizável via color picker — gera gradiente no visual do cartão)
 - Indicador de sincronização (sincronizando / salvo / erro)
 - Status da conexão Google
 
@@ -234,7 +236,7 @@ src/
 | **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id?`, `tipo_lancamento` |
 | **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`      |
 | **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                              |
-| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                          |
+| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`, `color?` (hex `#RRGGBB`)                                                |
 | **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                         |
 | **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                           |
 
@@ -297,7 +299,7 @@ Crie uma planilha com **6 abas**, com os cabeçalhos exatamente como listados ab
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `transactions`         | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id`, `tipo_lancamento` |
 | `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`        |
-| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                 |
+| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`, `color`                                                                                        |
 | `categories`           | `category_id`, `nome`, `icon_id`                                                                                                        |
 | `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                             |
 | `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                         |
