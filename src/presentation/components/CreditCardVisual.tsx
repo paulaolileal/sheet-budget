@@ -1,6 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { AppIcon } from "./AppIcon";
 import { brl } from "@/utils/format";
+import type { AccountTipo } from "@/domain/types";
 
 const GRADIENTS = [
   "from-slate-700 to-slate-900",
@@ -16,10 +17,17 @@ function pickGradient(nome: string): string {
   return GRADIENTS[idx];
 }
 
+const TIPO_LABEL: Record<AccountTipo, string> = {
+  CARTAO: "Fatura",
+  CONTA: "Saldo a pagar",
+  CARTEIRA: "Saldo",
+};
+
 interface CreditCardVisualProps {
   nome: string;
   total: number;
   isPaid: boolean;
+  tipo?: AccountTipo;
   iconId?: string;
   extraAmount?: number;
 }
@@ -28,10 +36,12 @@ export function CreditCardVisual({
   nome,
   total,
   isPaid,
+  tipo = "CARTAO",
   iconId,
   extraAmount,
 }: CreditCardVisualProps) {
   const gradient = pickGradient(nome);
+  const label = TIPO_LABEL[tipo];
 
   return (
     <div
@@ -44,16 +54,49 @@ export function CreditCardVisual({
 
       {/* content fills card with even distribution */}
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
-        {/* top: chip + account icon */}
+        {/* top: chip (only for cards) + account icon */}
         <div className="flex items-start justify-between">
-          <svg width="46" height="36" viewBox="0 0 46 36" fill="none" aria-hidden="true">
-            <rect width="46" height="36" rx="5" fill="#d4a843" />
-            <rect x="1" y="12" width="44" height="12" fill="#b8922e" />
-            <rect x="14" y="1" width="18" height="34" fill="#b8922e" />
-            <rect x="14" y="12" width="18" height="12" fill="#c9a33a" />
-            <rect x="1" y="12" width="13" height="12" fill="#c8962c" />
-            <rect x="32" y="12" width="13" height="12" fill="#c8962c" />
-          </svg>
+          {tipo === "CARTAO" ? (
+            <svg width="46" height="36" viewBox="0 0 46 36" fill="none" aria-hidden="true">
+              <rect width="46" height="36" rx="5" fill="#d4a843" />
+              <rect x="1" y="12" width="44" height="12" fill="#b8922e" />
+              <rect x="14" y="1" width="18" height="34" fill="#b8922e" />
+              <rect x="14" y="12" width="18" height="12" fill="#c9a33a" />
+              <rect x="1" y="12" width="13" height="12" fill="#c8962c" />
+              <rect x="32" y="12" width="13" height="12" fill="#c8962c" />
+            </svg>
+          ) : tipo === "CONTA" ? (
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="opacity-60"
+              aria-hidden="true"
+            >
+              <path d="M3 21h18" />
+              <path d="M3 10h18" />
+              <path d="M5 6l7-3 7 3" />
+              <path d="M4 10v11M8 10v11M12 10v11M16 10v11M20 10v11" />
+            </svg>
+          ) : (
+            <svg
+              width="36"
+              height="36"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="opacity-60"
+              aria-hidden="true"
+            >
+              <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+              <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
+            </svg>
+          )}
 
           <div className="opacity-70">
             {iconId ? (
@@ -80,7 +123,7 @@ export function CreditCardVisual({
         {/* middle: account name */}
         <div>
           <p className="text-[11px] font-medium uppercase tracking-widest opacity-60 mb-1">
-            Fatura
+            {label}
           </p>
           <p className="text-base font-bold truncate leading-tight">{nome}</p>
         </div>

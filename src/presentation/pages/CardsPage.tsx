@@ -136,11 +136,6 @@ export function CardsPage() {
     [accounts],
   );
 
-  const cardAccountIds = useMemo(
-    () => new Set((accounts ?? []).filter((a) => a.tipo === "CARTAO").map((a) => a.account_id)),
-    [accounts],
-  );
-
   const invoiceAmountMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const ia of invoiceAmounts ?? []) {
@@ -167,7 +162,7 @@ export function CardsPage() {
   const faturas = useMemo<DerivedFatura[]>(() => {
     const grouped = new Map<string, Transaction[]>();
     for (const t of txs ?? []) {
-      if (!t.payment_account_id || !cardAccountIds.has(t.payment_account_id)) continue;
+      if (!t.payment_account_id) continue;
       const key = `${t.payment_account_id}:${t.competencia}`;
       if (!grouped.has(key)) grouped.set(key, []);
       grouped.get(key)!.push(t);
@@ -194,7 +189,7 @@ export function CardsPage() {
         };
       })
       .sort((a, b) => b.competencia.localeCompare(a.competencia));
-  }, [txs, cardAccountIds, accMap, invoiceAmountMap]);
+  }, [txs, accMap, invoiceAmountMap]);
 
   const allMonths = useMemo(
     () => [...new Set(faturas.map((f) => f.competencia))].sort(),
@@ -290,9 +285,10 @@ export function CardsPage() {
                     )}
                   >
                     <CreditCardVisual
-                      nome={account?.nome ?? "Cartão"}
+                      nome={account?.nome ?? "Conta"}
                       total={f.total}
                       isPaid={f.isPaid}
+                      tipo={account?.tipo}
                       iconId={account?.icon_id}
                       extraAmount={f.extraAmount}
                     />
