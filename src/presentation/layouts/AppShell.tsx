@@ -112,7 +112,6 @@ export function AppShell() {
               />
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate">{user.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">{user.email}</div>
               </div>
               <button
                 onClick={() => navigate("/settings")}
@@ -121,6 +120,14 @@ export function AppShell() {
                 title="Configurações"
               >
                 <Settings className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={toggle}
+                className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="Alternar tema"
+                title="Alternar tema"
+              >
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
               <button
                 onClick={handleLogout}
@@ -132,25 +139,18 @@ export function AppShell() {
               </button>
             </div>
           )}
-          <div className="p-3 flex items-center justify-between">
+          <div className="flex flex-col items-center justify-center gap-2 px-4 py-5">
             <SyncIndicator />
-            <button
-              onClick={toggle}
-              className="h-8 w-8 grid place-items-center rounded-md hover:bg-sidebar-accent transition-colors"
-              aria-label="Alternar tema"
+            <a
+              href="https://lealtek.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="opacity-40 hover:opacity-70 transition-opacity"
+              title="Desenvolvido por LealTEK"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+              <img src="/lealtek-full.png" alt="LealTEK" className="h-8 object-contain" />
+            </a>
           </div>
-          <a
-            href="https://lealtek.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 px-3 py-2 border-t opacity-50 hover:opacity-80 transition-opacity"
-            title="Desenvolvido por LealTEK"
-          >
-            <img src="/lealtek-full.png" alt="LealTEK" className="h-5 object-contain" />
-          </a>
         </div>
       </aside>
 
