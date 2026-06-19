@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +114,10 @@ const TIPO_LABELS: Record<string, string> = {
   CARTEIRA: "Carteira",
 };
 
+const MAX_STACK = 2;
+const STACK_OFFSET = 10;
+const HORZ_INSET = 8;
+
 export function CardsPage() {
   const { data: txs, isLoading } = useTransactions();
   const { data: accounts } = useAccounts();
@@ -130,6 +134,9 @@ export function CardsPage() {
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(null);
   const [editingInvoiceKey, setEditingInvoiceKey] = useState<string | null>(null);
   const [invoiceInputValue, setInvoiceInputValue] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => setActiveIndex(0), [competencia]);
 
   const accMap = useMemo(
     () => Object.fromEntries((accounts ?? []).map((a) => [a.account_id, a])),
@@ -269,105 +276,172 @@ export function CardsPage() {
               </CardHeader>
             </Card>
           ) : (
-            <div
-              className={cn("grid gap-4", monthFaturas.length > 1 && "grid-cols-1 sm:grid-cols-2")}
-            >
-              {monthFaturas.map((f) => {
-                const account = accMap[f.payment_account_id];
+            <div className="space-y-4">
+              {/* Card stack */}
+              <div
+                className="relative max-w-sm mx-auto"
+                style={{
+                  paddingTop: `${(1 / 1.586) * 100}%`,
+                  marginBottom: `${Math.min(monthFaturas.length - 1, MAX_STACK) * STACK_OFFSET}px`,
+                }}
+              >
+                {monthFaturas.map((f, i) => {
+                  const relIdx = i - activeIndex;
+                  if (relIdx > MAX_STACK || relIdx < -1) return null;
+
+                  const account = accMap[f.payment_account_id];
+                  const isGone = relIdx < 0;
+
+                  return (
+                    <div
+                      key={f.key}
+                      className="absolute top-0 left-0 right-0 transition-all duration-300 ease-out"
+                      style={
+                        isGone
+                          ? {
+                              opacity: 0,
+                              transform: "translateY(-16px)",
+                              zIndex: 15,
+                              pointerEvents: "none",
+                            }
+                          : {
+                              top: `${relIdx * STACK_OFFSET}px`,
+                              left: `${relIdx * HORZ_INSET}px`,
+                              right: `${relIdx * HORZ_INSET}px`,
+                              zIndex: 10 - relIdx,
+                            }
+                      }
+                    >
+                      <CreditCardVisual
+                        nome={account?.nome ?? "Conta"}
+                        total={f.total}
+                        isPaid={f.isPaid}
+                        tipo={account?.tipo}
+                        iconId={account?.icon_id}
+                        extraAmount={f.extraAmount}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Carousel navigation */}
+              {monthFaturas.length > 1 && (
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={activeIndex === 0}
+                    onClick={() => setActiveIndex((idx) => idx - 1)}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="flex gap-1.5 items-center">
+                    {monthFaturas.map((_, i) => (
+                      <button
+                        key={i}
+                        className={cn(
+                          "h-1.5 rounded-full transition-all duration-200",
+                          i === activeIndex
+                            ? "bg-foreground w-4"
+                            : "bg-muted-foreground/30 w-1.5 hover:bg-muted-foreground/50",
+                        )}
+                        onClick={() => setActiveIndex(i)}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    disabled={activeIndex === monthFaturas.length - 1}
+                    onClick={() => setActiveIndex((idx) => idx + 1)}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Active card actions */}
+              {(() => {
+                const f = monthFaturas[activeIndex];
+                if (!f) return null;
                 const isEditingThis = editingInvoiceKey === f.key;
                 return (
-                  <div
-                    key={f.key}
-                    className={cn(
-                      "space-y-2",
-                      f.isPaid && "opacity-80",
-                      monthFaturas.length === 1 && "max-w-sm mx-auto w-full",
-                    )}
-                  >
-                    <CreditCardVisual
-                      nome={account?.nome ?? "Conta"}
-                      total={f.total}
-                      isPaid={f.isPaid}
-                      tipo={account?.tipo}
-                      iconId={account?.icon_id}
-                      extraAmount={f.extraAmount}
-                    />
-
-                    {/* Invoice real amount section */}
-                    <div className="px-1">
-                      {isEditingThis ? (
-                        <div className="flex gap-2 items-center">
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="Valor real da fatura"
-                            value={invoiceInputValue}
-                            onChange={(e) => setInvoiceInputValue(e.target.value)}
-                            className="h-8 text-sm"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSaveInvoiceAmount(f);
-                              if (e.key === "Escape") {
-                                setEditingInvoiceKey(null);
-                                setInvoiceInputValue("");
-                              }
-                            }}
-                          />
-                          <Button
-                            size="sm"
-                            className="h-8 px-3 shrink-0"
-                            onClick={() => handleSaveInvoiceAmount(f)}
-                            disabled={saveInvoiceAmount.isPending}
-                          >
-                            Salvar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 px-2 shrink-0"
-                            onClick={() => {
+                  <div className="space-y-2 max-w-sm mx-auto px-1">
+                    {isEditingThis ? (
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Valor real da fatura"
+                          value={invoiceInputValue}
+                          onChange={(e) => setInvoiceInputValue(e.target.value)}
+                          className="h-8 text-sm"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleSaveInvoiceAmount(f);
+                            if (e.key === "Escape") {
                               setEditingInvoiceKey(null);
                               setInvoiceInputValue("");
-                            }}
-                          >
-                            ✕
-                          </Button>
-                        </div>
-                      ) : f.valorReal != null ? (
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>
-                            Fatura real:{" "}
-                            <span className="font-medium text-foreground">{brl(f.valorReal)}</span>
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => {
-                              setEditingInvoiceKey(f.key);
-                              setInvoiceInputValue(String(f.valorReal));
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      ) : (
+                            }
+                          }}
+                        />
                         <Button
-                          variant="ghost"
                           size="sm"
-                          className="w-full text-xs h-7 text-muted-foreground"
+                          className="h-8 px-3 shrink-0"
+                          onClick={() => handleSaveInvoiceAmount(f)}
+                          disabled={saveInvoiceAmount.isPending}
+                        >
+                          Salvar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 px-2 shrink-0"
                           onClick={() => {
-                            setEditingInvoiceKey(f.key);
+                            setEditingInvoiceKey(null);
                             setInvoiceInputValue("");
                           }}
                         >
-                          + Informar valor real da fatura
+                          ✕
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    ) : f.valorReal != null ? (
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>
+                          Fatura real:{" "}
+                          <span className="font-medium text-foreground">{brl(f.valorReal)}</span>
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => {
+                            setEditingInvoiceKey(f.key);
+                            setInvoiceInputValue(String(f.valorReal));
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs h-7 text-muted-foreground"
+                        onClick={() => {
+                          setEditingInvoiceKey(f.key);
+                          setInvoiceInputValue("");
+                        }}
+                      >
+                        + Informar valor real da fatura
+                      </Button>
+                    )}
 
-                    <div className="flex gap-2 px-1">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -384,7 +458,7 @@ export function CardsPage() {
                     </div>
                   </div>
                 );
-              })}
+              })()}
             </div>
           )}
         </TabsContent>
