@@ -306,24 +306,131 @@ export function DashboardPage() {
         <SummaryCard label="Cartão de crédito" value={cartao} loading={isLoading} variant="muted" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <Card className="lg:col-span-2">
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle className="text-base">Gastos por categoria</CardTitle>
+          <CardDescription>Top 8 categorias do mês</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : categoryChartData.length === 0 ? (
+            <div className="h-full grid place-items-center text-sm text-muted-foreground">
+              Sem lançamentos neste mês.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={categoryChartData}
+                margin={{ top: 8, right: 8, left: -10, bottom: 50 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="nome"
+                  angle={-20}
+                  textAnchor="end"
+                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                  interval={0}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                  tickFormatter={(v) => brl(v).replace("R$", "")}
+                />
+                <Tooltip
+                  formatter={(v: number) => brl(v)}
+                  contentStyle={tooltipStyle}
+                  labelStyle={{ color: "var(--color-popover-foreground)" }}
+                  itemStyle={{ color: "var(--color-popover-foreground)" }}
+                />
+                <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+                  {categoryChartData.map((_, i) => (
+                    <Cell key={i} fill={palette[i % palette.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Gastos por categoria</CardTitle>
-            <CardDescription>Top 8 categorias do mês</CardDescription>
+            <CardTitle className="text-base">Tipo de lançamento</CardTitle>
+            <CardDescription>Distribuição por origem</CardDescription>
           </CardHeader>
-          <CardContent className="h-[340px]">
+          <CardContent>
             {isLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : categoryChartData.length === 0 ? (
-              <div className="h-full grid place-items-center text-sm text-muted-foreground">
+              <Skeleton className="h-[200px] w-full" />
+            ) : tipoChartData.length === 0 ? (
+              <div className="h-[200px] grid place-items-center text-sm text-muted-foreground">
                 Sem lançamentos neste mês.
               </div>
             ) : (
+              <div className="flex flex-col gap-4">
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={tipoChartData}
+                        dataKey="total"
+                        nameKey="nome"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={55}
+                        outerRadius={85}
+                        paddingAngle={3}
+                      >
+                        {tipoChartData.map((_, i) => (
+                          <Cell key={i} fill={palette[i % palette.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v: number) => brl(v)}
+                        contentStyle={tooltipStyle}
+                        labelStyle={{ color: "var(--color-popover-foreground)" }}
+                        itemStyle={{ color: "var(--color-popover-foreground)" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <ul className="flex flex-col gap-2">
+                  {tipoChartData.map((d, i) => (
+                    <li key={i} className="flex items-center justify-between text-sm">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ background: palette[i % palette.length] }}
+                        />
+                        <span className="text-muted-foreground">{d.nome}</span>
+                      </span>
+                      <span className="tabular-nums font-medium">{brl(d.total)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Entradas vs Saídas</CardTitle>
+            <CardDescription>Comparativo do mês atual</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            {isLoading ? (
+              <Skeleton className="h-full w-full" />
+            ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={categoryChartData}
-                  margin={{ top: 8, right: 8, left: -10, bottom: 60 }}
+                  data={entradasSaidasData}
+                  margin={{ top: 8, right: 8, left: -10, bottom: 8 }}
+                  barSize={64}
                 >
                   <CartesianGrid
                     strokeDasharray="3 3"
@@ -332,10 +439,7 @@ export function DashboardPage() {
                   />
                   <XAxis
                     dataKey="nome"
-                    angle={-25}
-                    textAnchor="end"
-                    tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                    interval={0}
+                    tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
                   />
                   <YAxis
                     tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
@@ -348,119 +452,14 @@ export function DashboardPage() {
                     itemStyle={{ color: "var(--color-popover-foreground)" }}
                   />
                   <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                    {categoryChartData.map((_, i) => (
-                      <Cell key={i} fill={palette[i % palette.length]} />
-                    ))}
+                    <Cell fill="var(--color-chart-2)" />
+                    <Cell fill="var(--color-chart-3)" />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
         </Card>
-
-        <div className="flex flex-col gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Tipo de lançamento</CardTitle>
-              <CardDescription>Distribuição por origem</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-[200px] w-full" />
-              ) : tipoChartData.length === 0 ? (
-                <div className="h-[200px] grid place-items-center text-sm text-muted-foreground">
-                  Sem lançamentos neste mês.
-                </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  <div className="h-[200px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={tipoChartData}
-                          dataKey="total"
-                          nameKey="nome"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={85}
-                          paddingAngle={3}
-                        >
-                          {tipoChartData.map((_, i) => (
-                            <Cell key={i} fill={palette[i % palette.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(v: number) => brl(v)}
-                          contentStyle={tooltipStyle}
-                          labelStyle={{ color: "var(--color-popover-foreground)" }}
-                          itemStyle={{ color: "var(--color-popover-foreground)" }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <ul className="flex flex-col gap-2">
-                    {tipoChartData.map((d, i) => (
-                      <li key={i} className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ background: palette[i % palette.length] }}
-                          />
-                          <span className="text-muted-foreground">{d.nome}</span>
-                        </span>
-                        <span className="tabular-nums font-medium">{brl(d.total)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Entradas vs Saídas</CardTitle>
-              <CardDescription>Comparativo do mês atual</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[200px]">
-              {isLoading ? (
-                <Skeleton className="h-full w-full" />
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={entradasSaidasData}
-                    margin={{ top: 8, right: 8, left: -10, bottom: 8 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--color-border)"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="nome"
-                      tick={{ fontSize: 12, fill: "var(--color-muted-foreground)" }}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                      tickFormatter={(v) => brl(v).replace("R$", "")}
-                    />
-                    <Tooltip
-                      formatter={(v: number) => brl(v)}
-                      contentStyle={tooltipStyle}
-                      labelStyle={{ color: "var(--color-popover-foreground)" }}
-                      itemStyle={{ color: "var(--color-popover-foreground)" }}
-                    />
-                    <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                      <Cell fill="var(--color-chart-2)" />
-                      <Cell fill="var(--color-chart-3)" />
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       <div className="mt-10 mb-5">
