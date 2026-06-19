@@ -244,19 +244,22 @@ export function DashboardPage() {
 
   return (
     <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
-      <PageHeader
-        title="Dashboard"
-        description={`Resumo de ${competenciaLabel(competencia)}`}
-        actions={<CompetenciaSelector />}
-      />
+      <PageHeader title="Dashboard" description="Resumo financeiro" />
 
       <Tabs defaultValue="mes-atual">
-        <TabsList className="mb-6">
-          <TabsTrigger value="mes-atual">Mês atual</TabsTrigger>
-          <TabsTrigger value="geral">Geral</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-6">
+          <TabsList>
+            <TabsTrigger value="mes-atual">Mês</TabsTrigger>
+            <TabsTrigger value="geral">Geral</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="mes-atual">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-muted-foreground">{competenciaLabel(competencia)}</p>
+            <CompetenciaSelector />
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <SummaryCard
               label="Total de receitas"
