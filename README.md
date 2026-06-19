@@ -42,6 +42,7 @@ Este app foi construído com esse foco:
 O dashboard é dividido em duas abas:
 
 **Aba Mês** (padrão)
+
 - Seletor de competência (mês ativo)
 - Cards de resumo: Total de Receitas, Total Previsto, Total Pago, Saldo Restante
 - Barra de progresso de pagamento do mês
@@ -53,6 +54,7 @@ O dashboard é dividido em duas abas:
 - Gráfico de linhas: tendência de gastos mensais (6 meses centrados no mês atual)
 
 **Aba Geral**
+
 - Filtros de intervalo de datas (início e fim de competência)
 - Resumo acumulado do período selecionado: total de gastos e total de receitas
 - Projeção de receitas no período
@@ -194,14 +196,14 @@ src/
 
 ### Entidades e convenções de dados
 
-| Entidade               | Campos principais                                                                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id?`, `tipo_lancamento`             |
-| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`                  |
-| **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                                          |
-| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                                      |
-| **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                                     |
-| **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                       |
+| Entidade               | Campos principais                                                                                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id?`, `tipo_lancamento` |
+| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`      |
+| **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                              |
+| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                          |
+| **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                         |
+| **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                           |
 
 **Regras de negócio:**
 
@@ -258,14 +260,14 @@ npm run format     # Prettier
 
 Crie uma planilha com **6 abas**, com os cabeçalhos exatamente como listados abaixo:
 
-| Aba                    | Colunas                                                                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Aba                    | Colunas                                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `transactions`         | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id`, `tipo_lancamento` |
-| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`         |
-| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                  |
-| `categories`           | `category_id`, `nome`, `icon_id`                                                                                                         |
-| `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                              |
-| `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                          |
+| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`        |
+| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                 |
+| `categories`           | `category_id`, `nome`, `icon_id`                                                                                                        |
+| `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                             |
+| `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                         |
 
 Copie o `spreadsheetId` da URL:
 

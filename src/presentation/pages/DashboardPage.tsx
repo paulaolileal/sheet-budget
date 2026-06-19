@@ -529,9 +529,8 @@ export function DashboardPage() {
                     <Tooltip
                       content={({ active, payload, label }) => {
                         if (!active || !payload?.length) return null;
-                        const isProjected = (
-                          payload[0]?.payload as { projecao?: boolean }
-                        )?.projecao;
+                        const isProjected = (payload[0]?.payload as { projecao?: boolean })
+                          ?.projecao;
                         return (
                           <div style={{ ...tooltipStyle, padding: "8px 12px" }}>
                             <p

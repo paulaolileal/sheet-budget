@@ -19,8 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { IconPicker } from "./IconPicker";
+import { cn } from "@/lib/utils";
 import { ServiceLogo } from "./ServiceLogo";
 import {
   useCreateTemplate,
@@ -50,19 +50,21 @@ export function TemplateDialog({
   const { data: accounts } = useAccounts();
   const isEditing = template !== null;
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [iconMode, setIconMode] = useState(false);
 
-  const { control, handleSubmit, register, reset, watch, formState } = useForm<TemplateFormInput>({
-    resolver: zodResolver(templateInputSchema),
-    defaultValues: {
-      nome: "",
-      categoria_id: "",
-      payment_account_id: null,
-      primeira_competencia: "",
-      ultima_competencia: undefined,
-      logo_url: undefined,
-      icon_id: undefined,
-    },
-  });
+  const { control, handleSubmit, register, reset, watch, setValue, formState } =
+    useForm<TemplateFormInput>({
+      resolver: zodResolver(templateInputSchema),
+      defaultValues: {
+        nome: "",
+        categoria_id: "",
+        payment_account_id: null,
+        primeira_competencia: "",
+        ultima_competencia: undefined,
+        logo_url: undefined,
+        icon_id: undefined,
+      },
+    });
 
   const watchedLogoUrl = watch("logo_url");
   const watchedIconId = watch("icon_id");
@@ -71,6 +73,7 @@ export function TemplateDialog({
   useEffect(() => {
     if (open) {
       setConfirmingDelete(false);
+      setIconMode(template ? !!template.icon_id && !template.logo_url : false);
       reset(
         template
           ? {
@@ -103,6 +106,12 @@ export function TemplateDialog({
     }
     onOpenChange(false);
   });
+
+  function handleModeSwitch(toIcon: boolean) {
+    setIconMode(toIcon);
+    if (toIcon) setValue("logo_url", undefined);
+    else setValue("icon_id", undefined);
+  }
 
   async function handleDelete() {
     if (!template) return;
@@ -147,63 +156,65 @@ export function TemplateDialog({
               )}
             </div>
 
-            <div>
-              <Label className="flex items-center gap-1.5">
-                <FolderOpen className="h-3.5 w-3.5" />
-                Categoria
-              </Label>
-              <Controller
-                control={control}
-                name="categoria_id"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(categories ?? []).map((c) => (
-                        <SelectItem key={c.category_id} value={c.category_id}>
-                          {c.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <FolderOpen className="h-3.5 w-3.5" />
+                  Categoria
+                </Label>
+                <Controller
+                  control={control}
+                  name="categoria_id"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(categories ?? []).map((c) => (
+                          <SelectItem key={c.category_id} value={c.category_id}>
+                            {c.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {formState.errors.categoria_id && (
+                  <p className="text-xs text-destructive mt-1">
+                    {formState.errors.categoria_id.message}
+                  </p>
                 )}
-              />
-              {formState.errors.categoria_id && (
-                <p className="text-xs text-destructive mt-1">
-                  {formState.errors.categoria_id.message}
-                </p>
-              )}
-            </div>
+              </div>
 
-            <div>
-              <Label className="flex items-center gap-1.5">
-                <Wallet className="h-3.5 w-3.5" />
-                Conta de pagamento
-              </Label>
-              <Controller
-                control={control}
-                name="payment_account_id"
-                render={({ field }) => (
-                  <Select
-                    value={field.value ?? "__none__"}
-                    onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Nenhuma" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Nenhuma</SelectItem>
-                      {(accounts ?? []).map((a) => (
-                        <SelectItem key={a.account_id} value={a.account_id}>
-                          {a.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Wallet className="h-3.5 w-3.5" />
+                  Conta de pagamento
+                </Label>
+                <Controller
+                  control={control}
+                  name="payment_account_id"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? "__none__"}
+                      onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nenhuma" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Nenhuma</SelectItem>
+                        {(accounts ?? []).map((a) => (
+                          <SelectItem key={a.account_id} value={a.account_id}>
+                            {a.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -239,41 +250,60 @@ export function TemplateDialog({
               </div>
             </div>
 
-            <div className="space-y-3 border-t pt-3">
-              <div className="flex items-start gap-3">
+            <div className="border-t pt-3">
+              <div className="flex items-center gap-2">
                 <ServiceLogo
                   logoUrl={watchedLogoUrl}
                   iconId={watchedIconId}
                   nome={watchedNome || "?"}
-                  size={40}
+                  size={36}
                 />
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <Label className="text-xs flex items-center gap-1">
-                      <Link className="h-3 w-3" />
-                      URL da logo (opcional)
-                    </Label>
+
+                <div className="inline-flex rounded-md border text-xs shrink-0 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch(false)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1.5 transition-colors",
+                      !iconMode
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-accent/50",
+                    )}
+                  >
+                    <Link size={11} />
+                    URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch(true)}
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1.5 border-l transition-colors",
+                      iconMode
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-accent/50",
+                    )}
+                  >
+                    <Tag size={11} />
+                    Ícone
+                  </button>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  {iconMode ? (
+                    <Controller
+                      control={control}
+                      name="icon_id"
+                      render={({ field }) => (
+                        <IconPicker value={field.value} onChange={field.onChange} />
+                      )}
+                    />
+                  ) : (
                     <Input
                       {...register("logo_url")}
                       placeholder="https://exemplo.com/logo.png"
-                      className="h-8 text-sm mt-1"
+                      className="h-8 text-sm"
                     />
-                  </div>
-                  <div>
-                    <Label className="text-xs flex items-center gap-1">
-                      <Tag className="h-3 w-3" />
-                      Ícone (se sem logo)
-                    </Label>
-                    <div className="mt-1">
-                      <Controller
-                        control={control}
-                        name="icon_id"
-                        render={({ field }) => (
-                          <IconPicker value={field.value} onChange={field.onChange} />
-                        )}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
