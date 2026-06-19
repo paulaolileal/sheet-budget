@@ -56,6 +56,7 @@ export interface Account {
   nome: string;
   tipo: AccountTipo;
   icon_id?: string;
+  color?: string;
 }
 
 export interface Income {

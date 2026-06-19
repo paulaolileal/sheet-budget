@@ -115,8 +115,8 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const MAX_STACK = 2;
-const STACK_OFFSET = 20;
-const STACK_SCALE = 0.04;
+const STACK_X_OFFSET = 20;
+const STACK_SCALE = 0.03;
 
 export function CardsPage() {
   const { data: txs, isLoading } = useTransactions();
@@ -288,7 +288,7 @@ export function CardsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="shrink-0"
+                    className="shrink-0 relative z-20"
                     onClick={() =>
                       setActiveIndex(
                         (idx) => (idx - 1 + monthFaturas.length) % monthFaturas.length,
@@ -299,13 +299,10 @@ export function CardsPage() {
                   </Button>
                 )}
 
-                {/* Card stack — paddingTop sets height via aspect ratio trick */}
+                {/* Card stack — horizontal peek to the right, paddingTop sets height */}
                 <div
                   className="relative flex-1"
-                  style={{
-                    paddingTop: `${(1 / 1.586) * 100}%`,
-                    marginBottom: `${Math.min(monthFaturas.length - 1, MAX_STACK) * 14}px`,
-                  }}
+                  style={{ paddingTop: `${(1 / 1.586) * 100}%` }}
                 >
                   {monthFaturas.map((f, i) => {
                     const relIdx = i - activeIndex;
@@ -322,14 +319,12 @@ export function CardsPage() {
                           isGone
                             ? {
                                 opacity: 0,
-                                transform: "translateY(-20px) scale(1)",
-                                transformOrigin: "top center",
+                                transform: "translateX(-24px) scale(0.92)",
                                 zIndex: 15,
                                 pointerEvents: "none",
                               }
                             : {
-                                transform: `translateY(${relIdx * STACK_OFFSET}px) scale(${1 - relIdx * STACK_SCALE})`,
-                                transformOrigin: "top center",
+                                transform: `translateX(${relIdx * STACK_X_OFFSET}px) scale(${1 - relIdx * STACK_SCALE})`,
                                 zIndex: 10 - relIdx,
                               }
                         }
@@ -341,6 +336,7 @@ export function CardsPage() {
                           tipo={account?.tipo}
                           iconId={account?.icon_id}
                           extraAmount={f.extraAmount}
+                          color={account?.color}
                         />
                       </div>
                     );
@@ -351,7 +347,7 @@ export function CardsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="shrink-0"
+                    className="shrink-0 relative z-20"
                     onClick={() => setActiveIndex((idx) => (idx + 1) % monthFaturas.length)}
                   >
                     <ChevronRight className="h-5 w-5" />

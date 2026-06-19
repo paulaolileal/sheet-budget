@@ -17,6 +17,24 @@ function pickGradient(nome: string): string {
   return GRADIENTS[idx];
 }
 
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = /^#([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
+}
+
+function darken(hex: string, factor: number): string {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return hex;
+  const [r, g, b] = rgb.map((v) => Math.max(0, Math.round(v * (1 - factor))));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
+function buildCustomStyle(color: string): React.CSSProperties {
+  return {
+    background: `linear-gradient(135deg, ${color} 0%, ${darken(color, 0.35)} 100%)`,
+  };
+}
+
 const TIPO_LABEL: Record<AccountTipo, string> = {
   CARTAO: "Fatura",
   CONTA: "Saldo a pagar",
@@ -30,6 +48,7 @@ interface CreditCardVisualProps {
   tipo?: AccountTipo;
   iconId?: string;
   extraAmount?: number;
+  color?: string;
 }
 
 export function CreditCardVisual({
@@ -39,14 +58,16 @@ export function CreditCardVisual({
   tipo = "CARTAO",
   iconId,
   extraAmount,
+  color,
 }: CreditCardVisualProps) {
   const gradient = pickGradient(nome);
   const label = TIPO_LABEL[tipo];
+  const customStyle = color ? buildCustomStyle(color) : undefined;
 
   return (
     <div
-      className={`relative w-full bg-gradient-to-br ${gradient} text-white rounded-2xl overflow-hidden select-none`}
-      style={{ aspectRatio: "1.586" }}
+      className={`relative w-full text-white rounded-2xl overflow-hidden select-none${customStyle ? "" : ` bg-gradient-to-br ${gradient}`}`}
+      style={{ aspectRatio: "1.586", ...customStyle }}
     >
       {/* decorative circles */}
       <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />

@@ -47,11 +47,17 @@ export const templateSchema = z.object({
 
 export const templateInputSchema = templateSchema.omit({ template_id: true });
 
+const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/, "Cor inválida")
+  .optional();
+
 export const accountSchema = z.object({
   account_id: z.string().min(1),
   nome: safeString(80),
   tipo: z.enum(ACCOUNT_TIPO),
   icon_id: z.string().optional(),
+  color: hexColorSchema,
 });
 
 export const categorySchema = z.object({
@@ -64,6 +70,7 @@ export const accountInputSchema = z.object({
   nome: safeString(80),
   tipo: z.enum(ACCOUNT_TIPO),
   icon_id: z.string().optional(),
+  color: hexColorSchema,
 });
 
 export const categoryInputSchema = z.object({

@@ -317,6 +317,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       nome: r.nome,
       tipo: (r.tipo as Account["tipo"]) ?? "CONTA",
       icon_id: r.icon_id || undefined,
+      color: r.color || undefined,
     }));
   }
 
@@ -324,20 +325,24 @@ export class GoogleSheetsRepository implements FinanceRepository {
     nome: string;
     tipo: Account["tipo"];
     icon_id?: string;
+    color?: string;
   }): Promise<Account> {
     const account: Account = {
       account_id: accountId(data.nome),
       nome: data.nome,
       tipo: data.tipo,
       icon_id: data.icon_id,
+      color: data.color,
     };
     const nextRow = await this.getNextRow(SHEETS.accounts);
     await this.request(
-      `/values/${SHEETS.accounts}!A${nextRow}:D${nextRow}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.accounts}!A${nextRow}:E${nextRow}?valueInputOption=USER_ENTERED`,
       {
         method: "PUT",
         body: JSON.stringify({
-          values: [[account.account_id, account.nome, account.tipo, account.icon_id ?? ""]],
+          values: [
+            [account.account_id, account.nome, account.tipo, account.icon_id ?? "", account.color ?? ""],
+          ],
         }),
       },
     );
@@ -346,17 +351,19 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   async updateAccount(
     id: string,
-    data: { nome: string; tipo: Account["tipo"]; icon_id?: string },
+    data: { nome: string; tipo: Account["tipo"]; icon_id?: string; color?: string },
   ): Promise<Account> {
     const rowIdx = await this.findRowIndex(SHEETS.accounts, "account_id", id);
     await this.request(
-      `/values/${SHEETS.accounts}!A${rowIdx}:D${rowIdx}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.accounts}!A${rowIdx}:E${rowIdx}?valueInputOption=USER_ENTERED`,
       {
         method: "PUT",
-        body: JSON.stringify({ values: [[id, data.nome, data.tipo, data.icon_id ?? ""]] }),
+        body: JSON.stringify({
+          values: [[id, data.nome, data.tipo, data.icon_id ?? "", data.color ?? ""]],
+        }),
       },
     );
-    return { account_id: id, nome: data.nome, tipo: data.tipo, icon_id: data.icon_id };
+    return { account_id: id, nome: data.nome, tipo: data.tipo, icon_id: data.icon_id, color: data.color };
   }
 
   async deleteAccount(id: string): Promise<void> {

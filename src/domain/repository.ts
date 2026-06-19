@@ -32,10 +32,15 @@ export interface FinanceRepository {
 
   // accounts
   getAccounts(): Promise<Account[]>;
-  createAccount(data: { nome: string; tipo: AccountTipo; icon_id?: string }): Promise<Account>;
+  createAccount(data: {
+    nome: string;
+    tipo: AccountTipo;
+    icon_id?: string;
+    color?: string;
+  }): Promise<Account>;
   updateAccount(
     id: string,
-    data: { nome: string; tipo: AccountTipo; icon_id?: string },
+    data: { nome: string; tipo: AccountTipo; icon_id?: string; color?: string },
   ): Promise<Account>;
   deleteAccount(id: string): Promise<void>;
 

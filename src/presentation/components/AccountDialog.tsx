@@ -43,17 +43,20 @@ export function AccountDialog({
   const update = useUpdateAccount();
   const isEditing = account !== null;
 
-  const { control, handleSubmit, register, reset, formState } = useForm<AccountInput>({
-    resolver: zodResolver(accountInputSchema),
-    defaultValues: { nome: "", tipo: "CONTA", icon_id: undefined },
-  });
+  const { control, handleSubmit, register, reset, formState, watch, setValue } =
+    useForm<AccountInput>({
+      resolver: zodResolver(accountInputSchema),
+      defaultValues: { nome: "", tipo: "CONTA", icon_id: undefined, color: undefined },
+    });
+
+  const colorValue = watch("color");
 
   useEffect(() => {
     if (open) {
       reset(
         account
-          ? { nome: account.nome, tipo: account.tipo, icon_id: account.icon_id }
-          : { nome: "", tipo: "CONTA", icon_id: undefined },
+          ? { nome: account.nome, tipo: account.tipo, icon_id: account.icon_id, color: account.color }
+          : { nome: "", tipo: "CONTA", icon_id: undefined, color: undefined },
       );
     }
   }, [open, account, reset]);
@@ -121,6 +124,32 @@ export function AccountDialog({
               name="icon_id"
               render={({ field }) => <IconPicker value={field.value} onChange={field.onChange} />}
             />
+          </div>
+
+          <div>
+            <Label className="mb-1.5 block">Cor do cartão</Label>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <input
+                  type="color"
+                  value={colorValue ?? "#6366f1"}
+                  onChange={(e) => setValue("color", e.target.value)}
+                  className="h-9 w-14 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
+                />
+              </div>
+              <span className="text-sm text-muted-foreground font-mono">
+                {colorValue ?? "padrão"}
+              </span>
+              {colorValue && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline"
+                  onClick={() => setValue("color", undefined)}
+                >
+                  Remover
+                </button>
+              )}
+            </div>
           </div>
 
           <DialogFooter>
