@@ -148,7 +148,7 @@ export function AppShell() {
               className="opacity-40 hover:opacity-70 transition-opacity"
               title="Desenvolvido por LealTEK"
             >
-              <img src="/lealtek-full.png" alt="LealTEK" className="h-8 object-contain" />
+              <img src="/lealtek-full.png" alt="LealTEK" className="h-14 object-contain" />
             </a>
           </div>
         </div>
