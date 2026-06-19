@@ -115,8 +115,8 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 const MAX_STACK = 2;
-const STACK_OFFSET = 10;
-const HORZ_INSET = 8;
+const STACK_OFFSET = 20;
+const STACK_SCALE = 0.04;
 
 export function CardsPage() {
   const { data: txs, isLoading } = useTransactions();
@@ -276,100 +276,101 @@ export function CardsPage() {
               </CardHeader>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {/* Card stack */}
+            <div className="space-y-3">
+              {/* Card carousel: arrows flanking the stack */}
               <div
-                className="relative max-w-sm mx-auto"
-                style={{
-                  paddingTop: `${(1 / 1.586) * 100}%`,
-                  marginBottom: `${Math.min(monthFaturas.length - 1, MAX_STACK) * STACK_OFFSET}px`,
-                }}
+                className={cn(
+                  "max-w-sm mx-auto",
+                  monthFaturas.length > 1 && "flex items-center gap-2",
+                )}
               >
-                {monthFaturas.map((f, i) => {
-                  const relIdx = i - activeIndex;
-                  if (relIdx > MAX_STACK || relIdx < -1) return null;
+                {monthFaturas.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() =>
+                      setActiveIndex(
+                        (idx) => (idx - 1 + monthFaturas.length) % monthFaturas.length,
+                      )
+                    }
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                )}
 
-                  const account = accMap[f.payment_account_id];
-                  const isGone = relIdx < 0;
+                {/* Card stack — paddingTop sets height via aspect ratio trick */}
+                <div
+                  className="relative flex-1"
+                  style={{
+                    paddingTop: `${(1 / 1.586) * 100}%`,
+                    marginBottom: `${Math.min(monthFaturas.length - 1, MAX_STACK) * 14}px`,
+                  }}
+                >
+                  {monthFaturas.map((f, i) => {
+                    const relIdx = i - activeIndex;
+                    if (relIdx > MAX_STACK || relIdx < -1) return null;
 
-                  return (
-                    <div
-                      key={f.key}
-                      className="absolute top-0 left-0 right-0 transition-all duration-300 ease-out"
-                      style={
-                        isGone
-                          ? {
-                              opacity: 0,
-                              transform: "translateY(-16px)",
-                              zIndex: 15,
-                              pointerEvents: "none",
-                            }
-                          : {
-                              top: `${relIdx * STACK_OFFSET}px`,
-                              left: `${relIdx * HORZ_INSET}px`,
-                              right: `${relIdx * HORZ_INSET}px`,
-                              zIndex: 10 - relIdx,
-                            }
-                      }
-                    >
-                      <CreditCardVisual
-                        nome={account?.nome ?? "Conta"}
-                        total={f.total}
-                        isPaid={f.isPaid}
-                        tipo={account?.tipo}
-                        iconId={account?.icon_id}
-                        extraAmount={f.extraAmount}
-                      />
-                    </div>
-                  );
-                })}
+                    const account = accMap[f.payment_account_id];
+                    const isGone = relIdx < 0;
+
+                    return (
+                      <div
+                        key={f.key}
+                        className="absolute top-0 left-0 right-0 transition-all duration-300 ease-out"
+                        style={
+                          isGone
+                            ? {
+                                opacity: 0,
+                                transform: "translateY(-20px) scale(1)",
+                                transformOrigin: "top center",
+                                zIndex: 15,
+                                pointerEvents: "none",
+                              }
+                            : {
+                                transform: `translateY(${relIdx * STACK_OFFSET}px) scale(${1 - relIdx * STACK_SCALE})`,
+                                transformOrigin: "top center",
+                                zIndex: 10 - relIdx,
+                              }
+                        }
+                      >
+                        <CreditCardVisual
+                          nome={account?.nome ?? "Conta"}
+                          total={f.total}
+                          isPaid={f.isPaid}
+                          tipo={account?.tipo}
+                          iconId={account?.icon_id}
+                          extraAmount={f.extraAmount}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {monthFaturas.length > 1 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    onClick={() => setActiveIndex((idx) => (idx + 1) % monthFaturas.length)}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
 
-              {/* Carousel navigation */}
-              {monthFaturas.length > 1 && (
-                <div className="flex items-center justify-center gap-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled={activeIndex === 0}
-                    onClick={() => setActiveIndex((idx) => idx - 1)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="flex gap-1.5 items-center">
-                    {monthFaturas.map((_, i) => (
-                      <button
-                        key={i}
-                        className={cn(
-                          "h-1.5 rounded-full transition-all duration-200",
-                          i === activeIndex
-                            ? "bg-foreground w-4"
-                            : "bg-muted-foreground/30 w-1.5 hover:bg-muted-foreground/50",
-                        )}
-                        onClick={() => setActiveIndex(i)}
-                      />
-                    ))}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    disabled={activeIndex === monthFaturas.length - 1}
-                    onClick={() => setActiveIndex((idx) => idx + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Active card actions */}
+              {/* Active card actions — indented to align with card when arrows are visible */}
               {(() => {
                 const f = monthFaturas[activeIndex];
                 if (!f) return null;
                 const isEditingThis = editingInvoiceKey === f.key;
                 return (
-                  <div className="space-y-2 max-w-sm mx-auto px-1">
+                  <div
+                    className={cn(
+                      "max-w-sm mx-auto space-y-2",
+                      monthFaturas.length > 1 && "px-10",
+                    )}
+                  >
                     {isEditingThis ? (
                       <div className="flex gap-2 items-center">
                         <Input
