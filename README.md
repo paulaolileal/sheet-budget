@@ -15,7 +15,7 @@ Este app foi construído com esse foco:
 - **Templates de recorrência** — cadastre uma vez (Netflix, aluguel, parcela do carro) e o sistema gera os lançamentos mensais automaticamente, sem duplicar se você gerar duas vezes
 - **Parcelados com visibilidade** — cada parcela é um lançamento com `tipo_lancamento=PARCELADO`, então você vê em qual mês cada parcela cai e quanto ainda vai pagar no futuro
 - **Faturas de cartão** — lançamentos vinculados ao cartão se agrupam numa fatura; você registra o valor real cobrado e paga tudo de uma vez, propagando o status para cada item
-- **Dashboard de tendências** — gráfico de 6 meses mostra se seus gastos estão subindo, e a comparação Receitas vs Saídas revela se você está no azul ou no vermelho antes do mês acabar
+- **Dashboard de tendências** — gráfico de 6 meses centrado no mês atual mostra se seus gastos estão subindo; aba Geral com filtro de período revela projeções e totais acumulados
 
 ### Por que Google Sheets
 
@@ -31,7 +31,7 @@ Este app foi construído com esse foco:
 - Geração automática de lançamentos recorrentes com um clique
 - Indicador de sync em tempo real (você vê quando o dado foi salvo na planilha)
 - Tema claro/escuro, filtros rápidos, busca textual
-- Controle de status: pendente, pago, adiantado, ignorado
+- Controle de status por lançamento: pendente, pago, adiantado, ignorado
 
 ---
 
@@ -39,13 +39,23 @@ Este app foi construído com esse foco:
 
 ### Dashboard
 
+O dashboard é dividido em duas abas:
+
+**Aba Mês** (padrão)
+- Seletor de competência (mês ativo)
 - Cards de resumo: Total de Receitas, Total Previsto, Total Pago, Saldo Restante
 - Barra de progresso de pagamento do mês
 - Cards rápidos: pendentes, fixos (recorrentes), cartão
 - Gráfico de barras: top 8 categorias de gasto
-- Gráfico de pizza: distribuição por tipo (Recorrente / Parcelado / Manual)
+- Gráfico de pizza: distribuição por tipo (Recorrente / Parcelado / À vista)
 - Gráfico de barras: Entradas vs Saídas do mês
-- Gráfico de linhas: tendência mensal dos últimos 6 meses
+- Gráfico de barras: quantidade de lançamentos por mês (6 meses centrados no mês atual)
+- Gráfico de linhas: tendência de gastos mensais (6 meses centrados no mês atual)
+
+**Aba Geral**
+- Filtros de intervalo de datas (início e fim de competência)
+- Resumo acumulado do período selecionado: total de gastos e total de receitas
+- Projeção de receitas no período
 
 ### Lançamentos
 
@@ -184,21 +194,21 @@ src/
 
 ### Entidades e convenções de dados
 
-| Entidade               | Campos principais                                                                                                                                                                       |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final?`, `status`, `considerar_resumo`, `payment_account_id?`, `tipo_lancamento` |
-| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`                               |
-| **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                                                                            |
-| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                                                                        |
-| **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                                                                       |
-| **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                                                         |
+| Entidade               | Campos principais                                                                                                                                     |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Transaction**        | `transaction_id`, `template_id?`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id?`, `tipo_lancamento`             |
+| **RecurrenceTemplate** | `template_id`, `nome`, `categoria_id`, `payment_account_id?`, `primeira_competencia`, `ultima_competencia?`, `logo_url?`, `icon_id?`                  |
+| **Income**             | `income_id`, `competencia`, `descricao`, `valor`, `icon_id?`                                                                                          |
+| **Account**            | `account_id`, `nome`, `tipo` (CONTA/CARTAO/CARTEIRA), `icon_id?`                                                                                      |
+| **Category**           | `category_id`, `nome`, `icon_id?`                                                                                                                     |
+| **InvoiceAmount**      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                       |
 
 **Regras de negócio:**
 
 - `competencia` é sempre `YYYY-MM` (string)
-- `status=PAGO` exige `valor_final` — validado por Zod
+- `valor` é o único campo monetário de `Transaction` — não há distinção entre previsto e pago
 - Registros nunca são deletados fisicamente — `status=CANCELADO` é o cancelamento
-- Pagar uma fatura propaga `status=PAGO` e `valor_final ??= valor_previsto` para todas as transações vinculadas
+- Pagar uma fatura propaga `status=PAGO` para todas as transações vinculadas
 - Geração de recorrências é idempotente: gerar para o mesmo mês duas vezes não duplica
 
 ### Status de transação
@@ -212,11 +222,11 @@ src/
 
 ### Tipo de lançamento
 
-| Tipo         | Descrição                          |
-| ------------ | ---------------------------------- |
-| `RECORRENTE` | Gerado por um template fixo mensal |
-| `PARCELADO`  | Parcela de uma compra parcelada    |
-| `MANUAL`     | Lançamento avulso                  |
+| Tipo         | Label na UI | Descrição                          |
+| ------------ | ----------- | ---------------------------------- |
+| `RECORRENTE` | Recorrente  | Gerado por um template fixo mensal |
+| `PARCELADO`  | Parcelado   | Parcela de uma compra parcelada    |
+| `MANUAL`     | À vista     | Lançamento avulso                  |
 
 ---
 
@@ -248,14 +258,14 @@ npm run format     # Prettier
 
 Crie uma planilha com **6 abas**, com os cabeçalhos exatamente como listados abaixo:
 
-| Aba                    | Colunas                                                                                                                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `transactions`         | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor_previsto`, `valor_final`, `status`, `considerar_resumo`, `payment_account_id`, `tipo_lancamento` |
-| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `considerar_resumo`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`                                |
-| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                                                              |
-| `categories`           | `category_id`, `nome`, `icon_id`                                                                                                                                                     |
-| `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                                                                          |
-| `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                                                                      |
+| Aba                    | Colunas                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `transactions`         | `transaction_id`, `template_id`, `competencia`, `descricao`, `categoria_id`, `valor`, `status`, `payment_account_id`, `tipo_lancamento` |
+| `recurrence_templates` | `template_id`, `nome`, `categoria_id`, `payment_account_id`, `primeira_competencia`, `ultima_competencia`, `logo_url`, `icon_id`         |
+| `accounts`             | `account_id`, `nome`, `tipo`, `icon_id`                                                                                                  |
+| `categories`           | `category_id`, `nome`, `icon_id`                                                                                                         |
+| `incomes`              | `income_id`, `competencia`, `descricao`, `valor`, `icon_id`                                                                              |
+| `invoice_amounts`      | `invoice_id`, `payment_account_id`, `competencia`, `valor_real`                                                                          |
 
 Copie o `spreadsheetId` da URL:
 
