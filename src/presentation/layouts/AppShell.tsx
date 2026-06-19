@@ -73,7 +73,7 @@ export function AppShell() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="px-5 py-5 border-b flex items-center gap-3">
-          <img src="/logo-ltek.png" alt="LTEK" className="h-10 w-10 object-contain shrink-0" />
+          <img src="/logo-bs.png" alt="Budget" className="h-10 w-10 object-contain shrink-0 rounded-md" />
           <div>
             <div className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
               lealtek
@@ -142,6 +142,15 @@ export function AppShell() {
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
+          <a
+            href="https://lealtek.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 border-t opacity-50 hover:opacity-80 transition-opacity"
+            title="Desenvolvido por LealTEK"
+          >
+            <img src="/lealtek-full.png" alt="LealTEK" className="h-5 object-contain" />
+          </a>
         </div>
       </aside>
 
@@ -149,7 +158,7 @@ export function AppShell() {
         {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
         <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <img src="/logo-ltek.png" alt="LTEK" className="h-8 w-8 object-contain shrink-0" />
+            <img src="/logo-bs.png" alt="Budget" className="h-8 w-8 object-contain shrink-0 rounded-md" />
             <div>
               <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
                 lealtek
