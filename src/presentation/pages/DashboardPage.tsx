@@ -514,7 +514,7 @@ export function DashboardPage() {
                 <Skeleton className="h-full w-full" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={trendData} margin={{ top: 8, right: 8, left: -10, bottom: 8 }}>
+                  <LineChart data={trendData} margin={{ top: 8, right: 8, left: 10, bottom: 8 }}>
                     <CartesianGrid
                       strokeDasharray="3 3"
                       stroke="var(--color-border)"
@@ -525,8 +525,14 @@ export function DashboardPage() {
                       tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
                     />
                     <YAxis
+                      domain={[0, "auto"]}
+                      tickCount={5}
                       tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                      tickFormatter={(v) => brl(v).replace("R$", "")}
+                      tickFormatter={(v: number) =>
+                        v === 0
+                          ? "0"
+                          : `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}k`
+                      }
                     />
                     <Tooltip
                       content={({ active, payload, label }) => {
