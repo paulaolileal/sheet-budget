@@ -1,8 +1,31 @@
+<img src="public/logo-bs.png" alt="Sheet Budget" height="250" style="float: right" />
+
 # Finanças — Gestão Financeira Pessoal com Google Sheets
 
 Você anota suas contas no papel, numa planilha gigante, ou simplesmente não anota? A maioria das pessoas perde o controle financeiro não por falta de vontade, mas porque as ferramentas são complexas demais ou pedem cadastro em mais um serviço.
 
 **Sheet Budget resolve isso de forma diferente:** usa a sua própria planilha do Google Sheets como banco de dados. Zero backend, zero mensalidade, zero dado seu em servidor de terceiro. Você já tem uma conta Google — isso é suficiente.
+
+![Dashboard — visão geral do mês](docs/images/sb-dashboard.png)
+
+<details>
+<summary>Ver mais telas</summary>
+
+| Lançamentos | Receitas |
+|---|---|
+| ![Lançamentos](docs/images/sb-lancamentos.png) | ![Receitas](docs/images/sb-receita.png) |
+
+| Recorrências | Configurações |
+|---|---|
+| ![Recorrências](docs/images/sb-recorrencias.png) | ![Configurações](docs/images/sb-configuracoes.png) |
+
+| Login | Tema claro |
+|---|---|
+| ![Login](docs/images/sb-login.png) | ![Tema claro](docs/images/sb-tema-claro.png) |
+
+</details>
+
+---
 
 ## Por que usar este sistema
 
@@ -53,6 +76,8 @@ O dashboard é dividido em duas abas:
 - Gráfico de barras: quantidade de lançamentos por mês (6 meses centrados no mês atual)
 - Gráfico de linhas: tendência de gastos mensais (6 meses centrados no mês atual)
 
+![Dashboard — aba Mês (tema escuro)](docs/images/sb-dashboard.png) ![Dashboard — tema claro](docs/images/sb-tema-claro.png)
+
 **Aba Geral**
 
 - Filtros de intervalo de datas (início e fim de competência)
@@ -67,12 +92,16 @@ O dashboard é dividido em duas abas:
 - Edição via modal com validação Zod
 - Ações por linha: editar, deletar, marcar como pago / pendente / adiantado
 
+![Lançamentos — tabela com filtros e ações por linha](docs/images/sb-lancamentos.png)
+
 ### Receitas
 
 - Registro de receitas por competência (salários, freelances, outras entradas)
 - Tabela com ícone customizável por receita
 - Cards: total do mês e quantidade de entradas
 - CRUD completo
+
+![Receitas — registro e totais do mês](docs/images/sb-receita.png)
 
 ### Cartões & Faturas
 
@@ -90,12 +119,16 @@ O dashboard é dividido em duas abas:
 - Geração de lançamentos on-demand para o mês desejado (idempotente — nunca duplica)
 - Templates com `ultima_competencia` encerram automaticamente
 
+![Recorrências — templates com filtros e paginação](docs/images/sb-recorrencias.png)
+
 ### Configurações
 
 - CRUD completo de **Categorias** (com ícone customizável)
 - CRUD completo de **Contas / Cartões** (tipo: conta, cartão, carteira)
 - Indicador de sincronização (sincronizando / salvo / erro)
 - Status da conexão Google
+
+![Configurações — categorias, contas e status de conexão](docs/images/sb-configuracoes.png)
 
 ### UX transversal
 
@@ -314,6 +347,8 @@ Reinicie o dev server. O app passa a usar `GoogleSheetsRepository`.
 
 Em **Configurações**, clique **Conectar com Google** — uma popup abre pedindo consentimento.
 O token de acesso fica **somente em memória** (closure em `src/services/googleAuth.ts`). Nunca é gravado em `localStorage` ou cookies.
+
+![Tela de login com Google OAuth](docs/images/sb-login.png)
 
 ### Segurança — o que NÃO fazemos
 
