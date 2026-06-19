@@ -32,7 +32,17 @@ import {
 import type { Transaction, TipoLancamento } from "@/domain/types";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaSchema } from "@/domain/schemas";
-import { Trash2 } from "lucide-react";
+import {
+  Trash2,
+  AlignLeft,
+  Calendar,
+  Layers,
+  Hash,
+  FolderOpen,
+  Wallet,
+  DollarSign,
+  CircleDot,
+} from "lucide-react";
 import { toast } from "sonner";
 
 const formSchema = z
@@ -204,7 +214,7 @@ export function TransactionDialog({
 
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
-            <Label>Descrição</Label>
+            <Label className="flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5" />Descrição</Label>
             <Input {...register("descricao")} autoFocus />
             {formState.errors.descricao && (
               <p className="text-xs text-destructive mt-1">{formState.errors.descricao.message}</p>
@@ -213,7 +223,7 @@ export function TransactionDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Competência</Label>
+              <Label className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Competência</Label>
               <Input type="month" {...register("competencia")} disabled={isEditing} />
               {formState.errors.competencia && (
                 <p className="text-xs text-destructive mt-1">
@@ -222,7 +232,7 @@ export function TransactionDialog({
               )}
             </div>
             <div>
-              <Label>Tipo</Label>
+              <Label className="flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />Tipo</Label>
               <Controller
                 control={control}
                 name="tipo_lancamento"
@@ -248,7 +258,8 @@ export function TransactionDialog({
 
           {(tipo === "PARCELADO" || tipo === "RECORRENTE") && !isEditing && (
             <div>
-              <Label>
+              <Label className="flex items-center gap-1.5">
+                <Hash className="h-3.5 w-3.5" />
                 {tipo === "RECORRENTE" ? "Gerar instâncias (meses)" : "Número de parcelas"}
               </Label>
               <Input type="number" min={1} max={120} {...register("parcelas")} />
@@ -262,7 +273,7 @@ export function TransactionDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label>Categoria</Label>
+              <Label className="flex items-center gap-1.5"><FolderOpen className="h-3.5 w-3.5" />Categoria</Label>
               <Controller
                 control={control}
                 name="categoria_id"
@@ -283,7 +294,7 @@ export function TransactionDialog({
               />
             </div>
             <div>
-              <Label>Conta de pagamento</Label>
+              <Label className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" />Conta de pagamento</Label>
               <Controller
                 control={control}
                 name="payment_account_id"
@@ -305,16 +316,13 @@ export function TransactionDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Valor</Label>
+              <Label className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" />Valor</Label>
               <Input type="number" step="0.01" {...register("valor")} />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             <div>
-              <Label>Status</Label>
+              <Label className="flex items-center gap-1.5"><CircleDot className="h-3.5 w-3.5" />Status</Label>
               <Controller
                 control={control}
                 name="status"
