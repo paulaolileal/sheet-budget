@@ -304,43 +304,37 @@ export function CardsPage() {
                   className="relative flex-1"
                   style={{ paddingTop: `${(1 / 1.586) * 100}%` }}
                 >
-                  {monthFaturas.map((f, i) => {
-                    const relIdx = i - activeIndex;
-                    if (relIdx > MAX_STACK || relIdx < -1) return null;
-
-                    const account = accMap[f.payment_account_id];
-                    const isGone = relIdx < 0;
-
-                    return (
-                      <div
-                        key={f.key}
-                        className="absolute top-0 left-0 right-0 transition-all duration-300 ease-out"
-                        style={
-                          isGone
-                            ? {
-                                opacity: 0,
-                                transform: "translateX(-24px) scale(0.92)",
-                                zIndex: 15,
-                                pointerEvents: "none",
-                              }
-                            : {
-                                transform: `translateX(${relIdx * STACK_X_OFFSET}px) scale(${1 - relIdx * STACK_SCALE})`,
-                                zIndex: 10 - relIdx,
-                              }
-                        }
-                      >
-                        <CreditCardVisual
-                          nome={account?.nome ?? "Conta"}
-                          total={f.total}
-                          isPaid={f.isPaid}
-                          tipo={account?.tipo}
-                          iconId={account?.icon_id}
-                          extraAmount={f.extraAmount}
-                          color={account?.color}
-                        />
-                      </div>
-                    );
-                  })}
+                  {Array.from(
+                    { length: Math.min(MAX_STACK + 1, monthFaturas.length) },
+                    (_, pos) => ({
+                      fatura: monthFaturas[(activeIndex + pos) % monthFaturas.length],
+                      relIdx: pos,
+                    }),
+                  )
+                    .reverse()
+                    .map(({ fatura, relIdx }) => {
+                      const account = accMap[fatura.payment_account_id];
+                      return (
+                        <div
+                          key={fatura.key}
+                          className="absolute top-0 left-0 right-0 transition-all duration-300 ease-out"
+                          style={{
+                            transform: `translateX(${relIdx * STACK_X_OFFSET}px) scale(${1 - relIdx * STACK_SCALE})`,
+                            zIndex: 10 - relIdx,
+                          }}
+                        >
+                          <CreditCardVisual
+                            nome={account?.nome ?? "Conta"}
+                            total={fatura.total}
+                            isPaid={fatura.isPaid}
+                            tipo={account?.tipo}
+                            iconId={account?.icon_id}
+                            extraAmount={fatura.extraAmount}
+                            color={account?.color}
+                          />
+                        </div>
+                      );
+                    })}
                 </div>
 
                 {monthFaturas.length > 1 && (

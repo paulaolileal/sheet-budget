@@ -22,6 +22,16 @@ function hexToRgb(hex: string): [number, number, number] | null {
   return m ? [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)] : null;
 }
 
+function isColorDark(hex: string): boolean {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return true;
+  const [r, g, b] = rgb.map((v) => {
+    const s = v / 255;
+    return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b <= 0.179;
+}
+
 function darken(hex: string, factor: number): string {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
@@ -63,15 +73,21 @@ export function CreditCardVisual({
   const gradient = pickGradient(nome);
   const label = TIPO_LABEL[tipo];
   const customStyle = color ? buildCustomStyle(color) : undefined;
+  const dark = color ? isColorDark(color) : true;
+  const textColor = dark ? "text-white" : "text-gray-900";
+  const circleBg1 = dark ? "bg-white/5" : "bg-black/5";
+  const circleBg2 = dark ? "bg-white/[0.07]" : "bg-black/[0.07]";
+  const badgeBg = dark ? "bg-white/20" : "bg-black/10";
+  const extraColor = dark ? "text-amber-300" : "text-amber-700";
 
   return (
     <div
-      className={`relative w-full text-white rounded-2xl overflow-hidden select-none${customStyle ? "" : ` bg-gradient-to-br ${gradient}`}`}
+      className={`relative w-full ${textColor} rounded-2xl overflow-hidden select-none${customStyle ? "" : ` bg-gradient-to-br ${gradient}`}`}
       style={{ aspectRatio: "1.586", ...customStyle }}
     >
       {/* decorative circles */}
-      <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
-      <div className="absolute right-2 -bottom-16 w-60 h-60 rounded-full bg-white/[0.07] pointer-events-none" />
+      <div className={`absolute -right-10 -top-10 w-48 h-48 rounded-full ${circleBg1} pointer-events-none`} />
+      <div className={`absolute right-2 -bottom-16 w-60 h-60 rounded-full ${circleBg2} pointer-events-none`} />
 
       {/* content fills card with even distribution */}
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
@@ -121,7 +137,7 @@ export function CreditCardVisual({
 
           <div className="opacity-70">
             {iconId ? (
-              <AppIcon iconId={iconId} size={24} className="text-white" />
+              <AppIcon iconId={iconId} size={24} className={textColor} />
             ) : (
               <svg
                 width="24"
@@ -157,13 +173,13 @@ export function CreditCardVisual({
               {brl(total)}
             </p>
             {extraAmount != null && extraAmount > 0 && (
-              <p className="text-xs font-semibold text-amber-300 mt-0.5">
+              <p className={`text-xs font-semibold ${extraColor} mt-0.5`}>
                 + {brl(extraAmount)} não catalogado
               </p>
             )}
           </div>
           {isPaid && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold bg-white/20 rounded-full px-3 py-1.5">
+            <div className={`flex items-center gap-1.5 text-xs font-semibold ${badgeBg} rounded-full px-3 py-1.5`}>
               <CheckCircle2 className="h-3.5 w-3.5" />
               Pago
             </div>
