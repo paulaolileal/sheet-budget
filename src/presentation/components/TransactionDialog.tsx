@@ -45,7 +45,6 @@ const formSchema = z
     valor_final: z.union([z.coerce.number().nonnegative(), z.literal(""), z.nan()]).optional(),
     status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
     tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
-    considerar_resumo: z.boolean(),
     parcelas: z.coerce.number().int().min(1).max(120).optional(),
   })
   .refine(
@@ -105,7 +104,6 @@ export function TransactionDialog({
       valor_final: transaction?.valor_final ?? undefined,
       status: transaction?.status ?? "PENDENTE",
       tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
-      considerar_resumo: transaction?.considerar_resumo ?? true,
       parcelas: 1,
     },
   });
@@ -121,7 +119,6 @@ export function TransactionDialog({
         valor_final: transaction?.valor_final ?? undefined,
         status: transaction?.status ?? "PENDENTE",
         tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
-        considerar_resumo: transaction?.considerar_resumo ?? true,
         parcelas: 1,
       });
       setConfirmDelete(false);
@@ -148,7 +145,6 @@ export function TransactionDialog({
       valor_previsto: values.valor_previsto,
       valor_final: valorFinal,
       status: values.status,
-      considerar_resumo: values.considerar_resumo,
       tipo_lancamento: values.tipo_lancamento,
     };
 
@@ -168,8 +164,6 @@ export function TransactionDialog({
         nome: values.descricao,
         categoria_id: values.categoria_id,
         payment_account_id: values.payment_account_id,
-        considerar_resumo: values.considerar_resumo,
-
         primeira_competencia: values.competencia,
       });
       for (let i = 0; i < numParcelas; i++) {
@@ -371,18 +365,6 @@ export function TransactionDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                )}
-              />
-            </div>
-            <div className="flex items-center justify-between border rounded-md px-3 h-10">
-              <Label htmlFor="cr" className="text-sm font-normal cursor-pointer">
-                Considerar no resumo
-              </Label>
-              <Controller
-                control={control}
-                name="considerar_resumo"
-                render={({ field }) => (
-                  <Switch id="cr" checked={field.value} onCheckedChange={field.onChange} />
                 )}
               />
             </div>

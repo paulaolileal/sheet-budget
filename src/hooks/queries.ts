@@ -379,7 +379,6 @@ export function useGenerateRecurring() {
           valor_previsto: resolveLastValue(txs, tpl, competencia),
           valor_final: null,
           status: "PENDENTE" as const,
-          considerar_resumo: tpl.considerar_resumo,
           payment_account_id: tpl.payment_account_id,
           tipo_lancamento: "RECORRENTE" as const,
           template_id: tpl.template_id,

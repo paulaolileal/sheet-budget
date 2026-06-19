@@ -56,7 +56,6 @@ export function TemplateDialog({
       nome: "",
       categoria_id: "",
       payment_account_id: null,
-      considerar_resumo: true,
       primeira_competencia: "",
       ultima_competencia: undefined,
       logo_url: undefined,
@@ -77,7 +76,6 @@ export function TemplateDialog({
               nome: template.nome,
               categoria_id: template.categoria_id,
               payment_account_id: template.payment_account_id,
-              considerar_resumo: template.considerar_resumo,
               primeira_competencia: template.primeira_competencia,
               ultima_competencia: template.ultima_competencia,
               logo_url: template.logo_url,
@@ -87,7 +85,6 @@ export function TemplateDialog({
               nome: "",
               categoria_id: "",
               payment_account_id: null,
-              considerar_resumo: true,
               primeira_competencia: "",
               ultima_competencia: undefined,
               logo_url: undefined,
@@ -224,23 +221,6 @@ export function TemplateDialog({
                   </p>
                 )}
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Controller
-                control={control}
-                name="considerar_resumo"
-                render={({ field }) => (
-                  <Checkbox
-                    id="considerar_resumo"
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
-              />
-              <Label htmlFor="considerar_resumo" className="cursor-pointer font-normal">
-                Considerar no resumo
-              </Label>
             </div>
 
             <div className="space-y-3 border-t pt-3">

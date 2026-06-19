@@ -27,7 +27,6 @@ export const transactionSchema = z.object({
   valor_previsto: z.number().nonnegative(),
   valor_final: z.number().nonnegative().nullable(),
   status: z.enum(TRANSACTION_STATUS),
-  considerar_resumo: z.boolean(),
   payment_account_id: z.string().nullable(),
   tipo_lancamento: z.enum(TIPO_LANCAMENTO),
 });
@@ -46,7 +45,6 @@ export const templateSchema = z.object({
   nome: safeString(120),
   categoria_id: z.string().min(1),
   payment_account_id: z.string().nullable(),
-  considerar_resumo: z.boolean(),
   primeira_competencia: competenciaSchema,
   ultima_competencia: competenciaSchema.optional(),
   logo_url: z.string().optional(),

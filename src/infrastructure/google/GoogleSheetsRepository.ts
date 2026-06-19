@@ -53,7 +53,6 @@ const TX_HEADERS = [
   "valor_previsto",
   "valor_final",
   "status",
-  "considerar_resumo",
   "payment_account_id",
   "tipo_lancamento",
 ];
@@ -126,7 +125,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       valor_previsto: parseCurrency(r.valor_previsto),
       valor_final: r.valor_final ? parseCurrency(r.valor_final) : null,
       status: r.status as Transaction["status"],
-      considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
       payment_account_id: r.payment_account_id || null,
       tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
     }));
@@ -142,7 +140,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.valor_previsto,
       t.valor_final ?? "",
       t.status,
-      t.considerar_resumo ? "TRUE" : "FALSE",
       t.payment_account_id ?? "",
       t.tipo_lancamento,
     ];
@@ -237,7 +234,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
         nome: r.nome,
         categoria_id: r.categoria_id,
         payment_account_id: r.payment_account_id || null,
-        considerar_resumo: String(r.considerar_resumo).toUpperCase() === "TRUE",
         primeira_competencia: r.primeira_competencia,
         ultima_competencia: r.ultima_competencia || undefined,
         logo_url: r.logo_url || undefined,
@@ -251,7 +247,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.nome,
       t.categoria_id,
       t.payment_account_id ?? "",
-      t.considerar_resumo ? "TRUE" : "FALSE",
       t.primeira_competencia,
       t.ultima_competencia ?? "",
       t.logo_url ?? "",

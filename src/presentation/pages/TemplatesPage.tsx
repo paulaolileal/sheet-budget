@@ -192,8 +192,6 @@ export function TemplatesPage() {
                   <CardContent className="text-xs text-muted-foreground">
                     Desde {competenciaLabel(t.primeira_competencia)}
                     {t.ultima_competencia && ` até ${competenciaLabel(t.ultima_competencia)}`}
-                    {" · "}
-                    {t.considerar_resumo ? "no resumo" : "fora do resumo"}
                   </CardContent>
                 </Card>
               );

@@ -22,7 +22,6 @@ export interface Transaction {
   valor_previsto: number;
   valor_final: number | null;
   status: TransactionStatus;
-  considerar_resumo: boolean;
   payment_account_id: string | null;
   tipo_lancamento: TipoLancamento;
 }
@@ -32,7 +31,6 @@ export interface RecurrenceTemplate {
   nome: string;
   categoria_id: string;
   payment_account_id: string | null;
-  considerar_resumo: boolean;
   primeira_competencia: Competencia;
   /** Inclusive end month. Absent means the recurrence runs indefinitely. */
   ultima_competencia?: Competencia;
