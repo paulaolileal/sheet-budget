@@ -342,7 +342,7 @@ function resolveLastValue(
   const lastTx = txs
     .filter((t) => t.competencia < beforeCompetencia && matchesTemplate(t, tpl))
     .sort((a, b) => b.competencia.localeCompare(a.competencia))[0];
-  return lastTx?.valor_previsto ?? 0;
+  return lastTx?.valor ?? 0;
 }
 
 function alreadyExists(txs: Transaction[], tpl: RecurrenceTemplate, competencia: string): boolean {
@@ -376,8 +376,7 @@ export function useGenerateRecurring() {
           competencia,
           descricao: tpl.nome,
           categoria_id: tpl.categoria_id,
-          valor_previsto: resolveLastValue(txs, tpl, competencia),
-          valor_final: null,
+          valor: resolveLastValue(txs, tpl, competencia),
           status: "PENDENTE" as const,
           payment_account_id: tpl.payment_account_id,
           tipo_lancamento: "RECORRENTE" as const,

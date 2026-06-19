@@ -50,8 +50,7 @@ const TX_HEADERS = [
   "competencia",
   "descricao",
   "categoria_id",
-  "valor_previsto",
-  "valor_final",
+  "valor",
   "status",
   "payment_account_id",
   "tipo_lancamento",
@@ -122,8 +121,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       competencia: r.competencia,
       descricao: r.descricao,
       categoria_id: r.categoria_id,
-      valor_previsto: parseCurrency(r.valor_previsto),
-      valor_final: r.valor_final ? parseCurrency(r.valor_final) : null,
+      valor: parseCurrency(r.valor),
       status: r.status as Transaction["status"],
       payment_account_id: r.payment_account_id || null,
       tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
@@ -137,8 +135,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.competencia,
       t.descricao,
       t.categoria_id,
-      t.valor_previsto,
-      t.valor_final ?? "",
+      t.valor,
       t.status,
       t.payment_account_id ?? "",
       t.tipo_lancamento,
@@ -299,10 +296,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
         t.status !== "IGNORADO",
     );
     for (const t of affected) {
-      await this.updateTransaction(t.transaction_id, {
-        status: "PAGO",
-        valor_final: t.valor_final ?? t.valor_previsto,
-      });
+      await this.updateTransaction(t.transaction_id, { status: "PAGO" });
     }
   }
 

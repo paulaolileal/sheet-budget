@@ -24,21 +24,15 @@ export const transactionSchema = z.object({
   competencia: competenciaSchema,
   descricao: safeString(200),
   categoria_id: z.string().min(1),
-  valor_previsto: z.number().nonnegative(),
-  valor_final: z.number().nonnegative().nullable(),
+  valor: z.number().nonnegative(),
   status: z.enum(TRANSACTION_STATUS),
   payment_account_id: z.string().nullable(),
   tipo_lancamento: z.enum(TIPO_LANCAMENTO),
 });
 
-export const transactionInputSchema = transactionSchema
-  .extend({
-    transaction_id: z.string().min(1).optional(),
-  })
-  .refine((t) => t.status !== "PAGO" || (t.valor_final != null && t.valor_final >= 0), {
-    message: "valor_final é obrigatório quando status = PAGO",
-    path: ["valor_final"],
-  });
+export const transactionInputSchema = transactionSchema.extend({
+  transaction_id: z.string().min(1).optional(),
+});
 
 export const templateSchema = z.object({
   template_id: z.string().min(1),

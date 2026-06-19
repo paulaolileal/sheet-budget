@@ -41,17 +41,11 @@ const formSchema = z
     competencia: competenciaSchema,
     categoria_id: z.string().min(1, "Selecione"),
     payment_account_id: z.string().min(1, "Selecione"),
-    valor_previsto: z.coerce.number().nonnegative("Inválido"),
-    valor_final: z.union([z.coerce.number().nonnegative(), z.literal(""), z.nan()]).optional(),
+    valor: z.coerce.number().nonnegative("Inválido"),
     status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
     tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
     parcelas: z.coerce.number().int().min(1).max(120).optional(),
-  })
-  .refine(
-    (v) =>
-      v.status !== "PAGO" || (typeof v.valor_final === "number" && !Number.isNaN(v.valor_final)),
-    { message: "valor_final é obrigatório quando status = PAGO", path: ["valor_final"] },
-  );
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -100,8 +94,7 @@ export function TransactionDialog({
       competencia: transaction?.competencia ?? competencia,
       categoria_id: transaction?.categoria_id ?? "",
       payment_account_id: transaction?.payment_account_id ?? "",
-      valor_previsto: transaction?.valor_previsto ?? 0,
-      valor_final: transaction?.valor_final ?? undefined,
+      valor: transaction?.valor ?? 0,
       status: transaction?.status ?? "PENDENTE",
       tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
       parcelas: 1,
@@ -115,8 +108,7 @@ export function TransactionDialog({
         competencia: transaction?.competencia ?? competencia,
         categoria_id: transaction?.categoria_id ?? "",
         payment_account_id: transaction?.payment_account_id ?? "",
-        valor_previsto: transaction?.valor_previsto ?? 0,
-        valor_final: transaction?.valor_final ?? undefined,
+        valor: transaction?.valor ?? 0,
         status: transaction?.status ?? "PENDENTE",
         tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
         parcelas: 1,
@@ -128,22 +120,12 @@ export function TransactionDialog({
   const tipo = watch("tipo_lancamento");
   const status = watch("status");
 
-  const showValorFinal = isEditing || status === "PAGO" || status === "ADIANTADO";
-
   const onSubmit = handleSubmit(async (values) => {
-    const valorFinal =
-      (values.status === "PAGO" || values.status === "ADIANTADO") &&
-      typeof values.valor_final === "number" &&
-      !Number.isNaN(values.valor_final)
-        ? values.valor_final
-        : null;
-
     const base = {
       descricao: values.descricao,
       categoria_id: values.categoria_id,
       payment_account_id: values.payment_account_id,
-      valor_previsto: values.valor_previsto,
-      valor_final: valorFinal,
+      valor: values.valor,
       status: values.status,
       tipo_lancamento: values.tipo_lancamento,
     };
@@ -323,27 +305,11 @@ export function TransactionDialog({
             </div>
           </div>
 
-          <div className={`grid gap-3 ${showValorFinal ? "grid-cols-2" : "grid-cols-1"}`}>
+          <div className="grid grid-cols-1 gap-3">
             <div>
-              <Label>Valor previsto</Label>
-              <Input type="number" step="0.01" {...register("valor_previsto")} />
+              <Label>Valor</Label>
+              <Input type="number" step="0.01" {...register("valor")} />
             </div>
-            {showValorFinal && (
-              <div>
-                <Label>Valor final</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register("valor_final")}
-                  placeholder={status === "PAGO" || status === "ADIANTADO" ? "obrigatório" : "—"}
-                />
-                {formState.errors.valor_final && (
-                  <p className="text-xs text-destructive mt-1">
-                    {formState.errors.valor_final.message as string}
-                  </p>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">

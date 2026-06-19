@@ -212,8 +212,8 @@ export function TransactionsPage() {
         const active = transactions.filter((t) => t.status !== "IGNORADO");
         const paid = transactions.filter((t) => t.status === "PAGO");
         const unpaid = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
-        const pago = paid.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
-        const aPagar = unpaid.reduce((s, t) => s + t.valor_previsto, 0);
+        const pago = paid.reduce((s, t) => s + t.valor, 0);
+        const aPagar = unpaid.reduce((s, t) => s + t.valor, 0);
         return {
           categoria_id,
           transactions,
@@ -260,21 +260,17 @@ export function TransactionsPage() {
     const pagoItems = active.filter((t) => t.status === "PAGO");
     const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
     return {
-      globalAPagar: aPagarItems.reduce((s, t) => s + t.valor_previsto, 0),
+      globalAPagar: aPagarItems.reduce((s, t) => s + t.valor, 0),
       globalAPagarCount: aPagarItems.length,
-      globalPago: pagoItems.reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0),
+      globalPago: pagoItems.reduce((s, t) => s + t.valor, 0),
       globalPagoCount: pagoItems.length,
-      globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor_previsto, 0),
+      globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor, 0),
       globalAdiantadoCount: adiantadoItems.length,
     };
   }, [filtered]);
 
   function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
-    const patch: Partial<Transaction> = { status: newStatus };
-    if (newStatus === "PAGO") {
-      patch.valor_final = tx.valor_final ?? tx.valor_previsto;
-    }
-    updateTransaction({ id: tx.transaction_id, patch });
+    updateTransaction({ id: tx.transaction_id, patch: { status: newStatus } });
   }
 
   return (
@@ -524,7 +520,7 @@ export function TransactionsPage() {
                                 <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                               </td>
                               <td className="px-4 py-0.5 text-right text-xs tabular-nums text-muted-foreground">
-                                {brl(tx.valor_final ?? tx.valor_previsto)}
+                                {brl(tx.valor)}
                               </td>
                               <td className="px-4 py-0.5">
                                 <Badge
@@ -564,7 +560,7 @@ export function TransactionsPage() {
                               <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                             </td>
                             <td className="px-4 py-2.5 text-right tabular-nums">
-                              {brl(tx.valor_final ?? tx.valor_previsto)}
+                              {brl(tx.valor)}
                             </td>
                             <td className="px-4 py-2.5">
                               <Badge
@@ -735,7 +731,7 @@ export function TransactionsPage() {
                               {descricao}
                             </span>
                             <span className="text-xs tabular-nums text-muted-foreground shrink-0">
-                              {brl(tx.valor_final ?? tx.valor_previsto)}
+                              {brl(tx.valor)}
                             </span>
                           </div>
                         );
@@ -783,7 +779,7 @@ export function TransactionsPage() {
                             </div>
                           </div>
                           <p className="text-sm font-semibold tabular-nums shrink-0">
-                            {brl(tx.valor_final ?? tx.valor_previsto)}
+                            {brl(tx.valor)}
                           </p>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

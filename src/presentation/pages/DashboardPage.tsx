@@ -60,23 +60,23 @@ export function DashboardPage() {
     [txs, competencia],
   );
 
-  const totalPrevisto = filtered.reduce((s, t) => s + t.valor_previsto, 0);
+  const totalPrevisto = filtered.reduce((s, t) => s + t.valor, 0);
   const totalPago = filtered
     .filter((t) => t.status === "PAGO")
-    .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+    .reduce((s, t) => s + t.valor, 0);
   const saldo = totalPrevisto - totalPago;
   const pagoPercent = totalPrevisto > 0 ? Math.round((totalPago / totalPrevisto) * 100) : 0;
 
   const pendentes = filtered.filter((t) => t.status === "PENDENTE");
-  const totalPendente = pendentes.reduce((s, t) => s + t.valor_previsto, 0);
+  const totalPendente = pendentes.reduce((s, t) => s + t.valor, 0);
 
   const fixos = filtered
     .filter((t) => t.tipo_lancamento === "RECORRENTE")
-    .reduce((s, t) => s + t.valor_previsto, 0);
+    .reduce((s, t) => s + t.valor, 0);
 
   const cartao = filtered
     .filter((t) => accounts?.find((a) => a.account_id === t.payment_account_id)?.tipo === "CARTAO")
-    .reduce((s, t) => s + t.valor_previsto, 0);
+    .reduce((s, t) => s + t.valor, 0);
 
   const totalReceitas = useMemo(
     () =>
@@ -92,7 +92,7 @@ export function DashboardPage() {
   const extraFatura = useMemo(() => {
     const cardTxTotal = filtered
       .filter((t) => cardIds.has(t.payment_account_id ?? ""))
-      .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+      .reduce((s, t) => s + (t.valor), 0);
     const invoiceTotal = (invoiceAmounts ?? [])
       .filter((ia) => ia.competencia === competencia)
       .reduce((s, ia) => s + ia.valor_real, 0);
@@ -104,7 +104,7 @@ export function DashboardPage() {
   const categoryChartData = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((t) => {
-      map.set(t.categoria_id, (map.get(t.categoria_id) ?? 0) + t.valor_previsto);
+      map.set(t.categoria_id, (map.get(t.categoria_id) ?? 0) + t.valor);
     });
     return Array.from(map.entries())
       .map(([id, total]) => ({
@@ -122,7 +122,7 @@ export function DashboardPage() {
       ["MANUAL", 0],
     ]);
     filtered.forEach((t) => {
-      map.set(t.tipo_lancamento, (map.get(t.tipo_lancamento) ?? 0) + t.valor_previsto);
+      map.set(t.tipo_lancamento, (map.get(t.tipo_lancamento) ?? 0) + t.valor);
     });
     return [
       { nome: "Recorrente", total: Math.round((map.get("RECORRENTE") ?? 0) * 100) / 100 },
@@ -148,7 +148,7 @@ export function DashboardPage() {
       const monthIncomes = (incomes ?? []).filter((i) => i.competencia === month);
       const cardTxTotal = monthTxs
         .filter((t) => cardIds.has(t.payment_account_id ?? ""))
-        .reduce((s, t) => s + (t.valor_final ?? t.valor_previsto), 0);
+        .reduce((s, t) => s + (t.valor), 0);
       const invoiceTotal = (invoiceAmounts ?? [])
         .filter((ia) => ia.competencia === month)
         .reduce((s, ia) => s + ia.valor_real, 0);
@@ -157,7 +157,7 @@ export function DashboardPage() {
         mes: MONTH_ABBR[Number(month.slice(5)) - 1] ?? month.slice(5),
         entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
         saidas:
-          Math.round((monthTxs.reduce((s, t) => s + t.valor_previsto, 0) + extra) * 100) / 100,
+          Math.round((monthTxs.reduce((s, t) => s + t.valor, 0) + extra) * 100) / 100,
       };
     });
   }, [txs, incomes, invoiceAmounts, cardIds, competencia]);

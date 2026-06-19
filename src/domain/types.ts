@@ -19,8 +19,7 @@ export interface Transaction {
   competencia: Competencia;
   descricao: string;
   categoria_id: string;
-  valor_previsto: number;
-  valor_final: number | null;
+  valor: number;
   status: TransactionStatus;
   payment_account_id: string | null;
   tipo_lancamento: TipoLancamento;
