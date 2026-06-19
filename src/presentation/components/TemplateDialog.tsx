@@ -32,6 +32,7 @@ import {
 import { templateInputSchema, type TemplateFormInput } from "@/domain/schemas";
 import { templateId } from "@/lib/idgen";
 import type { RecurrenceTemplate } from "@/domain/types";
+import { AlignLeft, FolderOpen, Wallet, Calendar, CalendarOff, Link, Tag } from "lucide-react";
 
 export function TemplateDialog({
   open,
@@ -136,7 +137,10 @@ export function TemplateDialog({
         <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
           <div className="space-y-4 overflow-y-auto flex-1 pr-1">
             <div>
-              <Label>Nome</Label>
+              <Label className="flex items-center gap-1.5">
+                <AlignLeft className="h-3.5 w-3.5" />
+                Nome
+              </Label>
               <Input {...register("nome")} autoFocus placeholder="Ex: Aluguel, Streaming..." />
               {formState.errors.nome && (
                 <p className="text-xs text-destructive mt-1">{formState.errors.nome.message}</p>
@@ -144,7 +148,10 @@ export function TemplateDialog({
             </div>
 
             <div>
-              <Label>Categoria</Label>
+              <Label className="flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" />
+                Categoria
+              </Label>
               <Controller
                 control={control}
                 name="categoria_id"
@@ -171,7 +178,10 @@ export function TemplateDialog({
             </div>
 
             <div>
-              <Label>Conta de pagamento</Label>
+              <Label className="flex items-center gap-1.5">
+                <Wallet className="h-3.5 w-3.5" />
+                Conta de pagamento
+              </Label>
               <Controller
                 control={control}
                 name="payment_account_id"
@@ -198,7 +208,10 @@ export function TemplateDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Início (YYYY-MM)</Label>
+                <Label className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  Início (YYYY-MM)
+                </Label>
                 <Input {...register("primeira_competencia")} placeholder="2024-01" maxLength={7} />
                 {formState.errors.primeira_competencia && (
                   <p className="text-xs text-destructive mt-1">
@@ -207,7 +220,10 @@ export function TemplateDialog({
                 )}
               </div>
               <div>
-                <Label>Fim (YYYY-MM, opcional)</Label>
+                <Label className="flex items-center gap-1.5">
+                  <CalendarOff className="h-3.5 w-3.5" />
+                  Fim (YYYY-MM, opcional)
+                </Label>
                 <Input
                   {...register("ultima_competencia", {
                     setValueAs: (v: string) => (v === "" ? undefined : v),
@@ -233,7 +249,10 @@ export function TemplateDialog({
                 />
                 <div className="flex-1 space-y-2">
                   <div>
-                    <Label className="text-xs">URL da logo (opcional)</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      <Link className="h-3 w-3" />
+                      URL da logo (opcional)
+                    </Label>
                     <Input
                       {...register("logo_url")}
                       placeholder="https://exemplo.com/logo.png"
@@ -241,7 +260,10 @@ export function TemplateDialog({
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Ícone (se sem logo)</Label>
+                    <Label className="text-xs flex items-center gap-1">
+                      <Tag className="h-3 w-3" />
+                      Ícone (se sem logo)
+                    </Label>
                     <div className="mt-1">
                       <Controller
                         control={control}

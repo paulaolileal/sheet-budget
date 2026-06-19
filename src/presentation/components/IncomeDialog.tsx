@@ -17,6 +17,7 @@ import { incomeInputSchema, type IncomeInput } from "@/domain/schemas";
 import { IconPicker } from "./IconPicker";
 import { useUiStore } from "@/store/uiStore";
 import type { Income } from "@/domain/types";
+import { Calendar, AlignLeft, DollarSign, Tag } from "lucide-react";
 
 export function IncomeDialog({
   open,
@@ -77,7 +78,10 @@ export function IncomeDialog({
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <Label>Competência</Label>
+            <Label className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5" />
+              Competência
+            </Label>
             <Input {...register("competencia")} placeholder="YYYY-MM" maxLength={7} />
             {formState.errors.competencia && (
               <p className="text-xs text-destructive mt-1">
@@ -87,7 +91,10 @@ export function IncomeDialog({
           </div>
 
           <div>
-            <Label>Descrição</Label>
+            <Label className="flex items-center gap-1.5">
+              <AlignLeft className="h-3.5 w-3.5" />
+              Descrição
+            </Label>
             <Input
               {...register("descricao")}
               autoFocus
@@ -99,7 +106,10 @@ export function IncomeDialog({
           </div>
 
           <div>
-            <Label>Valor (R$)</Label>
+            <Label className="flex items-center gap-1.5">
+              <DollarSign className="h-3.5 w-3.5" />
+              Valor (R$)
+            </Label>
             <Input
               type="number"
               step="0.01"
@@ -113,7 +123,10 @@ export function IncomeDialog({
           </div>
 
           <div>
-            <Label className="mb-1.5 block">Ícone</Label>
+            <Label className="flex items-center gap-1.5 mb-1.5">
+              <Tag className="h-3.5 w-3.5" />
+              Ícone
+            </Label>
             <Controller
               control={control}
               name="icon_id"

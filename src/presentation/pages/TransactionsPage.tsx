@@ -559,9 +559,7 @@ export function TransactionsPage() {
                             <td className="px-4 py-2.5">
                               <TipoCell tipo={tx.tipo_lancamento} parcela={parcela} />
                             </td>
-                            <td className="px-4 py-2.5 text-right tabular-nums">
-                              {brl(tx.valor)}
-                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums">{brl(tx.valor)}</td>
                             <td className="px-4 py-2.5">
                               <Badge
                                 variant="outline"

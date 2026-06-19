@@ -176,7 +176,7 @@ export function CardsPage() {
       .map(([key, txList]) => {
         const [accountId, comp] = key.split(":");
         const account = accMap[accountId];
-        const total = txList.reduce((s, t) => s + (t.valor), 0);
+        const total = txList.reduce((s, t) => s + t.valor, 0);
         const valorReal = invoiceAmountMap.get(key) ?? null;
         const extraAmount = valorReal != null ? Math.max(0, valorReal - total) : 0;
         return {
@@ -539,9 +539,7 @@ export function CardsPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-right tabular-nums">
-                      {brl(t.valor)}
-                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">{brl(t.valor)}</td>
                     <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
                   </tr>
                 ))}
@@ -604,9 +602,7 @@ export function CardsPage() {
                               </span>
                             )}
                           </td>
-                          <td className="px-3 py-2 text-right tabular-nums">
-                            {brl(t.valor)}
-                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums">{brl(t.valor)}</td>
                           <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
                         </tr>
                       ))}

@@ -45,17 +45,16 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-const formSchema = z
-  .object({
-    descricao: z.string().trim().min(1, "Obrigatório").max(200),
-    competencia: competenciaSchema,
-    categoria_id: z.string().min(1, "Selecione"),
-    payment_account_id: z.string().min(1, "Selecione"),
-    valor: z.coerce.number().nonnegative("Inválido"),
-    status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
-    tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
-    parcelas: z.coerce.number().int().min(1).max(120).optional(),
-  });
+const formSchema = z.object({
+  descricao: z.string().trim().min(1, "Obrigatório").max(200),
+  competencia: competenciaSchema,
+  categoria_id: z.string().min(1, "Selecione"),
+  payment_account_id: z.string().min(1, "Selecione"),
+  valor: z.coerce.number().nonnegative("Inválido"),
+  status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
+  tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
+  parcelas: z.coerce.number().int().min(1).max(120).optional(),
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -214,7 +213,10 @@ export function TransactionDialog({
 
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
-            <Label className="flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5" />Descrição</Label>
+            <Label className="flex items-center gap-1.5">
+              <AlignLeft className="h-3.5 w-3.5" />
+              Descrição
+            </Label>
             <Input {...register("descricao")} autoFocus />
             {formState.errors.descricao && (
               <p className="text-xs text-destructive mt-1">{formState.errors.descricao.message}</p>
@@ -223,7 +225,10 @@ export function TransactionDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Competência</Label>
+              <Label className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Competência
+              </Label>
               <Input type="month" {...register("competencia")} disabled={isEditing} />
               {formState.errors.competencia && (
                 <p className="text-xs text-destructive mt-1">
@@ -232,7 +237,10 @@ export function TransactionDialog({
               )}
             </div>
             <div>
-              <Label className="flex items-center gap-1.5"><Layers className="h-3.5 w-3.5" />Tipo</Label>
+              <Label className="flex items-center gap-1.5">
+                <Layers className="h-3.5 w-3.5" />
+                Tipo
+              </Label>
               <Controller
                 control={control}
                 name="tipo_lancamento"
@@ -246,7 +254,7 @@ export function TransactionDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="MANUAL">Manual</SelectItem>
+                      <SelectItem value="MANUAL">À vista</SelectItem>
                       <SelectItem value="RECORRENTE">Recorrente</SelectItem>
                       <SelectItem value="PARCELADO">Parcelado</SelectItem>
                     </SelectContent>
@@ -273,7 +281,10 @@ export function TransactionDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <Label className="flex items-center gap-1.5"><FolderOpen className="h-3.5 w-3.5" />Categoria</Label>
+              <Label className="flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" />
+                Categoria
+              </Label>
               <Controller
                 control={control}
                 name="categoria_id"
@@ -294,7 +305,10 @@ export function TransactionDialog({
               />
             </div>
             <div>
-              <Label className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" />Conta de pagamento</Label>
+              <Label className="flex items-center gap-1.5">
+                <Wallet className="h-3.5 w-3.5" />
+                Conta de pagamento
+              </Label>
               <Controller
                 control={control}
                 name="payment_account_id"
@@ -318,11 +332,17 @@ export function TransactionDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" />Valor</Label>
+              <Label className="flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5" />
+                Valor
+              </Label>
               <Input type="number" step="0.01" {...register("valor")} />
             </div>
             <div>
-              <Label className="flex items-center gap-1.5"><CircleDot className="h-3.5 w-3.5" />Status</Label>
+              <Label className="flex items-center gap-1.5">
+                <CircleDot className="h-3.5 w-3.5" />
+                Status
+              </Label>
               <Controller
                 control={control}
                 name="status"

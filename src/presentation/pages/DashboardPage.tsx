@@ -61,9 +61,7 @@ export function DashboardPage() {
   );
 
   const totalPrevisto = filtered.reduce((s, t) => s + t.valor, 0);
-  const totalPago = filtered
-    .filter((t) => t.status === "PAGO")
-    .reduce((s, t) => s + t.valor, 0);
+  const totalPago = filtered.filter((t) => t.status === "PAGO").reduce((s, t) => s + t.valor, 0);
   const saldo = totalPrevisto - totalPago;
   const pagoPercent = totalPrevisto > 0 ? Math.round((totalPago / totalPrevisto) * 100) : 0;
 
@@ -92,7 +90,7 @@ export function DashboardPage() {
   const extraFatura = useMemo(() => {
     const cardTxTotal = filtered
       .filter((t) => cardIds.has(t.payment_account_id ?? ""))
-      .reduce((s, t) => s + (t.valor), 0);
+      .reduce((s, t) => s + t.valor, 0);
     const invoiceTotal = (invoiceAmounts ?? [])
       .filter((ia) => ia.competencia === competencia)
       .reduce((s, ia) => s + ia.valor_real, 0);
@@ -148,7 +146,7 @@ export function DashboardPage() {
       const monthIncomes = (incomes ?? []).filter((i) => i.competencia === month);
       const cardTxTotal = monthTxs
         .filter((t) => cardIds.has(t.payment_account_id ?? ""))
-        .reduce((s, t) => s + (t.valor), 0);
+        .reduce((s, t) => s + t.valor, 0);
       const invoiceTotal = (invoiceAmounts ?? [])
         .filter((ia) => ia.competencia === month)
         .reduce((s, ia) => s + ia.valor_real, 0);
@@ -156,8 +154,7 @@ export function DashboardPage() {
       return {
         mes: MONTH_ABBR[Number(month.slice(5)) - 1] ?? month.slice(5),
         entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
-        saidas:
-          Math.round((monthTxs.reduce((s, t) => s + t.valor, 0) + extra) * 100) / 100,
+        saidas: Math.round((monthTxs.reduce((s, t) => s + t.valor, 0) + extra) * 100) / 100,
       };
     });
   }, [txs, incomes, invoiceAmounts, cardIds, competencia]);

@@ -93,19 +93,19 @@ export function TemplatesPage() {
         }
       />
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4 w-full">
         <Input
           placeholder="Filtrar por nome..."
           value={search}
           onChange={(e) => applyFilter(() => setSearch(e.target.value))}
-          className="max-w-xs"
+          className="flex-1 min-w-[10rem]"
         />
 
         <Select
           value={categoryFilter}
           onValueChange={(v) => applyFilter(() => setCategoryFilter(v))}
         >
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="flex-1 min-w-[10rem]">
             <SelectValue placeholder="Categoria" />
           </SelectTrigger>
           <SelectContent>
@@ -119,7 +119,7 @@ export function TemplatesPage() {
         </Select>
 
         <Select value={accountFilter} onValueChange={(v) => applyFilter(() => setAccountFilter(v))}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="flex-1 min-w-[10rem]">
             <SelectValue placeholder="Conta" />
           </SelectTrigger>
           <SelectContent>
@@ -136,7 +136,7 @@ export function TemplatesPage() {
           value={statusFilter}
           onValueChange={(v) => applyFilter(() => setStatusFilter(v as typeof statusFilter))}
         >
-          <SelectTrigger className="w-36">
+          <SelectTrigger className="flex-1 min-w-[8rem]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
