@@ -255,7 +255,7 @@ export function DashboardPage() {
         </div>
 
         <TabsContent value="mes-atual">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <p className="text-sm text-muted-foreground">{competenciaLabel(competencia)}</p>
             <CompetenciaSelector />
           </div>
@@ -480,23 +480,25 @@ export function DashboardPage() {
         </TabsContent>
 
         <TabsContent value="geral">
-          <div className="flex items-center justify-end gap-2 mb-6">
+          <div className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center sm:justify-end">
             <span className="text-xs text-muted-foreground">Período:</span>
-            <input
-              type="month"
-              value={summaryStart}
-              max={summaryEnd}
-              onChange={(e) => setSummaryStart(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-            />
-            <span className="text-xs text-muted-foreground">até</span>
-            <input
-              type="month"
-              value={summaryEnd}
-              min={summaryStart}
-              onChange={(e) => setSummaryEnd(e.target.value)}
-              className="rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="month"
+                value={summaryStart}
+                max={summaryEnd}
+                onChange={(e) => setSummaryStart(e.target.value)}
+                className="flex-1 sm:flex-none rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+              <span className="text-xs text-muted-foreground shrink-0">até</span>
+              <input
+                type="month"
+                value={summaryEnd}
+                min={summaryStart}
+                onChange={(e) => setSummaryEnd(e.target.value)}
+                className="flex-1 sm:flex-none rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
           </div>
 
           <Card className="mb-4">
@@ -697,7 +699,7 @@ function SummaryCard({
         {loading ? (
           <Skeleton className="h-8 w-32" />
         ) : (
-          <div className={`text-2xl font-semibold tabular-nums ${color}`}>{brl(value)}</div>
+          <div className={`text-xl sm:text-2xl font-semibold tabular-nums ${color}`}>{brl(value)}</div>
         )}
       </CardContent>
     </Card>
