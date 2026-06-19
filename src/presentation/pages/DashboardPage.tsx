@@ -25,6 +25,7 @@ import {
   LineChart,
   Pie,
   PieChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -42,7 +43,7 @@ import {
   useInvoiceAmounts,
   useTransactions,
 } from "@/hooks/queries";
-import { brl, competenciaLabel, monthRange } from "@/utils/format";
+import { brl, centeredMonthRange, competenciaLabel } from "@/utils/format";
 
 export function DashboardPage() {
   const competencia = useUiStore((s) => s.competencia);
@@ -138,8 +139,12 @@ export function DashboardPage() {
   );
 
   const trendData = useMemo(() => {
-    const months = monthRange(6, new Date(`${competencia}-15`));
+    const months = centeredMonthRange(competencia, 3);
+    const currentYear = Number(competencia.slice(0, 4));
     return months.map((month) => {
+      const year = Number(month.slice(0, 4));
+      const monthNum = Number(month.slice(5));
+      const abbr = MONTH_ABBR[monthNum - 1] ?? month.slice(5);
       const monthTxs = (txs ?? []).filter(
         (t) => t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
       );
@@ -152,12 +157,33 @@ export function DashboardPage() {
         .reduce((s, ia) => s + ia.valor_real, 0);
       const extra = Math.max(0, invoiceTotal - cardTxTotal);
       return {
-        mes: MONTH_ABBR[Number(month.slice(5)) - 1] ?? month.slice(5),
+        mes: year !== currentYear ? `${abbr}/${String(year).slice(2)}` : abbr,
         entradas: Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100,
         saidas: Math.round((monthTxs.reduce((s, t) => s + t.valor, 0) + extra) * 100) / 100,
       };
     });
   }, [txs, incomes, invoiceAmounts, cardIds, competencia]);
+
+  const countData = useMemo(() => {
+    const months = centeredMonthRange(competencia, 3);
+    const currentYear = Number(competencia.slice(0, 4));
+    return months.map((month) => {
+      const year = Number(month.slice(0, 4));
+      const monthNum = Number(month.slice(5));
+      const abbr = MONTH_ABBR[monthNum - 1] ?? month.slice(5);
+      const monthTxs = (txs ?? []).filter(
+        (t) => t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
+      );
+      return {
+        mes: year !== currentYear ? `${abbr}/${String(year).slice(2)}` : abbr,
+        recorrente: monthTxs.filter((t) => t.tipo_lancamento === "RECORRENTE").length,
+        parcelado: monthTxs.filter((t) => t.tipo_lancamento === "PARCELADO").length,
+        avista: monthTxs.filter((t) => t.tipo_lancamento === "MANUAL").length,
+      };
+    });
+  }, [txs, competencia]);
+
+  const currentMonthLabel = MONTH_ABBR[Number(competencia.slice(5)) - 1] ?? competencia.slice(5);
 
   const palette = [
     "var(--color-chart-1)",
@@ -352,7 +378,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Entradas vs Saídas</CardTitle>
@@ -399,7 +425,7 @@ export function DashboardPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">Tendência mensal</CardTitle>
-            <CardDescription>Últimos 6 meses — receitas e saídas</CardDescription>
+            <CardDescription>3 meses antes e depois do mês atual — receitas e saídas</CardDescription>
           </CardHeader>
           <CardContent className="h-[240px]">
             {isLoading ? (
@@ -430,6 +456,12 @@ export function DashboardPage() {
                     formatter={(value) => (value === "entradas" ? "Receitas" : "Saídas")}
                     wrapperStyle={{ fontSize: 12 }}
                   />
+                  <ReferenceLine
+                    x={currentMonthLabel}
+                    stroke="var(--color-muted-foreground)"
+                    strokeDasharray="4 2"
+                    strokeOpacity={0.5}
+                  />
                   <Line
                     type="monotone"
                     dataKey="entradas"
@@ -452,6 +484,68 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Quantidade de lançamentos</CardTitle>
+          <CardDescription>
+            Recorrentes, parcelados e à vista por mês — 3 meses antes e depois do atual
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          {isLoading ? (
+            <Skeleton className="h-full w-full" />
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={countData} margin={{ top: 8, right: 8, left: -10, bottom: 8 }}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--color-border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="mes"
+                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
+                />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  labelStyle={{ color: "var(--color-popover-foreground)" }}
+                  itemStyle={{ color: "var(--color-popover-foreground)" }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <ReferenceLine
+                  x={currentMonthLabel}
+                  stroke="var(--color-muted-foreground)"
+                  strokeDasharray="4 2"
+                  strokeOpacity={0.5}
+                />
+                <Bar
+                  dataKey="recorrente"
+                  name="Recorrente"
+                  fill="var(--color-chart-1)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="parcelado"
+                  name="Parcelado"
+                  fill="var(--color-chart-2)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="avista"
+                  name="À vista"
+                  fill="var(--color-chart-4)"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

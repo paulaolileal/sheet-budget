@@ -32,3 +32,14 @@ export const monthRange = (months: number, from = new Date()): string[] => {
   }
   return out;
 };
+
+export const centeredMonthRange = (competencia: string, radius: number): string[] => {
+  const year = Number(competencia.slice(0, 4));
+  const month = Number(competencia.slice(5));
+  const out: string[] = [];
+  for (let i = -radius; i <= radius; i++) {
+    const d = new Date(year, month - 1 + i, 1);
+    out.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return out;
+};
