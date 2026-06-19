@@ -252,14 +252,16 @@ export class GoogleSheetsRepository implements FinanceRepository {
     try {
       const idx = await this.findRowIndex(SHEETS.templates, "template_id", t.template_id);
       await this.request(
-        `/values/${SHEETS.templates}!A${idx}:I${idx}?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A${idx}:H${idx}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
-      await this.request(`/values/${SHEETS.templates}!A:I:append?valueInputOption=USER_ENTERED`, {
-        method: "POST",
-        body: JSON.stringify({ values: [row] }),
-      });
+      const rows = await this.getValues(SHEETS.templates);
+      const nextRow = rows.length + 1;
+      await this.request(
+        `/values/${SHEETS.templates}!A${nextRow}:H${nextRow}?valueInputOption=USER_ENTERED`,
+        { method: "PUT", body: JSON.stringify({ values: [row] }) },
+      );
     }
     return t;
   }
