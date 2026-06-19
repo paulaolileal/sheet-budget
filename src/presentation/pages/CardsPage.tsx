@@ -276,7 +276,7 @@ export function CardsPage() {
               </CardHeader>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-1">
               {/* Card carousel: arrows flanking the stack */}
               <div
                 className={cn(
