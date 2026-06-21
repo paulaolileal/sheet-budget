@@ -233,18 +233,26 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   async getTemplates(): Promise<RecurrenceTemplate[]> {
     const rows = await this.getValues(SHEETS.templates);
-    return this.rowsToObjects<Record<string, string>>(rows)
-      .filter((r) => !!r.template_id)
+    if (rows.length === 0) return [];
+    const [headerRow, ...body] = rows;
+    const headerMap: Record<string, number> = {};
+    headerRow.forEach((h, i) => (headerMap[h.trim()] = i));
+    // Reads by header name when available, falls back to known column position.
+    const col = (row: string[], name: string, fallback: number): string =>
+      row[name in headerMap ? headerMap[name] : fallback] ?? "";
+
+    return body
+      .filter((r) => !!col(r, "template_id", 0))
       .map((r) => ({
-        template_id: r.template_id,
-        nome: r.nome,
-        categoria_id: r.categoria_id,
-        payment_account_id: r.payment_account_id || null,
-        primeira_competencia: r.primeira_competencia,
-        ultima_competencia: r.ultima_competencia || undefined,
-        logo_url: r.logo_url || undefined,
-        icon_id: r.icon_id || undefined,
-        recurrence_type: (r.recurrence_type as RecurrenceType) || "M",
+        template_id: col(r, "template_id", 0),
+        nome: col(r, "nome", 1),
+        categoria_id: col(r, "categoria_id", 2),
+        payment_account_id: col(r, "payment_account_id", 3) || null,
+        primeira_competencia: col(r, "primeira_competencia", 4),
+        ultima_competencia: col(r, "ultima_competencia", 5) || undefined,
+        logo_url: col(r, "logo_url", 6) || undefined,
+        icon_id: col(r, "icon_id", 7) || undefined,
+        recurrence_type: (col(r, "recurrence_type", 8) as RecurrenceType) || "M",
       }));
   }
 
