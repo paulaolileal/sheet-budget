@@ -32,7 +32,7 @@ import {
 import { templateInputSchema, type TemplateFormInput } from "@/domain/schemas";
 import { templateId } from "@/lib/idgen";
 import type { RecurrenceTemplate } from "@/domain/types";
-import { AlignLeft, FolderOpen, Wallet, Calendar, CalendarOff, Link, Tag } from "lucide-react";
+import { AlignLeft, FolderOpen, Wallet, Calendar, CalendarOff, Link, Tag, Repeat } from "lucide-react";
 
 export function TemplateDialog({
   open,
@@ -63,6 +63,7 @@ export function TemplateDialog({
         ultima_competencia: undefined,
         logo_url: undefined,
         icon_id: undefined,
+        recurrence_type: "M",
       },
     });
 
@@ -84,6 +85,7 @@ export function TemplateDialog({
               ultima_competencia: template.ultima_competencia,
               logo_url: template.logo_url,
               icon_id: template.icon_id,
+              recurrence_type: template.recurrence_type ?? "M",
             }
           : {
               nome: "",
@@ -93,6 +95,7 @@ export function TemplateDialog({
               ultima_competencia: undefined,
               logo_url: undefined,
               icon_id: undefined,
+              recurrence_type: "M",
             },
       );
     }
@@ -248,6 +251,28 @@ export function TemplateDialog({
                   </p>
                 )}
               </div>
+            </div>
+
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <Repeat className="h-3.5 w-3.5" />
+                Tipo de recorrência
+              </Label>
+              <Controller
+                control={control}
+                name="recurrence_type"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Mensal</SelectItem>
+                      <SelectItem value="A">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="border-t pt-3">

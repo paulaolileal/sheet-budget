@@ -156,6 +156,7 @@ export function TransactionDialog({
         categoria_id: values.categoria_id,
         payment_account_id: values.payment_account_id,
         primeira_competencia: values.competencia,
+        recurrence_type: "M",
       });
       for (let i = 0; i < numParcelas; i++) {
         const comp = nextCompetencia(values.competencia, i);

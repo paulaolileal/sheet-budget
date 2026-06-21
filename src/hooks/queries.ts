@@ -334,6 +334,11 @@ function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
   return (t.template_id != null && t.template_id === tpl.template_id) || t.descricao === tpl.nome;
 }
 
+function isDueForCompetencia(tpl: RecurrenceTemplate, competencia: string): boolean {
+  if (tpl.recurrence_type !== "A") return true;
+  return tpl.primeira_competencia.slice(5) === competencia.slice(5);
+}
+
 function resolveLastValue(
   txs: Transaction[],
   tpl: RecurrenceTemplate,
@@ -363,6 +368,7 @@ export function useGenerateRecurring() {
 
       const missing = templates.filter((tpl) => {
         if (!isTemplateActive(tpl, competencia)) return false;
+        if (!isDueForCompetencia(tpl, competencia)) return false;
         return !alreadyExists(txs, tpl, competencia);
       });
 

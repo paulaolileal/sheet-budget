@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACCOUNT_TIPO, TIPO_LANCAMENTO, TRANSACTION_STATUS } from "./types";
+import { ACCOUNT_TIPO, RECURRENCE_TYPE, TIPO_LANCAMENTO, TRANSACTION_STATUS } from "./types";
 
 const competenciaRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -43,6 +43,7 @@ export const templateSchema = z.object({
   ultima_competencia: competenciaSchema.optional(),
   logo_url: z.string().optional(),
   icon_id: z.string().optional(),
+  recurrence_type: z.enum(RECURRENCE_TYPE),
 });
 
 export const templateInputSchema = templateSchema.omit({ template_id: true });

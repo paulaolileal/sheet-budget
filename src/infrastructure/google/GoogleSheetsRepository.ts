@@ -24,6 +24,7 @@ import type {
   Income,
   InvoiceAmount,
   RecurrenceTemplate,
+  RecurrenceType,
   Transaction,
 } from "@/domain/types";
 import { accountId, categoryId, incomeId, transactionId } from "@/lib/idgen";
@@ -243,6 +244,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
         ultima_competencia: r.ultima_competencia || undefined,
         logo_url: r.logo_url || undefined,
         icon_id: r.icon_id || undefined,
+        recurrence_type: (r.recurrence_type as RecurrenceType) || "M",
       }));
   }
 
@@ -256,18 +258,19 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.ultima_competencia ?? "",
       t.logo_url ?? "",
       t.icon_id ?? "",
+      t.recurrence_type,
     ];
     try {
       const idx = await this.findRowIndex(SHEETS.templates, "template_id", t.template_id);
       await this.request(
-        `/values/${SHEETS.templates}!A${idx}:H${idx}?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A${idx}:I${idx}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
       const rows = await this.getValues(SHEETS.templates);
       const nextRow = rows.length + 1;
       await this.request(
-        `/values/${SHEETS.templates}!A${nextRow}:H${nextRow}?valueInputOption=USER_ENTERED`,
+        `/values/${SHEETS.templates}!A${nextRow}:I${nextRow}?valueInputOption=USER_ENTERED`,
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     }

@@ -13,6 +13,9 @@ export type TipoLancamento = (typeof TIPO_LANCAMENTO)[number];
 export const ACCOUNT_TIPO = ["CONTA", "CARTAO", "CARTEIRA"] as const;
 export type AccountTipo = (typeof ACCOUNT_TIPO)[number];
 
+export const RECURRENCE_TYPE = ["M", "A"] as const;
+export type RecurrenceType = (typeof RECURRENCE_TYPE)[number];
+
 export interface Transaction {
   transaction_id: string;
   template_id: string | null;
@@ -35,6 +38,8 @@ export interface RecurrenceTemplate {
   ultima_competencia?: Competencia;
   logo_url?: string;
   icon_id?: string;
+  /** M = monthly (every month); A = annual (only in the month of primeira_competencia). */
+  recurrence_type: RecurrenceType;
 }
 
 /** Derives active status from date range instead of a stored boolean. */

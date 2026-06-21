@@ -167,6 +167,9 @@ export function TemplatesPage() {
                         <div className="flex items-center justify-between gap-2">
                           <CardTitle className="text-base truncate">{t.nome}</CardTitle>
                           <div className="flex items-center gap-1 shrink-0">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {t.recurrence_type === "A" ? "anual" : "mensal"}
+                            </Badge>
                             <Badge variant={active ? "default" : "outline"} className="text-[10px]">
                               {active ? "ativo" : "inativo"}
                             </Badge>
