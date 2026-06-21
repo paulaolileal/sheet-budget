@@ -63,6 +63,8 @@ import {
   Star,
   Repeat2,
   Sparkles,
+  Scale,
+  Percent,
   type LucideProps,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -144,6 +146,9 @@ export const ICON_REGISTRY: Record<string, IconComponent> = {
   Users,
   Smile,
   Flower2,
+  // Impostos / obrigações fiscais
+  Scale,
+  Percent,
   // Genérico
   Tag,
   Star,

@@ -3,6 +3,7 @@ import { Tag, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { ICON_LIST, getIcon } from "@/utils/iconRegistry";
 import { cn } from "@/lib/utils";
 
@@ -71,31 +72,33 @@ export function IconPicker({ value, onChange, placeholder = "Escolher ícone" }:
           )}
 
           {/* 6 colunas × 54px = 324px < 360px−24px (padding) = 336px */}
-          <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto overflow-x-hidden">
-            {filtered.map(({ id, component: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                title={id}
-                className={cn(
-                  "flex flex-col items-center justify-center gap-1 h-14 w-full rounded-md transition-colors hover:bg-accent",
-                  value === id && "bg-primary text-primary-foreground hover:bg-primary/90",
-                )}
-                onClick={() => select(id)}
-              >
-                <Icon size={20} />
-                <span className="text-[9px] leading-none opacity-60 truncate w-full text-center px-0.5">
-                  {id}
-                </span>
-              </button>
-            ))}
+          <ScrollArea className="h-64">
+            <div className="grid grid-cols-6 gap-1 pr-1">
+              {filtered.map(({ id, component: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  title={id}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 h-14 w-full rounded-md transition-colors hover:bg-accent",
+                    value === id && "bg-primary text-primary-foreground hover:bg-primary/90",
+                  )}
+                  onClick={() => select(id)}
+                >
+                  <Icon size={20} />
+                  <span className="text-[9px] leading-none opacity-60 truncate w-full text-center px-0.5">
+                    {id}
+                  </span>
+                </button>
+              ))}
 
-            {filtered.length === 0 && (
-              <p className="col-span-6 py-4 text-center text-xs text-muted-foreground">
-                Nenhum ícone encontrado
-              </p>
-            )}
-          </div>
+              {filtered.length === 0 && (
+                <p className="col-span-6 py-4 text-center text-xs text-muted-foreground">
+                  Nenhum ícone encontrado
+                </p>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </PopoverContent>
     </Popover>
