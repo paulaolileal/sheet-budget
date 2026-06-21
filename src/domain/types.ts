@@ -50,6 +50,12 @@ export function isTemplateActive(tpl: RecurrenceTemplate, competencia: Competenc
   );
 }
 
+/** Returns true when the template is due to generate a transaction for the given competencia. */
+export function isDueForCompetencia(tpl: RecurrenceTemplate, competencia: Competencia): boolean {
+  if (tpl.recurrence_type !== "A") return true;
+  return tpl.primeira_competencia.slice(5) === competencia.slice(5);
+}
+
 export interface Category {
   category_id: string;
   nome: string;

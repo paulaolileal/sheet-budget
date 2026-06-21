@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRepository } from "@/application/repositoryProvider";
-import { isTemplateActive } from "@/domain/types";
+import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type {
   Category,
   Income,
@@ -332,11 +332,6 @@ export function useBulkPayByAccount() {
 
 function matchesTemplate(t: Transaction, tpl: RecurrenceTemplate): boolean {
   return (t.template_id != null && t.template_id === tpl.template_id) || t.descricao === tpl.nome;
-}
-
-function isDueForCompetencia(tpl: RecurrenceTemplate, competencia: string): boolean {
-  if (tpl.recurrence_type !== "A") return true;
-  return tpl.primeira_competencia.slice(5) === competencia.slice(5);
 }
 
 function resolveLastValue(
