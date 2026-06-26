@@ -2,9 +2,9 @@
  * Implementação Google Sheets do FinanceRepository.
  *
  * Estratégia:
- * - Lê todas as abas via `values:batchGet`.
- * - Escreve por linha: localiza a linha pelo ID, faz PUT em values/{aba}!A{n}:M{n}
- *   ou PUT em values/{aba}!A{n}:X{n} com a linha calculada via getNextRow() para novas linhas.
+ * - Lê todas as abas via `values.get`.
+ * - Escreve por linha: localiza a linha pelo ID, faz PUT em values/{aba}!A{n}:I{n}.
+ * - Cria novas linhas via `values:append` (atômico, sem risco de race condition).
  *
  * Esta implementação assume que o frontend já recebeu um access_token via
  * Google Identity Services e o passou ao construtor (em memória, nunca em
@@ -116,17 +116,25 @@ export class GoogleSheetsRepository implements FinanceRepository {
   async getTransactions(): Promise<Transaction[]> {
     const rows = await this.getValues(SHEETS.transactions);
     const raw = this.rowsToObjects<Record<string, string>>(rows);
-    return raw.map((r) => ({
-      transaction_id: r.transaction_id,
-      template_id: r.template_id || null,
-      competencia: r.competencia,
-      descricao: r.descricao,
-      categoria_id: r.categoria_id,
-      valor: parseCurrency(r.valor),
-      status: r.status as Transaction["status"],
-      payment_account_id: r.payment_account_id || null,
-      tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
-    }));
+    const seen = new Set<string>();
+    return raw
+      .map((r) => ({
+        transaction_id: r.transaction_id,
+        template_id: r.template_id || null,
+        competencia: r.competencia,
+        descricao: r.descricao,
+        categoria_id: r.categoria_id,
+        valor: parseCurrency(r.valor),
+        status: r.status as Transaction["status"],
+        payment_account_id: r.payment_account_id || null,
+        tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
+      }))
+      .filter((t) => {
+        if (!t.transaction_id || !t.competencia) return false;
+        if (seen.has(t.transaction_id)) return false;
+        seen.add(t.transaction_id);
+        return true;
+      });
   }
 
   private txToRow(t: Transaction): (string | number)[] {
@@ -148,10 +156,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     };
-    const nextRow = await this.getNextRow(SHEETS.transactions);
     await this.request(
-      `/values/${SHEETS.transactions}!A${nextRow}:I${nextRow}?valueInputOption=USER_ENTERED`,
-      { method: "PUT", body: JSON.stringify({ values: [this.txToRow(tx)] }) },
+      `/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`,
+      { method: "POST", body: JSON.stringify({ values: [this.txToRow(tx)] }) },
     );
     return tx;
   }
@@ -163,11 +170,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     }));
-    const startRow = await this.getNextRow(SHEETS.transactions);
-    const endRow = startRow + created.length - 1;
     await this.request(
-      `/values/${SHEETS.transactions}!A${startRow}:I${endRow}?valueInputOption=USER_ENTERED`,
-      { method: "PUT", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
+      `/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`,
+      { method: "POST", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
     );
     return created;
   }
@@ -180,11 +185,6 @@ export class GoogleSheetsRepository implements FinanceRepository {
       if (rows[i][headerIdx] === id) return i + 1; // 1-indexed
     }
     throw new Error(`${idColumn}=${id} não encontrado em ${sheet}`);
-  }
-
-  private async getNextRow(sheet: string): Promise<number> {
-    const rows = await this.getValues(sheet);
-    return rows.length + 1;
   }
 
   async updateTransaction(id: string, patch: Partial<Transaction>) {
@@ -275,11 +275,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
-      const rows = await this.getValues(SHEETS.templates);
-      const nextRow = rows.length + 1;
       await this.request(
-        `/values/${SHEETS.templates}!A${nextRow}:I${nextRow}?valueInputOption=USER_ENTERED`,
-        { method: "PUT", body: JSON.stringify({ values: [row] }) },
+        `/values/${SHEETS.templates}:append?valueInputOption=USER_ENTERED`,
+        { method: "POST", body: JSON.stringify({ values: [row] }) },
       );
     }
     return t;
@@ -345,11 +343,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
       icon_id: data.icon_id,
       color: data.color,
     };
-    const nextRow = await this.getNextRow(SHEETS.accounts);
     await this.request(
-      `/values/${SHEETS.accounts}!A${nextRow}:E${nextRow}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.accounts}:append?valueInputOption=USER_ENTERED`,
       {
-        method: "PUT",
+        method: "POST",
         body: JSON.stringify({
           values: [
             [account.account_id, account.nome, account.tipo, account.icon_id ?? "", account.color ?? ""],
@@ -413,10 +410,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
       nome: data.nome,
       icon_id: data.icon_id,
     };
-    const nextRow = await this.getNextRow(SHEETS.categories);
     await this.request(
-      `/values/${SHEETS.categories}!A${nextRow}:C${nextRow}?valueInputOption=USER_ENTERED`,
-      { method: "PUT", body: JSON.stringify({ values: [[cat.category_id, cat.nome, cat.icon_id ?? ""]] }) },
+      `/values/${SHEETS.categories}:append?valueInputOption=USER_ENTERED`,
+      { method: "POST", body: JSON.stringify({ values: [[cat.category_id, cat.nome, cat.icon_id ?? ""]] }) },
     );
     return cat;
   }
@@ -479,10 +475,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...data,
       income_id: incomeId(data.competencia, data.descricao),
     };
-    const nextRow = await this.getNextRow(SHEETS.incomes);
     await this.request(
-      `/values/${SHEETS.incomes}!A${nextRow}:E${nextRow}?valueInputOption=USER_ENTERED`,
-      { method: "PUT", body: JSON.stringify({ values: [this.incomeToRow(income)] }) },
+      `/values/${SHEETS.incomes}:append?valueInputOption=USER_ENTERED`,
+      { method: "POST", body: JSON.stringify({ values: [this.incomeToRow(income)] }) },
     );
     return income;
   }
@@ -548,10 +543,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
           "Crie a aba 'invoice_amounts' no Google Sheets com as colunas: invoice_id | payment_account_id | competencia | valor_real",
         );
       }
-      const nextRow = await this.getNextRow(SHEETS.invoice_amounts);
       await this.request(
-        `/values/${SHEETS.invoice_amounts}!A${nextRow}:D${nextRow}?valueInputOption=USER_ENTERED`,
-        { method: "PUT", body: JSON.stringify({ values: [row] }) },
+        `/values/${SHEETS.invoice_amounts}:append?valueInputOption=USER_ENTERED`,
+        { method: "POST", body: JSON.stringify({ values: [row] }) },
       );
     }
     return { invoice_id, ...data };
