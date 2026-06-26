@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { MonthYearPicker } from "./MonthYearPicker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -224,9 +225,15 @@ export function TemplateDialog({
               <div>
                 <Label className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
-                  Início (YYYY-MM)
+                  Início
                 </Label>
-                <Input {...register("primeira_competencia")} placeholder="2024-01" maxLength={7} />
+                <Controller
+                  control={control}
+                  name="primeira_competencia"
+                  render={({ field }) => (
+                    <MonthYearPicker value={field.value} onChange={field.onChange} />
+                  )}
+                />
                 {formState.errors.primeira_competencia && (
                   <p className="text-xs text-destructive mt-1">
                     {formState.errors.primeira_competencia.message}
@@ -236,14 +243,19 @@ export function TemplateDialog({
               <div>
                 <Label className="flex items-center gap-1.5">
                   <CalendarOff className="h-3.5 w-3.5" />
-                  Fim (YYYY-MM, opcional)
+                  Fim (opcional)
                 </Label>
-                <Input
-                  {...register("ultima_competencia", {
-                    setValueAs: (v: string) => (v === "" ? undefined : v),
-                  })}
-                  placeholder="2024-12"
-                  maxLength={7}
+                <Controller
+                  control={control}
+                  name="ultima_competencia"
+                  render={({ field }) => (
+                    <MonthYearPicker
+                      value={field.value ?? ""}
+                      onChange={(v) => field.onChange(v === "" ? undefined : v)}
+                      placeholder="Sem término"
+                      optional
+                    />
+                  )}
                 />
                 {formState.errors.ultima_competencia && (
                   <p className="text-xs text-destructive mt-1">

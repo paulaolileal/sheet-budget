@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
+import { MonthYearPicker } from "./MonthYearPicker";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -82,7 +83,13 @@ export function IncomeDialog({
               <Calendar className="h-3.5 w-3.5" />
               Competência
             </Label>
-            <Input {...register("competencia")} placeholder="YYYY-MM" maxLength={7} />
+            <Controller
+              control={control}
+              name="competencia"
+              render={({ field }) => (
+                <MonthYearPicker value={field.value} onChange={field.onChange} />
+              )}
+            />
             {formState.errors.competencia && (
               <p className="text-xs text-destructive mt-1">
                 {formState.errors.competencia.message}
