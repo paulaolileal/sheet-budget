@@ -357,13 +357,14 @@ export function useGenerateRecurring() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (templateIds?: string[]) => {
       const competencia = useUiStore.getState().competencia;
       const [txs, templates] = await Promise.all([repo().getTransactions(), repo().getTemplates()]);
 
       const missing = templates.filter((tpl) => {
         if (!isTemplateActive(tpl, competencia)) return false;
         if (!isDueForCompetencia(tpl, competencia)) return false;
+        if (templateIds && !templateIds.includes(tpl.template_id)) return false;
         return !alreadyExists(txs, tpl, competencia);
       });
 

@@ -30,6 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -131,6 +132,7 @@ export function TransactionsPage() {
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState<Set<string>>(new Set());
   // IDs of all-settled categories that the user manually expanded
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   // IDs of settled transactions that the user manually expanded (show full row)
@@ -146,6 +148,19 @@ export function TransactionsPage() {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
+      return next;
+    });
+  }
+
+  function handleOpenConfirm() {
+    setSelectedTemplateIds(new Set(pendingTemplates.map((t) => t.template_id)));
+    setConfirmOpen(true);
+  }
+
+  function toggleTemplate(id: string) {
+    setSelectedTemplateIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }
@@ -282,7 +297,7 @@ export function TransactionsPage() {
         actions={
           <div className="flex items-center gap-2">
             <CompetenciaSelector />
-            <Button variant="outline" onClick={() => setConfirmOpen(true)} disabled={isGenerating}>
+            <Button variant="outline" onClick={handleOpenConfirm} disabled={isGenerating}>
               {isGenerating ? (
                 <RefreshCw className="h-4 w-4 sm:mr-1 animate-spin" />
               ) : (
@@ -854,21 +869,26 @@ export function TransactionsPage() {
             <DialogDescription>
               {pendingTemplates.length === 0
                 ? "Todos os templates já foram gerados para este mês."
-                : `${pendingTemplates.length} lançamento(s) serão criados:`}
+                : `${selectedTemplateIds.size} de ${pendingTemplates.length} lançamento(s) serão criados:`}
             </DialogDescription>
           </DialogHeader>
 
           {pendingTemplates.length > 0 && (
             <ul className="max-h-64 overflow-y-auto divide-y text-sm">
               {pendingTemplates.map((tpl) => (
-                <li key={tpl.template_id} className="py-2 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
+                <li key={tpl.template_id} className="py-2 flex items-center gap-3">
+                  <Checkbox
+                    id={tpl.template_id}
+                    checked={selectedTemplateIds.has(tpl.template_id)}
+                    onCheckedChange={() => toggleTemplate(tpl.template_id)}
+                  />
+                  <label htmlFor={tpl.template_id} className="flex-1 min-w-0 cursor-pointer">
                     <p className="font-medium truncate">{tpl.nome}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {catMap[tpl.categoria_id]?.nome ?? tpl.categoria_id}
                       {tpl.payment_account_id ? ` · ${accMap[tpl.payment_account_id]}` : ""}
                     </p>
-                  </div>
+                  </label>
                 </li>
               ))}
             </ul>
@@ -881,9 +901,9 @@ export function TransactionsPage() {
             <Button
               onClick={() => {
                 setConfirmOpen(false);
-                generateRecurring();
+                generateRecurring(Array.from(selectedTemplateIds));
               }}
-              disabled={pendingTemplates.length === 0 || isGenerating}
+              disabled={pendingTemplates.length === 0 || isGenerating || selectedTemplateIds.size === 0}
             >
               <Repeat className="h-4 w-4 mr-1" />
               Confirmar
