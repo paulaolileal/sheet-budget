@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   useAccounts,
   useCategories,
@@ -51,6 +50,7 @@ const formSchema = z.object({
   categoria_id: z.string().min(1, "Selecione"),
   payment_account_id: z.string().min(1, "Selecione"),
   valor: z.coerce.number().nonnegative("Inválido"),
+  valor_total: z.coerce.number().nonnegative().optional(),
   status: z.enum(["PENDENTE", "PAGO", "ADIANTADO", "IGNORADO"]),
   tipo_lancamento: z.enum(["RECORRENTE", "PARCELADO", "MANUAL"]),
   parcelas: z.coerce.number().int().min(1).max(120).optional(),
@@ -96,19 +96,21 @@ export function TransactionDialog({
 
   const isEditing = !!transaction;
 
-  const { control, handleSubmit, watch, register, reset, formState } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      descricao: transaction?.descricao ?? "",
-      competencia: transaction?.competencia ?? competencia,
-      categoria_id: transaction?.categoria_id ?? "",
-      payment_account_id: transaction?.payment_account_id ?? "",
-      valor: transaction?.valor ?? 0,
-      status: transaction?.status ?? "PENDENTE",
-      tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
-      parcelas: 1,
-    },
-  });
+  const { control, handleSubmit, watch, register, reset, setValue, formState } =
+    useForm<FormValues>({
+      resolver: zodResolver(formSchema),
+      defaultValues: {
+        descricao: transaction?.descricao ?? "",
+        competencia: transaction?.competencia ?? competencia,
+        categoria_id: transaction?.categoria_id ?? "",
+        payment_account_id: transaction?.payment_account_id ?? "",
+        valor: transaction?.valor ?? 0,
+        valor_total: 0,
+        status: transaction?.status ?? "PENDENTE",
+        tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
+        parcelas: 1,
+      },
+    });
 
   useEffect(() => {
     if (open) {
@@ -118,6 +120,7 @@ export function TransactionDialog({
         categoria_id: transaction?.categoria_id ?? "",
         payment_account_id: transaction?.payment_account_id ?? "",
         valor: transaction?.valor ?? 0,
+        valor_total: 0,
         status: transaction?.status ?? "PENDENTE",
         tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
         parcelas: 1,
@@ -127,7 +130,9 @@ export function TransactionDialog({
   }, [open, transaction, competencia, reset]);
 
   const tipo = watch("tipo_lancamento");
-  const status = watch("status");
+  const numParcelas = watch("parcelas") ?? 1;
+
+  const showParcelaFields = tipo === "PARCELADO" && numParcelas > 1 && !isEditing;
 
   const onSubmit = handleSubmit(async (values) => {
     const base = {
@@ -146,7 +151,7 @@ export function TransactionDialog({
     }
 
     const descSlug = slugify(values.descricao);
-    const numParcelas = values.parcelas ?? 1;
+    const n = values.parcelas ?? 1;
 
     if (values.tipo_lancamento === "RECORRENTE") {
       const templateId = `tpl-${descSlug}`;
@@ -158,7 +163,7 @@ export function TransactionDialog({
         primeira_competencia: values.competencia,
         recurrence_type: "M",
       });
-      for (let i = 0; i < numParcelas; i++) {
+      for (let i = 0; i < n; i++) {
         const comp = nextCompetencia(values.competencia, i);
         await create.mutateAsync({
           ...base,
@@ -168,12 +173,12 @@ export function TransactionDialog({
         });
       }
       toast.success(
-        numParcelas > 1
-          ? `Template e ${numParcelas} lançamentos recorrentes criados`
+        n > 1
+          ? `Template e ${n} lançamentos recorrentes criados`
           : "Template e lançamento recorrente criados",
       );
-    } else if (values.tipo_lancamento === "PARCELADO" && numParcelas > 1) {
-      for (let i = 0; i < numParcelas; i++) {
+    } else if (values.tipo_lancamento === "PARCELADO" && n > 1) {
+      for (let i = 0; i < n; i++) {
         const comp = nextCompetencia(values.competencia, i);
         await create.mutateAsync({
           ...base,
@@ -183,7 +188,7 @@ export function TransactionDialog({
           template_id: null,
         });
       }
-      toast.success(`${numParcelas} parcelas criadas`);
+      toast.success(`${n} parcelas criadas`);
     } else {
       await create.mutateAsync({
         ...base,
@@ -197,8 +202,6 @@ export function TransactionDialog({
     reset();
     onOpenChange(false);
   });
-
-  const statusOptions = STATUSES;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -227,18 +230,6 @@ export function TransactionDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5" />
-                Competência
-              </Label>
-              <Input type="month" {...register("competencia")} disabled={isEditing} />
-              {formState.errors.competencia && (
-                <p className="text-xs text-destructive mt-1">
-                  {formState.errors.competencia.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label className="flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5" />
                 Tipo
               </Label>
@@ -263,6 +254,18 @@ export function TransactionDialog({
                 )}
               />
             </div>
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Competência
+              </Label>
+              <Input type="month" {...register("competencia")} disabled={isEditing} />
+              {formState.errors.competencia && (
+                <p className="text-xs text-destructive mt-1">
+                  {formState.errors.competencia.message}
+                </p>
+              )}
+            </div>
           </div>
 
           {(tipo === "PARCELADO" || tipo === "RECORRENTE") && !isEditing && (
@@ -271,12 +274,142 @@ export function TransactionDialog({
                 <Hash className="h-3.5 w-3.5" />
                 {tipo === "RECORRENTE" ? "Gerar instâncias (meses)" : "Número de parcelas"}
               </Label>
-              <Input type="number" min={1} max={120} {...register("parcelas")} />
+              <Controller
+                control={control}
+                name="parcelas"
+                render={({ field }) => (
+                  <Input
+                    type="number"
+                    min={1}
+                    max={120}
+                    {...field}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      const n = parseInt(e.target.value) || 1;
+                      if (tipo === "PARCELADO" && n > 1) {
+                        const currentValor = watch("valor");
+                        setValue("valor_total", parseFloat((currentValor * n).toFixed(2)));
+                      }
+                    }}
+                  />
+                )}
+              />
               <p className="text-xs text-muted-foreground mt-1">
                 {tipo === "RECORRENTE"
                   ? "Serão criadas N instâncias mensais e um template de recorrência."
                   : "Serão criados N lançamentos a partir da competência informada."}
               </p>
+            </div>
+          )}
+
+          {showParcelaFields ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Valor da parcela
+                </Label>
+                <Controller
+                  control={control}
+                  name="valor"
+                  render={({ field }) => (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const v = parseFloat(e.target.value) || 0;
+                        setValue("valor_total", parseFloat((v * numParcelas).toFixed(2)));
+                      }}
+                    />
+                  )}
+                />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Valor total
+                </Label>
+                <Controller
+                  control={control}
+                  name="valor_total"
+                  render={({ field }) => (
+                    <Input
+                      type="number"
+                      step="0.01"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        const total = parseFloat(e.target.value) || 0;
+                        setValue("valor", parseFloat((total / numParcelas).toFixed(2)));
+                      }}
+                    />
+                  )}
+                />
+                <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" />
+                  Valor
+                </Label>
+                <Input type="number" step="0.01" {...register("valor")} />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <CircleDot className="h-3.5 w-3.5" />
+                  Status
+                </Label>
+                <Controller
+                  control={control}
+                  name="status"
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUSES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+          )}
+
+          {showParcelaFields && (
+            <div>
+              <Label className="flex items-center gap-1.5">
+                <CircleDot className="h-3.5 w-3.5" />
+                Status
+              </Label>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           )}
 
@@ -322,40 +455,6 @@ export function TransactionDialog({
                       {(accounts ?? []).map((a) => (
                         <SelectItem key={a.account_id} value={a.account_id}>
                           {a.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />
-                Valor
-              </Label>
-              <Input type="number" step="0.01" {...register("valor")} />
-            </div>
-            <div>
-              <Label className="flex items-center gap-1.5">
-                <CircleDot className="h-3.5 w-3.5" />
-                Status
-              </Label>
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {s}
                         </SelectItem>
                       ))}
                     </SelectContent>
