@@ -115,20 +115,28 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   async getTransactions(): Promise<Transaction[]> {
     const rows = await this.getValues(SHEETS.transactions);
-    const raw = this.rowsToObjects<Record<string, string>>(rows);
+    if (rows.length === 0) return [];
+    const [rawHeaders, ...body] = rows;
+    const trimmedHeaders = rawHeaders.map((h) => h.trim());
+    // Fall back to positional TX_HEADERS when the sheet header row is corrupted (e.g. A1 is blank/space)
+    const headers = trimmedHeaders.includes("transaction_id") ? trimmedHeaders : TX_HEADERS;
     const seen = new Set<string>();
-    return raw
-      .map((r) => ({
-        transaction_id: r.transaction_id,
-        template_id: r.template_id || null,
-        competencia: r.competencia,
-        descricao: r.descricao,
-        categoria_id: r.categoria_id,
-        valor: parseCurrency(r.valor),
-        status: r.status as Transaction["status"],
-        payment_account_id: r.payment_account_id || null,
-        tipo_lancamento: (r.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
-      }))
+    return body
+      .map((r) => {
+        const obj: Record<string, string> = {};
+        headers.forEach((h, i) => (obj[h] = r[i] ?? ""));
+        return {
+          transaction_id: obj.transaction_id,
+          template_id: obj.template_id || null,
+          competencia: obj.competencia,
+          descricao: obj.descricao,
+          categoria_id: obj.categoria_id,
+          valor: parseCurrency(obj.valor),
+          status: obj.status as Transaction["status"],
+          payment_account_id: obj.payment_account_id || null,
+          tipo_lancamento: (obj.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
+        };
+      })
       .filter((t) => {
         if (!t.transaction_id || !t.competencia) return false;
         if (seen.has(t.transaction_id)) return false;
@@ -179,7 +187,12 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   private async findRowIndex(sheet: string, idColumn: string, id: string): Promise<number> {
     const rows = await this.getValues(sheet);
-    const headerIdx = rows[0]?.indexOf(idColumn) ?? -1;
+    const trimmedHeaders = rows[0]?.map((h) => h.trim()) ?? [];
+    let headerIdx = trimmedHeaders.indexOf(idColumn);
+    // Fall back to TX_HEADERS positional index when the transactions header row is corrupted
+    if (headerIdx < 0 && sheet === SHEETS.transactions) {
+      headerIdx = TX_HEADERS.indexOf(idColumn);
+    }
     if (headerIdx < 0) throw new Error(`Cabeçalho ${idColumn} não encontrado em ${sheet}`);
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][headerIdx] === id) return i + 1; // 1-indexed
