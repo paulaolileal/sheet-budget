@@ -164,10 +164,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     };
-    await this.request(
-      `/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: [this.txToRow(tx)] }) },
-    );
+    await this.request(`/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [this.txToRow(tx)] }),
+    });
     return tx;
   }
 
@@ -178,10 +178,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...t,
       transaction_id: t.transaction_id ?? transactionId(t.competencia, t.descricao),
     }));
-    await this.request(
-      `/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }) },
-    );
+    await this.request(`/values/${SHEETS.transactions}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: created.map((tx) => this.txToRow(tx)) }),
+    });
     return created;
   }
 
@@ -288,10 +288,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
         { method: "PUT", body: JSON.stringify({ values: [row] }) },
       );
     } catch {
-      await this.request(
-        `/values/${SHEETS.templates}:append?valueInputOption=USER_ENTERED`,
-        { method: "POST", body: JSON.stringify({ values: [row] }) },
-      );
+      await this.request(`/values/${SHEETS.templates}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [row] }),
+      });
     }
     return t;
   }
@@ -356,17 +356,20 @@ export class GoogleSheetsRepository implements FinanceRepository {
       icon_id: data.icon_id,
       color: data.color,
     };
-    await this.request(
-      `/values/${SHEETS.accounts}:append?valueInputOption=USER_ENTERED`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          values: [
-            [account.account_id, account.nome, account.tipo, account.icon_id ?? "", account.color ?? ""],
+    await this.request(`/values/${SHEETS.accounts}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({
+        values: [
+          [
+            account.account_id,
+            account.nome,
+            account.tipo,
+            account.icon_id ?? "",
+            account.color ?? "",
           ],
-        }),
-      },
-    );
+        ],
+      }),
+    });
     return account;
   }
 
@@ -384,7 +387,13 @@ export class GoogleSheetsRepository implements FinanceRepository {
         }),
       },
     );
-    return { account_id: id, nome: data.nome, tipo: data.tipo, icon_id: data.icon_id, color: data.color };
+    return {
+      account_id: id,
+      nome: data.nome,
+      tipo: data.tipo,
+      icon_id: data.icon_id,
+      color: data.color,
+    };
   }
 
   async deleteAccount(id: string): Promise<void> {
@@ -423,10 +432,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
       nome: data.nome,
       icon_id: data.icon_id,
     };
-    await this.request(
-      `/values/${SHEETS.categories}:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: [[cat.category_id, cat.nome, cat.icon_id ?? ""]] }) },
-    );
+    await this.request(`/values/${SHEETS.categories}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [[cat.category_id, cat.nome, cat.icon_id ?? ""]] }),
+    });
     return cat;
   }
 
@@ -488,10 +497,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
       ...data,
       income_id: incomeId(data.competencia, data.descricao),
     };
-    await this.request(
-      `/values/${SHEETS.incomes}:append?valueInputOption=USER_ENTERED`,
-      { method: "POST", body: JSON.stringify({ values: [this.incomeToRow(income)] }) },
-    );
+    await this.request(`/values/${SHEETS.incomes}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: [this.incomeToRow(income)] }),
+    });
     return income;
   }
 
@@ -556,10 +565,10 @@ export class GoogleSheetsRepository implements FinanceRepository {
           "Crie a aba 'invoice_amounts' no Google Sheets com as colunas: invoice_id | payment_account_id | competencia | valor_real",
         );
       }
-      await this.request(
-        `/values/${SHEETS.invoice_amounts}:append?valueInputOption=USER_ENTERED`,
-        { method: "POST", body: JSON.stringify({ values: [row] }) },
-      );
+      await this.request(`/values/${SHEETS.invoice_amounts}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [row] }),
+      });
     }
     return { invoice_id, ...data };
   }

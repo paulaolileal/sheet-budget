@@ -12,12 +12,16 @@ import {
   CloudOff,
   RefreshCw,
   LogOut,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "../theme/ThemeProvider";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import { clearAccessToken } from "@/services/googleAuth";
+import { useSpreadsheetStore } from "@/store/spreadsheetStore";
+import { clearSheetProvider } from "@/application/repositoryProvider";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,6 +64,7 @@ function SyncIndicator() {
 export function AppShell() {
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { user, clearUser } = useAuthStore();
 
   function handleLogout() {
@@ -68,12 +73,24 @@ export function AppShell() {
     navigate("/login", { replace: true });
   }
 
+  function handleSwitchSpreadsheet() {
+    if (!user) return;
+    useSpreadsheetStore.getState().clearSpreadsheetId(user.email);
+    clearSheetProvider();
+    qc.clear();
+    navigate("/setup", { replace: true });
+  }
+
   return (
     <div className="fixed inset-0 flex bg-background text-foreground">
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="px-5 py-5 border-b flex items-center gap-3">
-          <img src="/logo-bs.png" alt="Budget" className="h-10 w-10 object-contain shrink-0 rounded-md" />
+          <img
+            src="/logo-bs.png"
+            alt="Budget"
+            className="h-10 w-10 object-contain shrink-0 rounded-md"
+          />
           <div>
             <div className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
               lealtek
@@ -122,12 +139,24 @@ export function AppShell() {
                 <Settings className="h-3.5 w-3.5" />
               </button>
               <button
+                onClick={handleSwitchSpreadsheet}
+                className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                aria-label="Trocar planilha"
+                title="Trocar planilha"
+              >
+                <Database className="h-3.5 w-3.5" />
+              </button>
+              <button
                 onClick={toggle}
                 className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                 aria-label="Alternar tema"
                 title="Alternar tema"
               >
-                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                {theme === "dark" ? (
+                  <Sun className="h-3.5 w-3.5" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5" />
+                )}
               </button>
               <button
                 onClick={handleLogout}
@@ -158,7 +187,11 @@ export function AppShell() {
         {/* Mobile header — shrink-0 keeps it fixed-height at the top of the flex column */}
         <header className="shrink-0 md:hidden flex items-center justify-between px-4 h-14 border-b bg-background/80 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <img src="/logo-bs.png" alt="Budget" className="h-8 w-8 object-contain shrink-0 rounded-md" />
+            <img
+              src="/logo-bs.png"
+              alt="Budget"
+              className="h-8 w-8 object-contain shrink-0 rounded-md"
+            />
             <div>
               <div className="text-[10px] font-semibold tracking-widest text-muted-foreground uppercase leading-none">
                 lealtek
@@ -192,6 +225,13 @@ export function AppShell() {
                   >
                     <Settings className="h-3.5 w-3.5" />
                     Configurações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-xs gap-2 cursor-pointer"
+                    onClick={handleSwitchSpreadsheet}
+                  >
+                    <Database className="h-3.5 w-3.5" />
+                    Trocar planilha
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

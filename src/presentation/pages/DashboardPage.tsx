@@ -705,7 +705,9 @@ function SummaryCard({
         {loading ? (
           <Skeleton className="h-8 w-32" />
         ) : (
-          <div className={`text-xl sm:text-2xl font-semibold tabular-nums ${color}`}>{brl(value)}</div>
+          <div className={`text-xl sm:text-2xl font-semibold tabular-nums ${color}`}>
+            {brl(value)}
+          </div>
         )}
       </CardContent>
     </Card>

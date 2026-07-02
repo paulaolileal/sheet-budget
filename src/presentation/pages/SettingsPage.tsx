@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,13 @@ import { CategoryDialog } from "../components/CategoryDialog";
 import { AppIcon } from "../components/AppIcon";
 import { useCategories, useDeleteCategory } from "@/hooks/queries";
 import { config } from "@/services/config";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Database } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/domain/types";
+import { useAuthStore } from "@/store/authStore";
+import { useSpreadsheetStore } from "@/store/spreadsheetStore";
+import { clearSheetProvider } from "@/application/repositoryProvider";
+import { useQueryClient } from "@tanstack/react-query";
 
 function CategoriesTab() {
   const { data: categories, isLoading } = useCategories();
@@ -132,6 +137,58 @@ function CategoriesTab() {
   );
 }
 
+function DataSourceTab() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const byEmail = useSpreadsheetStore((s) => s.byEmail);
+  const spreadsheetId = user ? byEmail[user.email] : undefined;
+
+  function handleSwitch() {
+    if (!user) return;
+    useSpreadsheetStore.getState().clearSpreadsheetId(user.email);
+    clearSheetProvider();
+    qc.clear();
+    navigate("/setup", { replace: true });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Fonte de dados</CardTitle>
+        <CardDescription>Google Sheets como fonte de verdade.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div>
+            <div className="text-xs text-muted-foreground">VITE_GOOGLE_CLIENT_ID</div>
+            <div className="font-mono">{config.googleClientId ? "configurado" : "—"}</div>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Planilha ativa</div>
+            <div className="font-mono text-xs truncate">{spreadsheetId ?? "—"}</div>
+            {spreadsheetId && (
+              <a
+                href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                Abrir no Google Sheets
+              </a>
+            )}
+          </div>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitch}>
+          <Database className="h-3.5 w-3.5" />
+          Trocar planilha
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function SettingsPage() {
   return (
     <div className="px-4 py-4 md:p-8 max-w-3xl mx-auto">
@@ -148,24 +205,7 @@ export function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="data">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Fonte de dados</CardTitle>
-              <CardDescription>Google Sheets como fonte de verdade.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <div>
-                  <div className="text-xs text-muted-foreground">VITE_GOOGLE_CLIENT_ID</div>
-                  <div className="font-mono">{config.googleClientId ? "configurado" : "—"}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-muted-foreground">VITE_SPREADSHEET_ID</div>
-                  <div className="font-mono">{config.spreadsheetId ? "configurado" : "—"}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <DataSourceTab />
         </TabsContent>
       </Tabs>
     </div>

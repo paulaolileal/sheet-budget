@@ -86,8 +86,12 @@ export function CreditCardVisual({
       style={{ aspectRatio: "1.586", ...customStyle }}
     >
       {/* decorative circles */}
-      <div className={`absolute -right-10 -top-10 w-48 h-48 rounded-full ${circleBg1} pointer-events-none`} />
-      <div className={`absolute right-2 -bottom-16 w-60 h-60 rounded-full ${circleBg2} pointer-events-none`} />
+      <div
+        className={`absolute -right-10 -top-10 w-48 h-48 rounded-full ${circleBg1} pointer-events-none`}
+      />
+      <div
+        className={`absolute right-2 -bottom-16 w-60 h-60 rounded-full ${circleBg2} pointer-events-none`}
+      />
 
       {/* content fills card with even distribution */}
       <div className="absolute inset-0 p-5 flex flex-col justify-between">
@@ -179,7 +183,9 @@ export function CreditCardVisual({
             )}
           </div>
           {isPaid && (
-            <div className={`flex items-center gap-1.5 text-xs font-semibold ${badgeBg} rounded-full px-3 py-1.5`}>
+            <div
+              className={`flex items-center gap-1.5 text-xs font-semibold ${badgeBg} rounded-full px-3 py-1.5`}
+            >
               <CheckCircle2 className="h-3.5 w-3.5" />
               Pago
             </div>

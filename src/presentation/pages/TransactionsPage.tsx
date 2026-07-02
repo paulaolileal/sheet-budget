@@ -903,7 +903,9 @@ export function TransactionsPage() {
                 setConfirmOpen(false);
                 generateRecurring(Array.from(selectedTemplateIds));
               }}
-              disabled={pendingTemplates.length === 0 || isGenerating || selectedTemplateIds.size === 0}
+              disabled={
+                pendingTemplates.length === 0 || isGenerating || selectedTemplateIds.size === 0
+              }
             >
               <Repeat className="h-4 w-4 mr-1" />
               Confirmar

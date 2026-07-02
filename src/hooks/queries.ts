@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getRepository } from "@/application/repositoryProvider";
+import { getSheetProvider } from "@/application/repositoryProvider";
 import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type {
   Category,
@@ -25,7 +25,7 @@ import { competenciaLabel } from "@/utils/format";
 import { transactionId } from "@/lib/idgen";
 import { toast } from "sonner";
 
-const repo = () => getRepository();
+const repo = () => getSheetProvider();
 
 export const qk = {
   transactions: ["transactions"] as const,

@@ -55,7 +55,12 @@ export function AccountDialog({
     if (open) {
       reset(
         account
-          ? { nome: account.nome, tipo: account.tipo, icon_id: account.icon_id, color: account.color }
+          ? {
+              nome: account.nome,
+              tipo: account.tipo,
+              icon_id: account.icon_id,
+              color: account.color,
+            }
           : { nome: "", tipo: "CONTA", icon_id: undefined, color: undefined },
       );
     }

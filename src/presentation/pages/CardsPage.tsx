@@ -290,9 +290,7 @@ export function CardsPage() {
                     size="icon"
                     className="shrink-0 relative z-20"
                     onClick={() =>
-                      setActiveIndex(
-                        (idx) => (idx - 1 + monthFaturas.length) % monthFaturas.length,
-                      )
+                      setActiveIndex((idx) => (idx - 1 + monthFaturas.length) % monthFaturas.length)
                     }
                   >
                     <ChevronLeft className="h-5 w-5" />
@@ -300,10 +298,7 @@ export function CardsPage() {
                 )}
 
                 {/* Card stack — horizontal peek to the right, paddingTop sets height */}
-                <div
-                  className="relative flex-1"
-                  style={{ paddingTop: `${(1 / 1.586) * 100}%` }}
-                >
+                <div className="relative flex-1" style={{ paddingTop: `${(1 / 1.586) * 100}%` }}>
                   {Array.from(
                     { length: Math.min(MAX_STACK + 1, monthFaturas.length) },
                     (_, pos) => ({
@@ -356,10 +351,7 @@ export function CardsPage() {
                 const isEditingThis = editingInvoiceKey === f.key;
                 return (
                   <div
-                    className={cn(
-                      "max-w-sm mx-auto space-y-2",
-                      monthFaturas.length > 1 && "px-10",
-                    )}
+                    className={cn("max-w-sm mx-auto space-y-2", monthFaturas.length > 1 && "px-10")}
                   >
                     {isEditingThis ? (
                       <div className="flex gap-2 items-center">

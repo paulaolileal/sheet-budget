@@ -33,7 +33,16 @@ import {
 import { templateInputSchema, type TemplateFormInput } from "@/domain/schemas";
 import { templateId } from "@/lib/idgen";
 import type { RecurrenceTemplate } from "@/domain/types";
-import { AlignLeft, FolderOpen, Wallet, Calendar, CalendarOff, Link, Tag, Repeat } from "lucide-react";
+import {
+  AlignLeft,
+  FolderOpen,
+  Wallet,
+  Calendar,
+  CalendarOff,
+  Link,
+  Tag,
+  Repeat,
+} from "lucide-react";
 
 export function TemplateDialog({
   open,

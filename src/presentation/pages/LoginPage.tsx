@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn, silentSignIn, getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
+import { useSpreadsheetStore } from "@/store/spreadsheetStore";
 
 function GoogleIcon() {
   return (
@@ -34,20 +35,28 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function redirectAfterLogin(email: string) {
+    const hasSpreadsheet = !!useSpreadsheetStore.getState().byEmail[email];
+    navigate(hasSpreadsheet ? "/" : "/setup", { replace: true });
+  }
+
   useEffect(() => {
     if (!user || getAccessToken()) return;
     setLoading(true);
     silentSignIn().then((info) => {
       if (info) {
         setUser(info);
-        navigate("/", { replace: true });
+        redirectAfterLogin(info.email);
       } else {
         setLoading(false);
       }
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (user && getAccessToken()) return <Navigate to="/" replace />;
+  if (user && getAccessToken()) {
+    const hasSpreadsheet = !!useSpreadsheetStore.getState().byEmail[user.email];
+    return <Navigate to={hasSpreadsheet ? "/" : "/setup"} replace />;
+  }
 
   async function handleSignIn() {
     setError(null);
@@ -55,7 +64,7 @@ export function LoginPage() {
     try {
       const info = await signIn();
       setUser(info);
-      navigate("/", { replace: true });
+      redirectAfterLogin(info.email);
     } catch (e) {
       setError((e as Error).message);
       setLoading(false);
