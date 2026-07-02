@@ -58,7 +58,9 @@ export class DriveApiClient {
 
   async moveToFolder(fileId: string, folderId: string): Promise<void> {
     const file = await this.request<{ parents?: string[] }>(`/files/${fileId}?fields=parents`);
-    const removeParents = encodeURIComponent((file.parents ?? []).join(","));
+    const currentParents = file.parents ?? [];
+    if (currentParents.includes(folderId)) return;
+    const removeParents = encodeURIComponent(currentParents.join(","));
     await this.request(
       `/files/${fileId}?addParents=${folderId}&removeParents=${removeParents}&fields=id`,
       { method: "PATCH", body: JSON.stringify({}) },

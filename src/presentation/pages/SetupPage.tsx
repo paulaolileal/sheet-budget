@@ -30,13 +30,10 @@ export function SetupPage() {
       } else {
         const initializer = new SheetsInitializer(getAccessToken);
         spreadsheetId = await initializer.createSpreadsheet(SPREADSHEET_TITLE);
-        try {
-          const folderId = await drive.getOrCreateFolder(FOLDER_NAME);
-          await drive.moveToFolder(spreadsheetId, folderId);
-        } catch {
-          // Non-fatal: folder organization is cosmetic
-        }
       }
+
+      const folderId = await drive.getOrCreateFolder(FOLDER_NAME);
+      await drive.moveToFolder(spreadsheetId, folderId);
 
       setSpreadsheetId(user.email, spreadsheetId);
       clearSheetProvider();
