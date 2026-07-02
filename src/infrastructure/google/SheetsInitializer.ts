@@ -54,6 +54,7 @@ const SHEET_SPECS: SheetSpec[] = [
 
 type CreatedSheet = { properties: { sheetId: number; title: string } };
 type CreateResponse = { spreadsheetId: string; sheets: CreatedSheet[] };
+type AddSheetReply = { replies: { addSheet?: { properties: { title: string; sheetId: number } } }[] };
 
 export class SheetsInitializer {
   constructor(private readonly getAccessToken: () => string | null) {}
@@ -120,5 +121,53 @@ export class SheetsInitializer {
     });
 
     return spreadsheetId;
+  }
+
+  async ensureSheets(spreadsheetId: string): Promise<void> {
+    type SpreadsheetMeta = { sheets: CreatedSheet[] };
+    const meta = await this.request<SpreadsheetMeta>(
+      `${SHEETS_API}/${spreadsheetId}?fields=sheets.properties`,
+    );
+
+    const sheetIdMap = new Map<string, number>(
+      meta.sheets.map((s) => [s.properties.title, s.properties.sheetId]),
+    );
+
+    const missing = SHEET_SPECS.filter((spec) => !sheetIdMap.has(spec.title));
+    if (missing.length > 0) {
+      const result = await this.request<AddSheetReply>(
+        `${SHEETS_API}/${spreadsheetId}:batchUpdate`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            requests: missing.map((spec) => ({ addSheet: { properties: { title: spec.title } } })),
+          }),
+        },
+      );
+      for (const reply of result.replies) {
+        if (reply.addSheet) {
+          sheetIdMap.set(reply.addSheet.properties.title, reply.addSheet.properties.sheetId);
+        }
+      }
+    }
+
+    await this.request(`${SHEETS_API}/${spreadsheetId}:batchUpdate`, {
+      method: "POST",
+      body: JSON.stringify({
+        requests: SHEET_SPECS.map((spec) => ({
+          updateCells: {
+            range: {
+              sheetId: sheetIdMap.get(spec.title)!,
+              startRowIndex: 0,
+              endRowIndex: 1,
+              startColumnIndex: 0,
+              endColumnIndex: spec.headers.length,
+            },
+            rows: [{ values: spec.headers.map((h) => ({ userEnteredValue: { stringValue: h } })) }],
+            fields: "userEnteredValue",
+          },
+        })),
+      }),
+    });
   }
 }

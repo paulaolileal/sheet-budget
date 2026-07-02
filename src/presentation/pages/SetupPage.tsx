@@ -22,13 +22,14 @@ export function SetupPage() {
   useEffect(() => {
     async function connect() {
       const drive = new DriveApiClient(getAccessToken);
+      const initializer = new SheetsInitializer(getAccessToken);
       const found = await drive.listSpreadsheets(SPREADSHEET_TITLE);
 
       let spreadsheetId: string;
       if (found.length > 0) {
         spreadsheetId = found[0].id;
+        await initializer.ensureSheets(spreadsheetId);
       } else {
-        const initializer = new SheetsInitializer(getAccessToken);
         spreadsheetId = await initializer.createSpreadsheet(SPREADSHEET_TITLE);
       }
 
