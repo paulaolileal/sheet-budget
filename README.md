@@ -11,16 +11,16 @@ Você anota suas contas no papel, numa planilha gigante, ou simplesmente não an
 <details>
 <summary>Ver mais telas</summary>
 
-| Lançamentos | Receitas |
-|---|---|
+| Lançamentos                                    | Receitas                                |
+| ---------------------------------------------- | --------------------------------------- |
 | ![Lançamentos](docs/images/sb-lancamentos.png) | ![Receitas](docs/images/sb-receita.png) |
 
-| Recorrências | Configurações |
-|---|---|
+| Recorrências                                     | Configurações                                      |
+| ------------------------------------------------ | -------------------------------------------------- |
 | ![Recorrências](docs/images/sb-recorrencias.png) | ![Configurações](docs/images/sb-configuracoes.png) |
 
-| Login | Tema claro |
-|---|---|
+| Login                              | Tema claro                                   |
+| ---------------------------------- | -------------------------------------------- |
 | ![Login](docs/images/sb-login.png) | ![Tema claro](docs/images/sb-tema-claro.png) |
 
 </details>
