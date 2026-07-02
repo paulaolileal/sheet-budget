@@ -12,8 +12,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useSpreadsheetStore } from "@/store/spreadsheetStore";
 import { clearSheetProvider } from "@/application/repositoryProvider";
 
-const FOLDER_NAME = "LealTEK";
-const SPREADSHEET_TITLE = "Sheet Budget";
+const FOLDER_NAME = "LealTEK Apps";
+const SPREADSHEET_TITLE = "SheetBudget";
 
 export function SetupPage() {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export function SetupPage() {
   useEffect(() => {
     const client = new DriveApiClient(getAccessToken);
     client
-      .listSpreadsheets()
+      .listSpreadsheets(SPREADSHEET_TITLE)
       .then(setSpreadsheets)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));

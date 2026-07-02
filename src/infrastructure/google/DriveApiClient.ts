@@ -27,9 +27,9 @@ export class DriveApiClient {
     return res.json() as Promise<T>;
   }
 
-  async listSpreadsheets(): Promise<DriveFile[]> {
+  async listSpreadsheets(name: string): Promise<DriveFile[]> {
     const q = encodeURIComponent(
-      "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
+      `mimeType='application/vnd.google-apps.spreadsheet' and name='${name}' and trashed=false`,
     );
     const data = await this.request<{ files: DriveFile[] }>(
       `/files?q=${q}&fields=files(id,name,modifiedTime)&orderBy=modifiedTime+desc`,
