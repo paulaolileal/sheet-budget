@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -18,8 +18,12 @@ export function SetupPage() {
   const user = useAuthStore((s) => s.user)!;
   const setSpreadsheetId = useSpreadsheetStore((s) => s.setSpreadsheetId);
   const [error, setError] = useState<string | null>(null);
+  const connectingRef = useRef(false);
 
   useEffect(() => {
+    if (connectingRef.current) return;
+    connectingRef.current = true;
+
     async function connect() {
       const drive = new DriveApiClient(getAccessToken);
       const initializer = new SheetsInitializer(getAccessToken);
