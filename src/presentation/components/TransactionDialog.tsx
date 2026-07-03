@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { MonthYearPicker } from "./MonthYearPicker";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,8 +27,14 @@ import {
   useCreateTransaction,
   useCreateTemplate,
   useDeleteTransaction,
+  useTransactions,
   useUpdateTransaction,
 } from "@/hooks/queries";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { Transaction, TipoLancamento } from "@/domain/types";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaSchema } from "@/domain/schemas";
@@ -42,6 +48,7 @@ import {
   Wallet,
   DollarSign,
   CircleDot,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -88,12 +95,46 @@ export function TransactionDialog({
 }) {
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
+  const { data: allTransactions = [] } = useTransactions();
   const create = useCreateTransaction();
   const createTemplate = useCreateTemplate();
   const update = useUpdateTransaction();
   const remove = useDeleteTransaction();
   const competencia = useUiStore((s) => s.competencia);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+
+  const serie = useMemo(() => {
+    if (!transaction) return [];
+    if (transaction.template_id) {
+      return allTransactions.filter((tx) => tx.template_id === transaction.template_id);
+    }
+    if (transaction.tipo_lancamento === "PARCELADO") {
+      const baseDesc = transaction.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim();
+      return allTransactions.filter(
+        (tx) =>
+          tx.tipo_lancamento === "PARCELADO" &&
+          tx.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim() === baseDesc,
+      );
+    }
+    return [transaction];
+  }, [allTransactions, transaction]);
+
+  const debtSummary = useMemo(() => {
+    if (!transaction) return null;
+    const txComp = transaction.competencia;
+    const txYear = txComp.slice(0, 4);
+    const total = serie
+      .filter((tx) => tx.competencia <= txComp)
+      .reduce((sum, tx) => sum + tx.valor, 0);
+    const noAno = serie
+      .filter((tx) => tx.competencia.startsWith(txYear) && tx.competencia <= txComp)
+      .reduce((sum, tx) => sum + tx.valor, 0);
+    const restante = serie
+      .filter((tx) => tx.competencia > txComp)
+      .reduce((sum, tx) => sum + tx.valor, 0);
+    return { total, noAno, restante };
+  }, [serie, transaction]);
 
   const isEditing = !!transaction;
 
@@ -127,6 +168,7 @@ export function TransactionDialog({
         parcelas: 1,
       });
       setConfirmDelete(false);
+      setSummaryOpen(false);
     }
   }, [open, transaction, competencia, reset]);
 
@@ -217,6 +259,42 @@ export function TransactionDialog({
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-3">
+          {isEditing && debtSummary && (
+            <Collapsible open={summaryOpen} onOpenChange={setSummaryOpen}>
+              <CollapsibleTrigger asChild>
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between text-xs text-muted-foreground border rounded-md px-3 py-2 hover:bg-muted/50 transition-colors"
+                >
+                  <span>Resumo da série</span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${summaryOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="grid grid-cols-3 divide-x border border-t-0 rounded-b-md bg-muted/30">
+                  {(
+                    [
+                      { label: "Total", value: debtSummary.total },
+                      { label: "No ano", value: debtSummary.noAno },
+                      { label: "Restante", value: debtSummary.restante },
+                    ] as const
+                  ).map(({ label, value }) => (
+                    <div key={label} className="flex flex-col items-center py-3 px-2 gap-1">
+                      <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+                        {label}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums">
+                        {value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
           <div>
             <Label className="flex items-center gap-1.5">
               <AlignLeft className="h-3.5 w-3.5" />
