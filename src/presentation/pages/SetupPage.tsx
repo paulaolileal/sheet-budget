@@ -12,6 +12,12 @@ import { clearSheetProvider } from "@/application/repositoryProvider";
 const FOLDER_NAME = "LealTEK Apps";
 const SPREADSHEET_TITLE = "SheetBudget";
 
+const STEPS = [
+  "Verificando sua planilha…",
+  "Configurando estrutura…",
+  "Quase lá…",
+] as const;
+
 export function SetupPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -19,6 +25,17 @@ export function SetupPage() {
   const setSpreadsheetId = useSpreadsheetStore((s) => s.setSpreadsheetId);
   const [error, setError] = useState<string | null>(null);
   const connectingRef = useRef(false);
+  const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    if (error) return;
+    const t1 = setTimeout(() => setStep(1), 1800);
+    const t2 = setTimeout(() => setStep(2), 4000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [error]);
 
   useEffect(() => {
     if (connectingRef.current) return;
@@ -51,17 +68,28 @@ export function SetupPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-4">
-      <div className="flex flex-col items-center gap-4">
-        <img src="/logo-bs.png" alt="Budget" className="h-12 w-12 object-contain rounded-md" />
+      <div className="flex flex-col items-center gap-6 max-w-xs w-full text-center">
+        <div className="flex items-center gap-3">
+          <img src="/logo-bs.png" alt="Budget" className="h-10 w-10 object-contain rounded-md" />
+          <div className="text-left">
+            <p className="text-[11px] font-semibold tracking-widest text-muted-foreground uppercase">
+              lealtek
+            </p>
+            <p className="text-sm font-bold tracking-tight">Budget</p>
+          </div>
+        </div>
         {error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive max-w-sm text-center">
+          <p className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </p>
         ) : (
-          <>
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Conectando sua planilha…</p>
-          </>
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div>
+              <p className="text-sm font-medium">{STEPS[step]}</p>
+              <p className="text-xs text-muted-foreground mt-1">Conectando ao Google Drive</p>
+            </div>
+          </div>
         )}
       </div>
     </div>

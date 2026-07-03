@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, HardDrive, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signIn, silentSignIn, getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
@@ -72,39 +72,122 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-      <div className="w-full max-w-sm px-8 py-12 space-y-8">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-3">
-            <img src="/logo-bs.png" alt="Budget" className="h-14 w-14 object-contain" />
-            <div className="text-left">
-              <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                lealtek
-              </p>
-              <h1 className="text-3xl font-bold tracking-tight">Budget</h1>
-            </div>
+    <div className="min-h-screen flex bg-background text-foreground">
+
+      {/* Painel esquerdo — visível apenas lg+ */}
+      <div
+        className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 relative overflow-hidden text-white"
+        style={{
+          background: "linear-gradient(145deg, oklch(0.20 0.12 265) 0%, oklch(0.32 0.14 265) 100%)",
+        }}
+      >
+        <div
+          className="absolute inset-0 opacity-20 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse at 30% 20%, oklch(0.50 0.18 265 / 40%) 0%, transparent 60%)",
+          }}
+        />
+
+        <div className="relative z-10 flex items-center gap-3">
+          <img
+            src="/logo-bs.png"
+            alt="Budget"
+            className="h-10 w-10 object-contain rounded-lg opacity-95"
+          />
+          <div>
+            <p className="text-[11px] font-semibold tracking-widest text-white/55 uppercase">
+              lealtek
+            </p>
+            <p className="text-lg font-bold tracking-tight">Budget</p>
           </div>
-          <p className="text-sm text-muted-foreground">Gestão de finanças pessoais</p>
         </div>
 
-        {loading ? (
-          <div className="flex flex-col items-center gap-2 py-2 text-sm text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            {user ? "Reconectando sua conta…" : "Entrando…"}
+        <div className="relative z-10 space-y-10">
+          <div>
+            <h2 className="text-4xl font-bold tracking-tight leading-tight">
+              Suas finanças,
+              <br />
+              organizadas.
+            </h2>
+            <p className="mt-4 text-base text-white/65 max-w-xs leading-relaxed">
+              Gestão de finanças pessoais com os dados sempre no seu Google Drive.
+            </p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {error && (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
+          <ul className="space-y-4">
+            {[
+              { Icon: CheckCircle2, text: "Conectado ao Google Sheets" },
+              { Icon: HardDrive, text: "Dados no seu Drive, sempre" },
+              { Icon: BarChart3, text: "Gráficos e relatórios mensais" },
+            ].map(({ Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <Icon className="h-5 w-5 text-white/60 shrink-0" />
+                <span className="text-sm text-white/80">{text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="relative z-10">
+          <a
+            href="https://lealtek.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-white/35 hover:text-white/55 transition-colors"
+          >
+            lealtek.com
+          </a>
+        </div>
+      </div>
+
+      {/* Painel direito / form */}
+      <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-14">
+        <div className="w-full max-w-sm space-y-8">
+
+          {/* Logo — só mobile/tablet */}
+          <div className="text-center space-y-2 lg:hidden">
+            <div className="flex items-center justify-center gap-3">
+              <img src="/logo-bs.png" alt="Budget" className="h-12 w-12 object-contain" />
+              <div className="text-left">
+                <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                  lealtek
+                </p>
+                <h1 className="text-3xl font-bold tracking-tight">Budget</h1>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">Gestão de finanças pessoais</p>
+          </div>
+
+          {/* Heading — lg+ */}
+          <div className="hidden lg:block">
+            <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Entre com sua conta Google para continuar.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>{user ? "Reconectando sua conta…" : "Entrando…"}</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {error && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+              <Button onClick={handleSignIn} className="w-full gap-2.5 h-11" size="lg">
+                <GoogleIcon />
+                {user ? "Reconectar com Google" : "Entrar com Google"}
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Seus dados ficam no seu Google Drive
               </p>
-            )}
-            <Button onClick={handleSignIn} className="w-full gap-2" size="lg">
-              <GoogleIcon />
-              {user ? "Reconectar com Google" : "Entrar com Google"}
-            </Button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

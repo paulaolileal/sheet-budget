@@ -107,15 +107,22 @@ export function AppShell() {
               end={end}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
+                  "relative flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm transition-colors",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/60",
                 )
               }
             >
-              <Icon className="h-4 w-4" />
-              {label}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <span className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-primary" />
+                  )}
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>
@@ -129,6 +136,7 @@ export function AppShell() {
               />
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate">{user.name}</div>
+                <div className="text-[10px] text-muted-foreground truncate leading-tight">{user.email}</div>
               </div>
               <button
                 onClick={() => navigate("/settings")}
@@ -168,16 +176,16 @@ export function AppShell() {
               </button>
             </div>
           )}
-          <div className="flex flex-col items-center justify-center gap-2 px-4 py-5">
+          <div className="flex items-center justify-between px-4 py-3">
             <SyncIndicator />
             <a
               href="https://lealtek.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="opacity-40 hover:opacity-70 transition-opacity"
+              className="opacity-35 hover:opacity-60 transition-opacity"
               title="Desenvolvido por LealTEK"
             >
-              <img src="/lealtek-full.png" alt="LealTEK" className="h-14 object-contain" />
+              <img src="/lealtek-full.png" alt="LealTEK" className="h-5 object-contain" />
             </a>
           </div>
         </div>
@@ -262,13 +270,20 @@ export function AppShell() {
                 end={end}
                 className={({ isActive }) =>
                   cn(
-                    "flex flex-col items-center justify-center gap-0.5 text-[9px] font-medium transition-colors",
+                    "relative flex flex-col items-center justify-center gap-0.5 text-[10.5px] font-medium transition-colors",
                     isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )
                 }
               >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-primary" />
+                    )}
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </div>
