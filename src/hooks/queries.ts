@@ -173,6 +173,75 @@ export function useDeleteTransaction() {
   });
 }
 
+type SeriesScope = "only_this" | "this_and_future" | "all";
+
+export function useUpdateTransactionSeries() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      transaction,
+      patch,
+      scope,
+      allTransactions,
+      templates,
+    }: {
+      transaction: Transaction;
+      patch: Partial<Transaction>;
+      scope: SeriesScope;
+      allTransactions: Transaction[];
+      templates: RecurrenceTemplate[];
+    }) =>
+      withSync(async () => {
+        let targets: Transaction[] = [transaction];
+        if (scope !== "only_this") {
+          if (transaction.template_id) {
+            targets = allTransactions.filter((tx) => tx.template_id === transaction.template_id);
+          } else if (transaction.tipo_lancamento === "PARCELADO") {
+            const baseDesc = transaction.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim();
+            targets = allTransactions.filter(
+              (tx) =>
+                tx.tipo_lancamento === "PARCELADO" &&
+                tx.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim() === baseDesc,
+            );
+          }
+          if (scope === "this_and_future") {
+            targets = targets.filter((tx) => tx.competencia >= transaction.competencia);
+          }
+        }
+
+        for (const tx of targets) {
+          const txPatch: Partial<Transaction> = { ...patch };
+          if (patch.descricao && tx.tipo_lancamento === "PARCELADO") {
+            const suffix = tx.descricao.match(/\s*\(\d+\/\d+\)$/)?.[0] ?? "";
+            txPatch.descricao = patch.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim() + suffix;
+          }
+          await repo().updateTransaction(tx.transaction_id, txPatch);
+        }
+
+        if (transaction.template_id && scope !== "only_this") {
+          const tpl = templates.find((t) => t.template_id === transaction.template_id);
+          if (tpl) {
+            await repo().saveTemplate({
+              ...tpl,
+              nome: patch.descricao ?? tpl.nome,
+              categoria_id: patch.categoria_id ?? tpl.categoria_id,
+              payment_account_id:
+                patch.payment_account_id !== undefined
+                  ? patch.payment_account_id
+                  : tpl.payment_account_id,
+            });
+          }
+        }
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.transactions });
+      qc.invalidateQueries({ queryKey: qk.templates });
+      toast.success("Série atualizada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 export function useCreateAccount() {
   const qc = useQueryClient();
   return useMutation({

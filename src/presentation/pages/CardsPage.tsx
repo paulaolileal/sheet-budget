@@ -50,6 +50,12 @@ function addMonths(competencia: string, delta: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function isLastInstallment(label: string | undefined): boolean {
+  if (!label) return false;
+  const [a, b] = label.replace(/[()]/g, "").split("/");
+  return a === b;
+}
+
 function MonthPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const [year, setYear] = useState(() => Number(value.split("-")[0]));
@@ -645,20 +651,32 @@ export function CardsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {toChange.map((t) => (
-                        <tr key={t.transaction_id} className="border-t">
-                          <td className="px-3 py-2">
-                            {t.descricao}
-                            {installmentLabels.has(t.transaction_id) && (
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                {installmentLabels.get(t.transaction_id)}
+                      {toChange.map((t) => {
+                        const instLabel = installmentLabels.get(t.transaction_id);
+                        const isLast = isLastInstallment(instLabel);
+                        return (
+                          <tr
+                            key={t.transaction_id}
+                            className={isLast ? "border-t bg-amber-50/40" : "border-t"}
+                          >
+                            <td className="px-3 py-2">
+                              <span className="flex items-center gap-1.5 flex-wrap">
+                                {t.descricao}
+                                {instLabel && (
+                                  <span className="text-xs text-muted-foreground">{instLabel}</span>
+                                )}
+                                {isLast && (
+                                  <span className="text-[10px] font-medium px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+                                    última parcela
+                                  </span>
+                                )}
                               </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-right tabular-nums">{brl(t.valor)}</td>
-                          <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">{brl(t.valor)}</td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground">{t.status}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

@@ -8,6 +8,8 @@ import {
   ChevronDown,
   MoreHorizontal,
   Pencil,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -285,6 +287,26 @@ export function TransactionsPage() {
     };
   }, [filtered]);
 
+  const prevCompetencia = useMemo(() => {
+    const [y, m] = competencia.split("-").map(Number);
+    const d = new Date(y, m - 2, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }, [competencia]);
+
+  const prevTotals = useMemo(() => {
+    const prevActive = (txs ?? []).filter(
+      (t) => t.competencia === prevCompetencia && t.status !== "IGNORADO",
+    );
+    const aPagarItems = prevActive.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
+    const pagoItems = prevActive.filter((t) => t.status === "PAGO");
+    return {
+      aPagar: aPagarItems.reduce((s, t) => s + t.valor, 0),
+      aPagarCount: aPagarItems.length,
+      pago: pagoItems.reduce((s, t) => s + t.valor, 0),
+      pagoCount: pagoItems.length,
+    };
+  }, [txs, prevCompetencia]);
+
   function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
     updateTransaction({ id: tx.transaction_id, patch: { status: newStatus } });
   }
@@ -338,6 +360,21 @@ export function TransactionsPage() {
             </span>
           </>
         )}
+        <div className="ml-auto flex items-center gap-2 text-xs">
+          <MonthDelta
+            current={globalAPagar}
+            prev={prevTotals.aPagar}
+            currentCount={globalAPagarCount}
+            prevCount={prevTotals.aPagarCount}
+          />
+          <span className="text-border">|</span>
+          <MonthDelta
+            current={globalPago}
+            prev={prevTotals.pago}
+            currentCount={globalPagoCount}
+            prevCount={prevTotals.pagoCount}
+          />
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 mb-4 md:flex-row md:flex-wrap md:items-center">
@@ -781,9 +818,16 @@ export function TransactionsPage() {
                                 <Repeat className="h-3 w-3 text-muted-foreground" />
                               )}
                               {parcela && (
-                                <span className="text-xs text-muted-foreground tabular-nums">
-                                  {parcela}
-                                </span>
+                                <>
+                                  <span className="text-xs text-muted-foreground tabular-nums">
+                                    {parcela}
+                                  </span>
+                                  {isLastParcela(parcela) && (
+                                    <span className="text-[10px] leading-none px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200/80">
+                                      fin.
+                                    </span>
+                                  )}
+                                </>
                               )}
                               {tx.payment_account_id && accMap[tx.payment_account_id] && (
                                 <span className="text-xs text-muted-foreground truncate">
@@ -917,12 +961,61 @@ export function TransactionsPage() {
   );
 }
 
+function isLastParcela(parcela: string | null): boolean {
+  if (!parcela) return false;
+  const [a, b] = parcela.split("/");
+  return a === b;
+}
+
+function MonthDelta({
+  current,
+  prev,
+  currentCount,
+  prevCount,
+}: {
+  current: number;
+  prev: number;
+  currentCount: number;
+  prevCount: number;
+}) {
+  if (prev === 0 && current === 0) return null;
+  const deltaVal = current - prev;
+  const deltaCnt = currentCount - prevCount;
+  const up = deltaVal > 0;
+  const Icon = up ? ArrowUp : ArrowDown;
+  const color = up ? "text-red-500" : "text-green-500";
+  const sign = deltaCnt >= 0 ? "+" : "";
+  const valSign = deltaVal >= 0 ? "+" : "-";
+  return (
+    <span className={cn("flex items-center gap-0.5 tabular-nums", color)}>
+      <Icon className="h-3 w-3" />
+      <span>
+        ({sign}
+        {deltaCnt})
+      </span>
+      <span>
+        {valSign}
+        {brl(Math.abs(deltaVal))}
+      </span>
+    </span>
+  );
+}
+
 function TipoCell({ tipo, parcela }: { tipo: TipoLancamento; parcela: string | null }) {
   if (tipo === "RECORRENTE") {
     return <Repeat className="h-3.5 w-3.5 text-muted-foreground" />;
   }
   if (tipo === "PARCELADO" && parcela) {
-    return <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>;
+    return (
+      <span className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>
+        {isLastParcela(parcela) && (
+          <span className="text-[10px] leading-none px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200/80">
+            fin.
+          </span>
+        )}
+      </span>
+    );
   }
   return null;
 }

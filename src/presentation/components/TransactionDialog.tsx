@@ -27,14 +27,20 @@ import {
   useCreateTransaction,
   useCreateTemplate,
   useDeleteTransaction,
+  useTemplates,
   useTransactions,
   useUpdateTransaction,
+  useUpdateTransactionSeries,
 } from "@/hooks/queries";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { Transaction, TipoLancamento } from "@/domain/types";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaSchema } from "@/domain/schemas";
@@ -96,13 +102,18 @@ export function TransactionDialog({
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
   const { data: allTransactions = [] } = useTransactions();
+  const { data: templates = [] } = useTemplates();
   const create = useCreateTransaction();
   const createTemplate = useCreateTemplate();
   const update = useUpdateTransaction();
+  const updateSeries = useUpdateTransactionSeries();
   const remove = useDeleteTransaction();
   const competencia = useUiStore((s) => s.competencia);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [scopeDialog, setScopeDialog] = useState<{
+    patch: Partial<import("@/domain/types").Transaction>;
+  } | null>(null);
 
   const serie = useMemo(() => {
     if (!transaction) return [];
@@ -188,7 +199,20 @@ export function TransactionDialog({
     };
 
     if (isEditing && transaction) {
-      await update.mutateAsync({ id: transaction.transaction_id, patch: base });
+      const patch = { ...base, competencia: values.competencia };
+      const hasSeries = serie.length > 1;
+      const seriesFieldChanged =
+        values.descricao !== transaction.descricao ||
+        values.categoria_id !== transaction.categoria_id ||
+        values.payment_account_id !== transaction.payment_account_id ||
+        values.valor !== transaction.valor;
+
+      if (hasSeries && seriesFieldChanged) {
+        setScopeDialog({ patch });
+        return;
+      }
+
+      await update.mutateAsync({ id: transaction.transaction_id, patch });
       onOpenChange(false);
       return;
     }
@@ -342,11 +366,7 @@ export function TransactionDialog({
                 control={control}
                 name="competencia"
                 render={({ field }) => (
-                  <MonthYearPicker
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isEditing}
-                  />
+                  <MonthYearPicker value={field.value} onChange={field.onChange} />
                 )}
               />
               {formState.errors.competencia && (
@@ -574,13 +594,84 @@ export function TransactionDialog({
             </Button>
             <Button
               type="submit"
-              disabled={create.isPending || update.isPending || createTemplate.isPending}
+              disabled={
+                create.isPending ||
+                update.isPending ||
+                createTemplate.isPending ||
+                updateSeries.isPending
+              }
             >
               {isEditing ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <AlertDialog open={!!scopeDialog} onOpenChange={(o) => !o && setScopeDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Atualizar série</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este lançamento faz parte de uma série. O que deseja atualizar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button
+              onClick={async () => {
+                if (!scopeDialog || !transaction) return;
+                await updateSeries.mutateAsync({
+                  transaction,
+                  patch: scopeDialog.patch,
+                  scope: "only_this",
+                  allTransactions,
+                  templates,
+                });
+                setScopeDialog(null);
+                onOpenChange(false);
+              }}
+              disabled={updateSeries.isPending}
+            >
+              Somente este
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!scopeDialog || !transaction) return;
+                await updateSeries.mutateAsync({
+                  transaction,
+                  patch: scopeDialog.patch,
+                  scope: "this_and_future",
+                  allTransactions,
+                  templates,
+                });
+                setScopeDialog(null);
+                onOpenChange(false);
+              }}
+              disabled={updateSeries.isPending}
+            >
+              Esse e os próximos
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!scopeDialog || !transaction) return;
+                await updateSeries.mutateAsync({
+                  transaction,
+                  patch: scopeDialog.patch,
+                  scope: "all",
+                  allTransactions,
+                  templates,
+                });
+                setScopeDialog(null);
+                onOpenChange(false);
+              }}
+              disabled={updateSeries.isPending}
+            >
+              Todos da série
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
