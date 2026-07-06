@@ -627,9 +627,22 @@ export function CardsPage() {
           </DialogHeader>
           {confirming &&
             (() => {
-              const toChange = confirming.transactions.filter(
-                (t) => t.status !== "ADIANTADO" && t.status !== "IGNORADO",
-              );
+              const toChange = confirming.transactions
+                .filter((t) => t.status !== "ADIANTADO" && t.status !== "IGNORADO")
+                .sort((a, b) => {
+                  const typeOrder = { RECORRENTE: 0, PARCELADO: 1, MANUAL: 2 };
+                  const tDiff = typeOrder[a.tipo_lancamento] - typeOrder[b.tipo_lancamento];
+                  if (tDiff !== 0) return tDiff;
+                  if (a.tipo_lancamento === "PARCELADO") {
+                    const labelA = installmentLabels.get(a.transaction_id) ?? "";
+                    const labelB = installmentLabels.get(b.transaction_id) ?? "";
+                    const [xA, yA] = labelA.replace(/[()]/g, "").split("/").map(Number);
+                    const [xB, yB] = labelB.replace(/[()]/g, "").split("/").map(Number);
+                    if (yA !== yB) return yA - yB;
+                    return xA - xB;
+                  }
+                  return 0;
+                });
               return toChange.length === 0 ? (
                 <p className="text-sm text-muted-foreground px-1">
                   Nenhuma transação será alterada.
