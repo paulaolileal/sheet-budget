@@ -362,9 +362,9 @@ export function TransactionsPage() {
         )}
         <div className="ml-auto text-xs">
           <MonthDelta
-            current={globalAPagar + globalPago + globalAdiantado}
+            current={globalAPagar + globalPago}
             prev={prevTotals.aPagar + prevTotals.pago}
-            currentCount={globalAPagarCount + globalPagoCount + globalAdiantadoCount}
+            currentCount={globalAPagarCount + globalPagoCount}
             prevCount={prevTotals.aPagarCount + prevTotals.pagoCount}
           />
         </div>
