@@ -986,9 +986,12 @@ function MonthDelta({
         ({sign}
         {deltaCnt})
       </span>
-      <span>
-        {valSign}
-        {brl(Math.abs(deltaVal))}
+      <span className="ml-1">
+        R$ {valSign}
+        {Math.abs(deltaVal).toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}
       </span>
     </span>
   );
