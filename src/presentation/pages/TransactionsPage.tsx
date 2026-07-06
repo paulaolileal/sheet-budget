@@ -360,19 +360,12 @@ export function TransactionsPage() {
             </span>
           </>
         )}
-        <div className="ml-auto flex items-center gap-2 text-xs">
+        <div className="ml-auto text-xs">
           <MonthDelta
-            current={globalAPagar}
-            prev={prevTotals.aPagar}
-            currentCount={globalAPagarCount}
-            prevCount={prevTotals.aPagarCount}
-          />
-          <span className="text-border">|</span>
-          <MonthDelta
-            current={globalPago}
-            prev={prevTotals.pago}
-            currentCount={globalPagoCount}
-            prevCount={prevTotals.pagoCount}
+            current={globalAPagar + globalPago + globalAdiantado}
+            prev={prevTotals.aPagar + prevTotals.pago}
+            currentCount={globalAPagarCount + globalPagoCount + globalAdiantadoCount}
+            prevCount={prevTotals.aPagarCount + prevTotals.pagoCount}
           />
         </div>
       </div>
@@ -818,16 +811,16 @@ export function TransactionsPage() {
                                 <Repeat className="h-3 w-3 text-muted-foreground" />
                               )}
                               {parcela && (
-                                <>
-                                  <span className="text-xs text-muted-foreground tabular-nums">
-                                    {parcela}
-                                  </span>
-                                  {isLastParcela(parcela) && (
-                                    <span className="text-[10px] leading-none px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200/80">
-                                      fin.
-                                    </span>
+                                <span
+                                  className={cn(
+                                    "text-xs tabular-nums",
+                                    isLastParcela(parcela)
+                                      ? "font-medium text-foreground/70"
+                                      : "text-muted-foreground",
                                   )}
-                                </>
+                                >
+                                  {parcela}
+                                </span>
                               )}
                               {tx.payment_account_id && accMap[tx.payment_account_id] && (
                                 <span className="text-xs text-muted-foreground truncate">
@@ -1007,13 +1000,13 @@ function TipoCell({ tipo, parcela }: { tipo: TipoLancamento; parcela: string | n
   }
   if (tipo === "PARCELADO" && parcela) {
     return (
-      <span className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground tabular-nums">{parcela}</span>
-        {isLastParcela(parcela) && (
-          <span className="text-[10px] leading-none px-1 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200/80">
-            fin.
-          </span>
+      <span
+        className={cn(
+          "text-xs tabular-nums",
+          isLastParcela(parcela) ? "font-medium text-foreground/70" : "text-muted-foreground",
         )}
+      >
+        {parcela}
       </span>
     );
   }
