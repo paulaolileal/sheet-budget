@@ -73,7 +73,6 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex bg-background text-foreground">
-
       {/* Painel esquerdo — visível apenas lg+ */}
       <div
         className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 relative overflow-hidden text-white"
@@ -143,7 +142,6 @@ export function LoginPage() {
       {/* Painel direito / form */}
       <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-14">
         <div className="w-full max-w-sm space-y-8">
-
           {/* Logo — só mobile/tablet */}
           <div className="text-center space-y-2 lg:hidden">
             <div className="flex items-center justify-center gap-3">

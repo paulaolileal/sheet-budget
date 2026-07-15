@@ -25,7 +25,15 @@ import {
 } from "@/hooks/queries";
 import { brl, competenciaLabel, currentCompetencia } from "@/utils/format";
 import type { Account, Transaction } from "@/domain/types";
-import { CalendarIcon, ChevronLeft, ChevronRight, Loader2, Pencil, Trash2, Plus } from "lucide-react";
+import {
+  CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AppIcon } from "../components/AppIcon";
 import { CreditCardVisual } from "../components/CreditCardVisual";
@@ -696,7 +704,11 @@ export function CardsPage() {
               );
             })()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirming(null)} disabled={bulkPay.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setConfirming(null)}
+              disabled={bulkPay.isPending}
+            >
               Cancelar
             </Button>
             <Button

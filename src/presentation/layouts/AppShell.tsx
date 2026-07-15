@@ -136,7 +136,9 @@ export function AppShell() {
               />
               <div className="flex-1 min-w-0">
                 <div className="text-xs font-medium truncate">{user.name}</div>
-                <div className="text-[10px] text-muted-foreground truncate leading-tight">{user.email}</div>
+                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                  {user.email}
+                </div>
               </div>
               <button
                 onClick={() => navigate("/settings")}

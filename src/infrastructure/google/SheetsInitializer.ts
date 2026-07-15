@@ -54,7 +54,9 @@ const SHEET_SPECS: SheetSpec[] = [
 
 type CreatedSheet = { properties: { sheetId: number; title: string } };
 type CreateResponse = { spreadsheetId: string; sheets: CreatedSheet[] };
-type AddSheetReply = { replies: { addSheet?: { properties: { title: string; sheetId: number } } }[] };
+type AddSheetReply = {
+  replies: { addSheet?: { properties: { title: string; sheetId: number } } }[];
+};
 
 export class SheetsInitializer {
   constructor(private readonly getAccessToken: () => string | null) {}

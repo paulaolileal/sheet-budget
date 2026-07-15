@@ -12,11 +12,7 @@ import { clearSheetProvider } from "@/application/repositoryProvider";
 const FOLDER_NAME = "LealTEK Apps";
 const SPREADSHEET_TITLE = "SheetBudget";
 
-const STEPS = [
-  "Verificando sua planilha…",
-  "Configurando estrutura…",
-  "Quase lá…",
-] as const;
+const STEPS = ["Verificando sua planilha…", "Configurando estrutura…", "Quase lá…"] as const;
 
 export function SetupPage() {
   const navigate = useNavigate();
