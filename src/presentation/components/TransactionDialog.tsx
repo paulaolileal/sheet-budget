@@ -112,7 +112,7 @@ export function TransactionDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [scopeDialog, setScopeDialog] = useState<{
-    patch: Partial<import("@/domain/types").Transaction>;
+    patch: Partial<Transaction>;
   } | null>(null);
 
   const serie = useMemo(() => {
@@ -199,13 +199,27 @@ export function TransactionDialog({
     };
 
     if (isEditing && transaction) {
-      const patch = { ...base, competencia: values.competencia };
+      // Only include fields the user actually changed, so propagating to a
+      // series (this-and-future/all) never touches untouched fields.
+      const patch: Partial<Transaction> = {};
+      if (values.descricao !== transaction.descricao) patch.descricao = values.descricao;
+      if (values.categoria_id !== transaction.categoria_id)
+        patch.categoria_id = values.categoria_id;
+      if (values.payment_account_id !== transaction.payment_account_id)
+        patch.payment_account_id = values.payment_account_id;
+      if (values.valor !== transaction.valor) patch.valor = values.valor;
+      if (values.tipo_lancamento !== transaction.tipo_lancamento)
+        patch.tipo_lancamento = values.tipo_lancamento;
+      if (values.status !== transaction.status) patch.status = values.status;
+      if (values.competencia !== transaction.competencia) patch.competencia = values.competencia;
+
       const hasSeries = serie.length > 1;
       const seriesFieldChanged =
-        values.descricao !== transaction.descricao ||
-        values.categoria_id !== transaction.categoria_id ||
-        values.payment_account_id !== transaction.payment_account_id ||
-        values.valor !== transaction.valor;
+        patch.descricao !== undefined ||
+        patch.categoria_id !== undefined ||
+        patch.payment_account_id !== undefined ||
+        patch.valor !== undefined ||
+        patch.tipo_lancamento !== undefined;
 
       if (hasSeries && seriesFieldChanged) {
         setScopeDialog({ patch });

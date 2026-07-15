@@ -211,6 +211,12 @@ export function useUpdateTransactionSeries() {
 
         for (const tx of targets) {
           const txPatch: Partial<Transaction> = { ...patch };
+          if (tx.transaction_id !== transaction.transaction_id) {
+            // competencia and status belong to each occurrence, not the series —
+            // only the edited transaction itself may have them changed
+            delete txPatch.competencia;
+            delete txPatch.status;
+          }
           if (patch.descricao && tx.tipo_lancamento === "PARCELADO") {
             const suffix = tx.descricao.match(/\s*\(\d+\/\d+\)$/)?.[0] ?? "";
             txPatch.descricao = patch.descricao.replace(/\s*\(\d+\/\d+\)$/, "").trim() + suffix;
