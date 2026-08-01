@@ -35,9 +35,9 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/transactions", label: "Lançamentos", icon: Receipt },
   { to: "/incomes", label: "Receitas", icon: TrendingUp },
-  { to: "/debtors", label: "Devedores", icon: HandCoins },
   { to: "/cards", label: "Cartões", icon: CreditCard },
   { to: "/recurrences", label: "Recorrências", icon: Repeat },
+  { to: "/debtors", label: "Devedores", icon: HandCoins },
 ];
 
 function SyncIndicator() {
