@@ -241,14 +241,14 @@ export function DebtorsPage() {
 
             return (
               <Card key={debtor.debtor_id}>
-                <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
-                  <div>
+                <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 pb-3">
+                  <div className="min-w-0">
                     <CardTitle className="text-base">{debtor.nome}</CardTitle>
-                    <CardDescription className="tabular-nums">
+                    <CardDescription className="tabular-nums whitespace-nowrap">
                       Total no mês: {brl(total)}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap sm:shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
