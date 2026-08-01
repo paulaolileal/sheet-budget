@@ -24,7 +24,7 @@ export function App() {
             <Route index element={<DashboardPage />} />
             <Route path="transactions" element={<TransactionsPage />} />
             <Route path="incomes" element={<IncomePage />} />
-            <Route path="devedores" element={<DebtorsPage />} />
+            <Route path="debtors" element={<DebtorsPage />} />
             <Route path="cards" element={<CardsPage />} />
             <Route path="recurrences" element={<TemplatesPage />} />
             <Route path="settings" element={<SettingsPage />} />

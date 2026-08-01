@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -12,7 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, MessageCircle, CopyPlus, Repeat } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  MessageCircle,
+  CopyPlus,
+  Repeat,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { DebtorDialog } from "../components/DebtorDialog";
@@ -312,8 +320,14 @@ export function DebtorsPage() {
                                 {brl(debt.valor)}
                               </td>
                               <td className="px-3 py-2">
-                                <button
-                                  type="button"
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "h-6 gap-1 px-2 text-xs border-transparent",
+                                    STATUS_TONES[debt.status],
+                                  )}
+                                  disabled={updateDebt.isPending}
                                   onClick={() =>
                                     updateDebt.mutate({
                                       id: debt.debt_id,
@@ -322,14 +336,19 @@ export function DebtorsPage() {
                                       },
                                     })
                                   }
+                                  title={
+                                    debt.status === "PAGO"
+                                      ? "Marcar como pendente"
+                                      : "Marcar como pago"
+                                  }
                                 >
-                                  <Badge
-                                    variant="outline"
-                                    className={cn("cursor-pointer", STATUS_TONES[debt.status])}
-                                  >
-                                    {debt.status}
-                                  </Badge>
-                                </button>
+                                  {debt.status === "PAGO" ? (
+                                    <CheckCircle2 className="h-3 w-3" />
+                                  ) : (
+                                    <Circle className="h-3 w-3" />
+                                  )}
+                                  {debt.status}
+                                </Button>
                               </td>
                               <td className="px-3 py-2">
                                 <div className="flex items-center justify-end gap-1">
