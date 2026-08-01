@@ -3,6 +3,7 @@ import { getSheetProvider } from "@/application/repositoryProvider";
 import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type {
   Category,
+  Debt,
   Income,
   InvoiceAmount,
   Transaction,
@@ -11,11 +12,15 @@ import type {
 import {
   accountInputSchema,
   categoryInputSchema,
+  debtInputSchema,
+  debtorInputSchema,
   incomeInputSchema,
   invoiceAmountInputSchema,
   transactionInputSchema,
   type AccountInput,
   type CategoryInput,
+  type DebtInput,
+  type DebtorInput,
   type IncomeInput,
   type InvoiceAmountInput,
   type TransactionInput,
@@ -34,6 +39,8 @@ export const qk = {
   categories: ["categories"] as const,
   incomes: ["incomes"] as const,
   invoice_amounts: ["invoice_amounts"] as const,
+  debtors: ["debtors"] as const,
+  debts: ["debts"] as const,
 };
 
 const STALE = {
@@ -81,6 +88,20 @@ export const useInvoiceAmounts = () =>
   useQuery({
     queryKey: qk.invoice_amounts,
     queryFn: () => repo().getInvoiceAmounts(),
+    staleTime: STALE.transactional,
+  });
+
+export const useDebtors = () =>
+  useQuery({
+    queryKey: qk.debtors,
+    queryFn: () => repo().getDebtors(),
+    staleTime: STALE.transactional,
+  });
+
+export const useDebts = () =>
+  useQuery({
+    queryKey: qk.debts,
+    queryFn: () => repo().getDebts(),
     staleTime: STALE.transactional,
   });
 
@@ -474,6 +495,147 @@ export function useGenerateRecurring() {
     },
     onError: (e: Error) => {
       toast.error(e.message, { id: "gen-recurring" });
+    },
+  });
+}
+
+export function useCreateDebtor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: DebtorInput) => {
+      const parsed = debtorInputSchema.parse(input);
+      return withSync(() => repo().createDebtor(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debtors });
+      toast.success("Devedor criado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateDebtor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: DebtorInput }) => {
+      const parsed = debtorInputSchema.parse(data);
+      return withSync(() => repo().updateDebtor(id, parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debtors });
+      toast.success("Devedor atualizado");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteDebtor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteDebtor(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debtors });
+      qc.invalidateQueries({ queryKey: qk.debts });
+      toast.success("Devedor excluído");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useCreateDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: DebtInput) => {
+      const parsed = debtInputSchema.parse(input);
+      return withSync(() => repo().createDebt(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debts });
+      toast.success("Dívida adicionada");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: Partial<Debt> }) =>
+      withSync(() => repo().updateDebt(id, patch)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debts });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useDeleteDebt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deleteDebt(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debts });
+      toast.success("Dívida excluída");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+function shiftCompetencia(c: string, months: number): string {
+  const [y, m] = c.split("-").map(Number);
+  const d = new Date(y, m - 1 + months, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+export function useDuplicatePreviousMonthDebts() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const competencia = useUiStore.getState().competencia;
+      const previous = shiftCompetencia(competencia, -1);
+      const debts = await repo().getDebts();
+
+      const existingKeys = new Set(
+        debts
+          .filter((d) => d.competencia === competencia)
+          .map((d) => `${d.debtor_id}|${d.descricao}`),
+      );
+
+      const missing = debts.filter(
+        (d) => d.competencia === previous && !existingKeys.has(`${d.debtor_id}|${d.descricao}`),
+      );
+
+      if (missing.length === 0) return { count: 0, competencia };
+
+      const monthLabel = competenciaLabel(competencia);
+      toast.loading(`Duplicando dívidas para ${monthLabel}...`, { id: "dup-debts" });
+
+      const created = await repo().createDebtsBatch(
+        missing.map((d) => ({
+          debtor_id: d.debtor_id,
+          competencia,
+          descricao: d.descricao,
+          valor: d.valor,
+          status: "PENDENTE" as const,
+        })),
+      );
+
+      return { count: created.length, competencia };
+    },
+    onSuccess: async ({ count, competencia }) => {
+      await qc.invalidateQueries({ queryKey: qk.debts });
+      const monthLabel = competenciaLabel(competencia);
+      if (count === 0) {
+        toast.info(`Nenhuma dívida do mês anterior para duplicar em ${monthLabel}`, {
+          id: "dup-debts",
+        });
+      } else {
+        toast.success(`${count} dívida(s) duplicada(s) para ${monthLabel}`, { id: "dup-debts" });
+      }
+    },
+    onError: (e: Error) => {
+      toast.error(e.message, { id: "dup-debts" });
     },
   });
 }

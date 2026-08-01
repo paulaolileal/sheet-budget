@@ -32,3 +32,12 @@ export function incomeId(competencia: string, descricao: string): string {
   const [year, month] = competencia.split("-");
   return `inc-${year}-${month}-${slugify(descricao)}-${Date.now().toString(36)}`;
 }
+
+export function debtorId(nome: string): string {
+  return `debtor-${slugify(nome)}-${Date.now().toString(36)}`;
+}
+
+export function debtId(competencia: string, descricao: string): string {
+  const [year, month] = competencia.split("-");
+  return `debt-${year}-${month}-${slugify(descricao)}-${Date.now().toString(36)}`;
+}

@@ -84,3 +84,23 @@ export interface InvoiceAmount {
   competencia: Competencia;
   valor_real: number;
 }
+
+export const DEBT_STATUS = ["PENDENTE", "PAGO"] as const;
+export type DebtStatus = (typeof DEBT_STATUS)[number];
+
+export interface Debtor {
+  debtor_id: string;
+  nome: string;
+  /** Dígitos com DDI, ex: 5511999999999 — usado no link de cobrança do WhatsApp. */
+  telefone?: string;
+  icon_id?: string;
+}
+
+export interface Debt {
+  debt_id: string;
+  debtor_id: string;
+  competencia: Competencia;
+  descricao: string;
+  valor: number;
+  status: DebtStatus;
+}

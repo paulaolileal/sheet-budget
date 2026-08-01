@@ -50,6 +50,14 @@ const SHEET_SPECS: SheetSpec[] = [
     title: "invoice_amounts",
     headers: ["invoice_id", "payment_account_id", "competencia", "valor_real"],
   },
+  {
+    title: "debtors",
+    headers: ["debtor_id", "nome", "telefone", "icon_id"],
+  },
+  {
+    title: "debts",
+    headers: ["debt_id", "debtor_id", "competencia", "descricao", "valor", "status"],
+  },
 ];
 
 type CreatedSheet = { properties: { sheetId: number; title: string } };

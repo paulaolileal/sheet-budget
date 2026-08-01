@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { ACCOUNT_TIPO, RECURRENCE_TYPE, TIPO_LANCAMENTO, TRANSACTION_STATUS } from "./types";
+import {
+  ACCOUNT_TIPO,
+  DEBT_STATUS,
+  RECURRENCE_TYPE,
+  TIPO_LANCAMENTO,
+  TRANSACTION_STATUS,
+} from "./types";
 
 const competenciaRegex = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -98,6 +104,26 @@ export const invoiceAmountSchema = z.object({
 
 export const invoiceAmountInputSchema = invoiceAmountSchema.omit({ invoice_id: true });
 
+export const debtorSchema = z.object({
+  debtor_id: z.string().min(1),
+  nome: safeString(80),
+  telefone: safeString(20).optional(),
+  icon_id: z.string().optional(),
+});
+
+export const debtorInputSchema = debtorSchema.omit({ debtor_id: true });
+
+export const debtSchema = z.object({
+  debt_id: z.string().min(1),
+  debtor_id: z.string().min(1),
+  competencia: competenciaSchema,
+  descricao: safeString(120),
+  valor: z.number().positive(),
+  status: z.enum(DEBT_STATUS),
+});
+
+export const debtInputSchema = debtSchema.omit({ debt_id: true });
+
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
 export type TemplateFormInput = z.infer<typeof templateInputSchema>;
@@ -105,3 +131,5 @@ export type AccountInput = z.infer<typeof accountInputSchema>;
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
 export type IncomeInput = z.infer<typeof incomeInputSchema>;
 export type InvoiceAmountInput = z.infer<typeof invoiceAmountInputSchema>;
+export type DebtorInput = z.infer<typeof debtorInputSchema>;
+export type DebtInput = z.infer<typeof debtInputSchema>;

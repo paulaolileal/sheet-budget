@@ -21,13 +21,15 @@ import type { FinanceRepository } from "@/domain/repository";
 import type {
   Account,
   Category,
+  Debt,
+  Debtor,
   Income,
   InvoiceAmount,
   RecurrenceTemplate,
   RecurrenceType,
   Transaction,
 } from "@/domain/types";
-import { accountId, categoryId, incomeId, transactionId } from "@/lib/idgen";
+import { accountId, categoryId, debtId, debtorId, incomeId, transactionId } from "@/lib/idgen";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
 
@@ -43,6 +45,8 @@ const SHEETS = {
   categories: "categories",
   incomes: "incomes",
   invoice_amounts: "invoice_amounts",
+  debtors: "debtors",
+  debts: "debts",
 } as const;
 
 const TX_HEADERS = [
@@ -571,6 +575,158 @@ export class GoogleSheetsRepository implements FinanceRepository {
       });
     }
     return { invoice_id, ...data };
+  }
+
+  async getDebtors(): Promise<Debtor[]> {
+    try {
+      const rows = await this.getValues(SHEETS.debtors);
+      return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+        debtor_id: r.debtor_id,
+        nome: r.nome,
+        telefone: r.telefone || undefined,
+        icon_id: r.icon_id || undefined,
+      }));
+    } catch (err) {
+      if (isMissingSheetError(err)) return [];
+      throw err;
+    }
+  }
+
+  private debtorToRow(d: Debtor): (string | number)[] {
+    return [d.debtor_id, d.nome, d.telefone ?? "", d.icon_id ?? ""];
+  }
+
+  async createDebtor(data: Omit<Debtor, "debtor_id">): Promise<Debtor> {
+    const debtor: Debtor = { ...data, debtor_id: debtorId(data.nome) };
+    try {
+      await this.request(`/values/${SHEETS.debtors}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [this.debtorToRow(debtor)] }),
+      });
+    } catch (err) {
+      if (isMissingSheetError(err)) {
+        throw new Error(
+          "Crie a aba 'debtors' no Google Sheets com as colunas: debtor_id | nome | telefone | icon_id",
+        );
+      }
+      throw err;
+    }
+    return debtor;
+  }
+
+  async updateDebtor(id: string, patch: Partial<Omit<Debtor, "debtor_id">>): Promise<Debtor> {
+    const all = await this.getDebtors();
+    const current = all.find((d) => d.debtor_id === id);
+    if (!current) throw new Error(`Devedor ${id} não encontrado`);
+    const updated: Debtor = { ...current, ...patch, debtor_id: id };
+    const rowIdx = await this.findRowIndex(SHEETS.debtors, "debtor_id", id);
+    await this.request(
+      `/values/${SHEETS.debtors}!A${rowIdx}:D${rowIdx}?valueInputOption=USER_ENTERED`,
+      { method: "PUT", body: JSON.stringify({ values: [this.debtorToRow(updated)] }) },
+    );
+    return updated;
+  }
+
+  async deleteDebtor(id: string): Promise<void> {
+    const debts = await this.getDebts();
+    if (debts.some((d) => d.debtor_id === id)) {
+      throw new Error("Exclua as dívidas desse devedor antes de removê-lo.");
+    }
+    const rowIdx = await this.findRowIndex(SHEETS.debtors, "debtor_id", id);
+    const sheetId = await this.getSheetId(SHEETS.debtors);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: { sheetId, dimension: "ROWS", startIndex: rowIdx - 1, endIndex: rowIdx },
+            },
+          },
+        ],
+      }),
+    });
+  }
+
+  async getDebts(): Promise<Debt[]> {
+    try {
+      const rows = await this.getValues(SHEETS.debts);
+      return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+        debt_id: r.debt_id,
+        debtor_id: r.debtor_id,
+        competencia: r.competencia,
+        descricao: r.descricao,
+        valor: parseCurrency(r.valor),
+        status: (r.status as Debt["status"]) || "PENDENTE",
+      }));
+    } catch (err) {
+      if (isMissingSheetError(err)) return [];
+      throw err;
+    }
+  }
+
+  private debtToRow(d: Debt): (string | number)[] {
+    return [d.debt_id, d.debtor_id, d.competencia, d.descricao, d.valor, d.status];
+  }
+
+  async createDebt(data: Omit<Debt, "debt_id">): Promise<Debt> {
+    const debt: Debt = { ...data, debt_id: debtId(data.competencia, data.descricao) };
+    try {
+      await this.request(`/values/${SHEETS.debts}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [this.debtToRow(debt)] }),
+      });
+    } catch (err) {
+      if (isMissingSheetError(err)) {
+        throw new Error(
+          "Crie a aba 'debts' no Google Sheets com as colunas: debt_id | debtor_id | competencia | descricao | valor | status",
+        );
+      }
+      throw err;
+    }
+    return debt;
+  }
+
+  async createDebtsBatch(data: Omit<Debt, "debt_id">[]): Promise<Debt[]> {
+    const created: Debt[] = data.map((d) => ({
+      ...d,
+      debt_id: debtId(d.competencia, d.descricao),
+    }));
+    await this.request(`/values/${SHEETS.debts}:append?valueInputOption=USER_ENTERED`, {
+      method: "POST",
+      body: JSON.stringify({ values: created.map((d) => this.debtToRow(d)) }),
+    });
+    return created;
+  }
+
+  async updateDebt(id: string, patch: Partial<Debt>): Promise<Debt> {
+    const all = await this.getDebts();
+    const current = all.find((d) => d.debt_id === id);
+    if (!current) throw new Error(`Dívida ${id} não encontrada`);
+    const updated: Debt = { ...current, ...patch, debt_id: id };
+    const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
+    await this.request(
+      `/values/${SHEETS.debts}!A${rowIdx}:F${rowIdx}?valueInputOption=USER_ENTERED`,
+      { method: "PUT", body: JSON.stringify({ values: [this.debtToRow(updated)] }) },
+    );
+    return updated;
+  }
+
+  async deleteDebt(id: string): Promise<void> {
+    const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
+    const sheetId = await this.getSheetId(SHEETS.debts);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: { sheetId, dimension: "ROWS", startIndex: rowIdx - 1, endIndex: rowIdx },
+            },
+          },
+        ],
+      }),
+    });
   }
 }
 

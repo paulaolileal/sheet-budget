@@ -2,6 +2,8 @@ import type {
   Account,
   AccountTipo,
   Category,
+  Debt,
+  Debtor,
   Income,
   InvoiceAmount,
   RecurrenceTemplate,
@@ -59,4 +61,17 @@ export interface FinanceRepository {
   // invoice amounts
   getInvoiceAmounts(): Promise<InvoiceAmount[]>;
   saveInvoiceAmount(data: Omit<InvoiceAmount, "invoice_id">): Promise<InvoiceAmount>;
+
+  // debtors
+  getDebtors(): Promise<Debtor[]>;
+  createDebtor(data: Omit<Debtor, "debtor_id">): Promise<Debtor>;
+  updateDebtor(id: string, patch: Partial<Omit<Debtor, "debtor_id">>): Promise<Debtor>;
+  deleteDebtor(id: string): Promise<void>;
+
+  // debts
+  getDebts(): Promise<Debt[]>;
+  createDebt(data: Omit<Debt, "debt_id">): Promise<Debt>;
+  createDebtsBatch(data: Omit<Debt, "debt_id">[]): Promise<Debt[]>;
+  updateDebt(id: string, patch: Partial<Debt>): Promise<Debt>;
+  deleteDebt(id: string): Promise<void>;
 }

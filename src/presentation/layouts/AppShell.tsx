@@ -6,6 +6,7 @@ import {
   Repeat,
   Settings,
   TrendingUp,
+  HandCoins,
   Moon,
   Sun,
   CloudCheck,
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/transactions", label: "Lançamentos", icon: Receipt },
   { to: "/incomes", label: "Receitas", icon: TrendingUp },
+  { to: "/devedores", label: "Devedores", icon: HandCoins },
   { to: "/cards", label: "Cartões", icon: CreditCard },
   { to: "/recurrences", label: "Recorrências", icon: Repeat },
 ];
@@ -264,7 +266,7 @@ export function AppShell() {
 
         {/* Mobile bottom nav — shrink-0 keeps it fixed-height at the bottom of the flex column */}
         <nav className="shrink-0 md:hidden h-16 bg-background/95 backdrop-blur-sm border-t z-50">
-          <div className="grid grid-cols-5 h-full">
+          <div className="grid grid-cols-6 h-full">
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
