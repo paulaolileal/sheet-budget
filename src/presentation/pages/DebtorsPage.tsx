@@ -324,13 +324,19 @@ export function DebtorsPage() {
                     <p className="text-sm text-muted-foreground py-2">Nenhuma dívida neste mês.</p>
                   ) : (
                     <div className="border rounded-md overflow-hidden">
-                      <table className="w-full text-sm">
+                      <table className="w-full text-sm table-fixed">
+                        <colgroup>
+                          <col />
+                          <col className="w-20 sm:w-24" />
+                          <col className="w-24 sm:w-28" />
+                          <col className="w-[84px] sm:w-24" />
+                        </colgroup>
                         <tbody>
                           {debtorDebts.map((debt) => (
                             <tr key={debt.debt_id} className="border-t first:border-t-0">
                               <td className="px-3 py-2 font-medium">
-                                <span className="inline-flex items-center gap-1.5">
-                                  {debt.descricao}
+                                <span className="flex items-center gap-1.5 min-w-0">
+                                  <span className="truncate">{debt.descricao}</span>
                                   {debt.tipo === "RECORRENTE" && (
                                     <Repeat
                                       className="h-3 w-3 text-muted-foreground shrink-0"
@@ -346,7 +352,7 @@ export function DebtorsPage() {
                                 <Badge
                                   variant="outline"
                                   className={cn(
-                                    "h-6 gap-1 px-2 text-xs border-transparent",
+                                    "h-6 gap-1 px-2 text-xs border-transparent whitespace-nowrap",
                                     STATUS_TONES[debt.status],
                                   )}
                                 >
