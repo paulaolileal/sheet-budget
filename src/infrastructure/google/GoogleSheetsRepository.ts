@@ -658,6 +658,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
         descricao: r.descricao,
         valor: parseCurrency(r.valor),
         status: (r.status as Debt["status"]) || "PENDENTE",
+        tipo: (r.tipo as Debt["tipo"]) || "UNICO",
       }));
     } catch (err) {
       if (isMissingSheetError(err)) return [];
@@ -666,7 +667,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
   }
 
   private debtToRow(d: Debt): (string | number)[] {
-    return [d.debt_id, d.debtor_id, d.competencia, d.descricao, d.valor, d.status];
+    return [d.debt_id, d.debtor_id, d.competencia, d.descricao, d.valor, d.status, d.tipo];
   }
 
   async createDebt(data: Omit<Debt, "debt_id">): Promise<Debt> {
@@ -679,7 +680,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     } catch (err) {
       if (isMissingSheetError(err)) {
         throw new Error(
-          "Crie a aba 'debts' no Google Sheets com as colunas: debt_id | debtor_id | competencia | descricao | valor | status",
+          "Crie a aba 'debts' no Google Sheets com as colunas: debt_id | debtor_id | competencia | descricao | valor | status | tipo",
         );
       }
       throw err;
@@ -706,7 +707,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     const updated: Debt = { ...current, ...patch, debt_id: id };
     const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
     await this.request(
-      `/values/${SHEETS.debts}!A${rowIdx}:F${rowIdx}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.debts}!A${rowIdx}:G${rowIdx}?valueInputOption=USER_ENTERED`,
       { method: "PUT", body: JSON.stringify({ values: [this.debtToRow(updated)] }) },
     );
     return updated;

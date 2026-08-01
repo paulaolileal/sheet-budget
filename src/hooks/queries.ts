@@ -581,43 +581,30 @@ export function useDeleteDebt() {
   });
 }
 
-function shiftCompetencia(c: string, months: number): string {
-  const [y, m] = c.split("-").map(Number);
-  const d = new Date(y, m - 1 + months, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
+/** Duplicates the selected previous-month debts (only RECORRENTE ones are eligible) into the active competencia. */
 export function useDuplicatePreviousMonthDebts() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (debtIds: string[]) => {
       const competencia = useUiStore.getState().competencia;
-      const previous = shiftCompetencia(competencia, -1);
       const debts = await repo().getDebts();
 
-      const existingKeys = new Set(
-        debts
-          .filter((d) => d.competencia === competencia)
-          .map((d) => `${d.debtor_id}|${d.descricao}`),
-      );
+      const toCopy = debts.filter((d) => d.tipo === "RECORRENTE" && debtIds.includes(d.debt_id));
 
-      const missing = debts.filter(
-        (d) => d.competencia === previous && !existingKeys.has(`${d.debtor_id}|${d.descricao}`),
-      );
-
-      if (missing.length === 0) return { count: 0, competencia };
+      if (toCopy.length === 0) return { count: 0, competencia };
 
       const monthLabel = competenciaLabel(competencia);
       toast.loading(`Duplicando dívidas para ${monthLabel}...`, { id: "dup-debts" });
 
       const created = await repo().createDebtsBatch(
-        missing.map((d) => ({
+        toCopy.map((d) => ({
           debtor_id: d.debtor_id,
           competencia,
           descricao: d.descricao,
           valor: d.valor,
           status: "PENDENTE" as const,
+          tipo: d.tipo,
         })),
       );
 
@@ -627,9 +614,7 @@ export function useDuplicatePreviousMonthDebts() {
       await qc.invalidateQueries({ queryKey: qk.debts });
       const monthLabel = competenciaLabel(competencia);
       if (count === 0) {
-        toast.info(`Nenhuma dívida do mês anterior para duplicar em ${monthLabel}`, {
-          id: "dup-debts",
-        });
+        toast.info(`Nenhuma dívida duplicada para ${monthLabel}`, { id: "dup-debts" });
       } else {
         toast.success(`${count} dívida(s) duplicada(s) para ${monthLabel}`, { id: "dup-debts" });
       }

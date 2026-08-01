@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   ACCOUNT_TIPO,
   DEBT_STATUS,
+  DEBT_TIPO,
   RECURRENCE_TYPE,
   TIPO_LANCAMENTO,
   TRANSACTION_STATUS,
@@ -120,6 +121,7 @@ export const debtSchema = z.object({
   descricao: safeString(120),
   valor: z.number().positive(),
   status: z.enum(DEBT_STATUS),
+  tipo: z.enum(DEBT_TIPO),
 });
 
 export const debtInputSchema = debtSchema.omit({ debt_id: true });

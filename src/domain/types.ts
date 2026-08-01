@@ -88,6 +88,9 @@ export interface InvoiceAmount {
 export const DEBT_STATUS = ["PENDENTE", "PAGO"] as const;
 export type DebtStatus = (typeof DEBT_STATUS)[number];
 
+export const DEBT_TIPO = ["UNICO", "RECORRENTE"] as const;
+export type DebtTipo = (typeof DEBT_TIPO)[number];
+
 export interface Debtor {
   debtor_id: string;
   nome: string;
@@ -103,4 +106,5 @@ export interface Debt {
   descricao: string;
   valor: number;
   status: DebtStatus;
+  tipo: DebtTipo;
 }

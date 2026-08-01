@@ -3,7 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, MessageCircle, CopyPlus } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Pencil, Trash2, MessageCircle, CopyPlus, Repeat } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { DebtorDialog } from "../components/DebtorDialog";
@@ -17,7 +26,7 @@ import {
   useDuplicatePreviousMonthDebts,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
-import { brl } from "@/utils/format";
+import { brl, competenciaLabel, shiftCompetencia } from "@/utils/format";
 import { buildChargeMessage, whatsappChargeUrl } from "@/utils/whatsapp";
 import { cn } from "@/lib/utils";
 import type { Debt, DebtStatus, Debtor } from "@/domain/types";
@@ -45,7 +54,15 @@ export function DebtorsPage() {
   const [debtDialogDebtorId, setDebtDialogDebtorId] = useState<string | null>(null);
   const [deletingDebtId, setDeletingDebtId] = useState<string | null>(null);
 
+  const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+  const [selectedDebtIds, setSelectedDebtIds] = useState<Set<string>>(new Set());
+
   const isLoading = loadingDebtors || loadingDebts;
+
+  const debtorMap = useMemo(
+    () => Object.fromEntries((debtors ?? []).map((d) => [d.debtor_id, d.nome])),
+    [debtors],
+  );
 
   const debtsByDebtor = useMemo(() => {
     const map = new Map<string, Debt[]>();
@@ -58,6 +75,23 @@ export function DebtorsPage() {
     return map;
   }, [debts, competencia]);
 
+  const prevCompetencia = useMemo(() => shiftCompetencia(competencia, -1), [competencia]);
+
+  const pendingRecurringDebts = useMemo(() => {
+    if (!debts) return [];
+    const existingKeys = new Set(
+      debts
+        .filter((d) => d.competencia === competencia)
+        .map((d) => `${d.debtor_id}|${d.descricao}`),
+    );
+    return debts.filter(
+      (d) =>
+        d.competencia === prevCompetencia &&
+        d.tipo === "RECORRENTE" &&
+        !existingKeys.has(`${d.debtor_id}|${d.descricao}`),
+    );
+  }, [debts, competencia, prevCompetencia]);
+
   const { totalPendente, totalPago } = useMemo(() => {
     let pendente = 0;
     let pago = 0;
@@ -68,6 +102,20 @@ export function DebtorsPage() {
     }
     return { totalPendente: pendente, totalPago: pago };
   }, [debts, competencia]);
+
+  function handleOpenCopyDialog() {
+    setSelectedDebtIds(new Set(pendingRecurringDebts.map((d) => d.debt_id)));
+    setCopyDialogOpen(true);
+  }
+
+  function toggleDebtSelection(id: string) {
+    setSelectedDebtIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function openNewDebt(debtorId: string) {
     setDebtDialogDebtorId(debtorId);
@@ -99,7 +147,7 @@ export function DebtorsPage() {
             <CompetenciaSelector />
             <Button
               variant="outline"
-              onClick={() => duplicatePreviousMonth.mutate()}
+              onClick={handleOpenCopyDialog}
               disabled={duplicatePreviousMonth.isPending}
             >
               <CopyPlus className="h-4 w-4 sm:mr-1" />
@@ -249,7 +297,17 @@ export function DebtorsPage() {
                         <tbody>
                           {debtorDebts.map((debt) => (
                             <tr key={debt.debt_id} className="border-t first:border-t-0">
-                              <td className="px-3 py-2 font-medium">{debt.descricao}</td>
+                              <td className="px-3 py-2 font-medium">
+                                <span className="inline-flex items-center gap-1.5">
+                                  {debt.descricao}
+                                  {debt.tipo === "RECORRENTE" && (
+                                    <Repeat
+                                      className="h-3 w-3 text-muted-foreground shrink-0"
+                                      aria-label="Recorrente"
+                                    />
+                                  )}
+                                </span>
+                              </td>
                               <td className="px-3 py-2 text-right tabular-nums">
                                 {brl(debt.valor)}
                               </td>
@@ -357,6 +415,61 @@ export function DebtorsPage() {
         debtorId={debtDialogDebtorId}
         debt={editingDebt}
       />
+
+      <Dialog open={copyDialogOpen} onOpenChange={setCopyDialogOpen}>
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Copiar dívidas recorrentes para {competenciaLabel(competencia)}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingRecurringDebts.length === 0
+                ? "Nenhuma dívida recorrente pendente de cópia neste mês."
+                : `${selectedDebtIds.size} de ${pendingRecurringDebts.length} dívida(s) serão copiadas:`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingRecurringDebts.length > 0 && (
+            <ul className="max-h-64 overflow-y-auto divide-y text-sm">
+              {pendingRecurringDebts.map((debt) => (
+                <li key={debt.debt_id} className="py-2 flex items-center gap-3">
+                  <Checkbox
+                    id={debt.debt_id}
+                    checked={selectedDebtIds.has(debt.debt_id)}
+                    onCheckedChange={() => toggleDebtSelection(debt.debt_id)}
+                  />
+                  <label htmlFor={debt.debt_id} className="flex-1 min-w-0 cursor-pointer">
+                    <p className="font-medium truncate">{debt.descricao}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {debtorMap[debt.debtor_id] ?? debt.debtor_id} · {brl(debt.valor)}
+                    </p>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCopyDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                setCopyDialogOpen(false);
+                duplicatePreviousMonth.mutate(Array.from(selectedDebtIds));
+              }}
+              disabled={
+                pendingRecurringDebts.length === 0 ||
+                duplicatePreviousMonth.isPending ||
+                selectedDebtIds.size === 0
+              }
+            >
+              <CopyPlus className="h-4 w-4 mr-1" />
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
@@ -12,10 +12,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCreateDebt, useUpdateDebt } from "@/hooks/queries";
 import { debtInputSchema, type DebtInput } from "@/domain/schemas";
 import { useUiStore } from "@/store/uiStore";
-import type { Debt } from "@/domain/types";
+import type { Debt, DebtTipo } from "@/domain/types";
 
 export function DebtDialog({
   open,
@@ -33,7 +40,7 @@ export function DebtDialog({
   const update = useUpdateDebt();
   const isEditing = debt !== null;
 
-  const { handleSubmit, register, reset, formState } = useForm<DebtInput>({
+  const { control, handleSubmit, register, reset, formState } = useForm<DebtInput>({
     resolver: zodResolver(debtInputSchema),
     defaultValues: {
       debtor_id: debtorId ?? "",
@@ -41,6 +48,7 @@ export function DebtDialog({
       descricao: "",
       valor: 0,
       status: "PENDENTE",
+      tipo: "UNICO",
     },
   });
 
@@ -54,6 +62,7 @@ export function DebtDialog({
               descricao: debt.descricao,
               valor: debt.valor,
               status: debt.status,
+              tipo: debt.tipo,
             }
           : {
               debtor_id: debtorId ?? "",
@@ -61,6 +70,7 @@ export function DebtDialog({
               descricao: "",
               valor: 0,
               status: "PENDENTE",
+              tipo: "UNICO",
             },
       );
     }
@@ -108,6 +118,28 @@ export function DebtDialog({
             {formState.errors.valor && (
               <p className="text-xs text-destructive mt-1">{formState.errors.valor.message}</p>
             )}
+          </div>
+
+          <div>
+            <Label>Tipo</Label>
+            <Controller
+              control={control}
+              name="tipo"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={(v) => field.onChange(v as DebtTipo)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="UNICO">Única</SelectItem>
+                    <SelectItem value="RECORRENTE">Recorrente</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Dívidas recorrentes podem ser copiadas para o próximo mês.
+            </p>
           </div>
 
           <DialogFooter>
