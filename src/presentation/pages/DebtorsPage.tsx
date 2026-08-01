@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   Circle,
   CheckCheck,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -234,6 +235,9 @@ export function DebtorsPage() {
             const debtorDebts = debtsByDebtor.get(debtor.debtor_id) ?? [];
             const total = debtorDebts.reduce((s, d) => s + d.valor, 0);
             const hasPending = debtorDebts.some((d) => d.status === "PENDENTE");
+            const isPayingMonth =
+              bulkPayDebtorMonth.isPending &&
+              bulkPayDebtorMonth.variables?.debtor_id === debtor.debtor_id;
 
             return (
               <Card key={debtor.debtor_id}>
@@ -276,7 +280,11 @@ export function DebtorsPage() {
                         bulkPayDebtorMonth.mutate({ debtor_id: debtor.debtor_id, competencia })
                       }
                     >
-                      <CheckCheck className="h-3.5 w-3.5" />
+                      {isPayingMonth ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <CheckCheck className="h-3.5 w-3.5" />
+                      )}
                       Pagar mês
                     </Button>
                     <Button
@@ -332,106 +340,113 @@ export function DebtorsPage() {
                           <col className="w-[84px] sm:w-24" />
                         </colgroup>
                         <tbody>
-                          {debtorDebts.map((debt) => (
-                            <tr key={debt.debt_id} className="border-t first:border-t-0">
-                              <td className="px-3 py-2 font-medium">
-                                <span className="flex items-center gap-1.5 min-w-0">
-                                  <span className="truncate">{debt.descricao}</span>
-                                  {debt.tipo === "RECORRENTE" && (
-                                    <Repeat
-                                      className="h-3 w-3 text-muted-foreground shrink-0"
-                                      aria-label="Recorrente"
-                                    />
-                                  )}
-                                </span>
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums">
-                                {brl(debt.valor)}
-                              </td>
-                              <td className="px-3 py-2">
-                                <Badge
-                                  variant="outline"
-                                  className={cn(
-                                    "h-6 gap-1 px-2 text-xs border-transparent whitespace-nowrap",
-                                    STATUS_TONES[debt.status],
-                                  )}
-                                >
-                                  {debt.status === "PAGO" ? (
-                                    <CheckCircle2 className="h-3 w-3" />
-                                  ) : (
-                                    <Circle className="h-3 w-3" />
-                                  )}
-                                  {debt.status}
-                                </Badge>
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center justify-end gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    disabled={updateDebt.isPending}
-                                    onClick={() =>
-                                      updateDebt.mutate({
-                                        id: debt.debt_id,
-                                        patch: {
-                                          status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
-                                        },
-                                      })
-                                    }
-                                    title={
-                                      debt.status === "PAGO"
-                                        ? "Marcar como pendente"
-                                        : "Marcar como pago"
-                                    }
+                          {debtorDebts.map((debt) => {
+                            const isTogglingStatus =
+                              updateDebt.isPending && updateDebt.variables?.id === debt.debt_id;
+                            return (
+                              <tr key={debt.debt_id} className="border-t first:border-t-0">
+                                <td className="px-3 py-2 font-medium">
+                                  <span className="flex items-center gap-1.5 min-w-0">
+                                    <span className="truncate">{debt.descricao}</span>
+                                    {debt.tipo === "RECORRENTE" && (
+                                      <Repeat
+                                        className="h-3 w-3 text-muted-foreground shrink-0"
+                                        aria-label="Recorrente"
+                                      />
+                                    )}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-2 text-right tabular-nums">
+                                  {brl(debt.valor)}
+                                </td>
+                                <td className="px-3 py-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "h-6 gap-1 px-2 text-xs border-transparent whitespace-nowrap",
+                                      STATUS_TONES[debt.status],
+                                    )}
                                   >
                                     {debt.status === "PAGO" ? (
-                                      <Circle className="h-3 w-3" />
-                                    ) : (
                                       <CheckCircle2 className="h-3 w-3" />
+                                    ) : (
+                                      <Circle className="h-3 w-3" />
                                     )}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => openEditDebt(debt)}
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className={cn(
-                                      "h-6 w-6",
-                                      deletingDebtId === debt.debt_id
-                                        ? "text-destructive hover:text-destructive"
-                                        : "text-muted-foreground",
-                                    )}
-                                    disabled={deleteDebt.isPending}
-                                    onClick={async () => {
-                                      if (deletingDebtId !== debt.debt_id) {
-                                        setDeletingDebtId(debt.debt_id);
-                                        return;
+                                    {debt.status}
+                                  </Badge>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      disabled={updateDebt.isPending}
+                                      onClick={() =>
+                                        updateDebt.mutate({
+                                          id: debt.debt_id,
+                                          patch: {
+                                            status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
+                                          },
+                                        })
                                       }
-                                      await deleteDebt.mutateAsync(debt.debt_id);
-                                      setDeletingDebtId(null);
-                                    }}
-                                    onBlur={() => {
-                                      if (deletingDebtId === debt.debt_id) setDeletingDebtId(null);
-                                    }}
-                                    title={
-                                      deletingDebtId === debt.debt_id
-                                        ? "Confirmar exclusão"
-                                        : "Excluir"
-                                    }
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                      title={
+                                        debt.status === "PAGO"
+                                          ? "Marcar como pendente"
+                                          : "Marcar como pago"
+                                      }
+                                    >
+                                      {isTogglingStatus ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : debt.status === "PAGO" ? (
+                                        <Circle className="h-3 w-3" />
+                                      ) : (
+                                        <CheckCircle2 className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => openEditDebt(debt)}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                        "h-6 w-6",
+                                        deletingDebtId === debt.debt_id
+                                          ? "text-destructive hover:text-destructive"
+                                          : "text-muted-foreground",
+                                      )}
+                                      disabled={deleteDebt.isPending}
+                                      onClick={async () => {
+                                        if (deletingDebtId !== debt.debt_id) {
+                                          setDeletingDebtId(debt.debt_id);
+                                          return;
+                                        }
+                                        await deleteDebt.mutateAsync(debt.debt_id);
+                                        setDeletingDebtId(null);
+                                      }}
+                                      onBlur={() => {
+                                        if (deletingDebtId === debt.debt_id)
+                                          setDeletingDebtId(null);
+                                      }}
+                                      title={
+                                        deletingDebtId === debt.debt_id
+                                          ? "Confirmar exclusão"
+                                          : "Excluir"
+                                      }
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
