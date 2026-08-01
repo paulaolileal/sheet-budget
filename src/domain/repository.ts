@@ -74,4 +74,5 @@ export interface FinanceRepository {
   createDebtsBatch(data: Omit<Debt, "debt_id">[]): Promise<Debt[]>;
   updateDebt(id: string, patch: Partial<Debt>): Promise<Debt>;
   deleteDebt(id: string): Promise<void>;
+  bulkPayDebtorMonth(debtor_id: string, competencia: string): Promise<void>;
 }

@@ -581,6 +581,19 @@ export function useDeleteDebt() {
   });
 }
 
+export function useBulkPayDebtorMonth() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ debtor_id, competencia }: { debtor_id: string; competencia: string }) =>
+      withSync(() => repo().bulkPayDebtorMonth(debtor_id, competencia)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.debts });
+      toast.success("Dívidas do mês marcadas como pagas");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
 /** Duplicates the selected previous-month debts (only RECORRENTE ones are eligible) into the active competencia. */
 export function useDuplicatePreviousMonthDebts() {
   const qc = useQueryClient();

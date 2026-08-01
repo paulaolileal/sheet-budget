@@ -112,7 +112,9 @@ export class GoogleSheetsRepository implements FinanceRepository {
     const [headers, ...body] = rows;
     return body.map((r) => {
       const obj: Record<string, string> = {};
-      headers.forEach((h, i) => (obj[h.trim()] = r[i] ?? ""));
+      // Sheet cells commonly carry stray whitespace from manual edits/paste;
+      // untrimmed values break strict equality checks (e.g. competencia, tipo comparisons).
+      headers.forEach((h, i) => (obj[h.trim()] = (r[i] ?? "").trim()));
       return obj as unknown as T;
     });
   }
@@ -668,6 +670,16 @@ export class GoogleSheetsRepository implements FinanceRepository {
 
   private debtToRow(d: Debt): (string | number)[] {
     return [d.debt_id, d.debtor_id, d.competencia, d.descricao, d.valor, d.status, d.tipo];
+  }
+
+  async bulkPayDebtorMonth(debtor_id: string, competencia: string): Promise<void> {
+    const debts = await this.getDebts();
+    const affected = debts.filter(
+      (d) => d.debtor_id === debtor_id && d.competencia === competencia && d.status !== "PAGO",
+    );
+    for (const d of affected) {
+      await this.updateDebt(d.debt_id, { status: "PAGO" });
+    }
   }
 
   async createDebt(data: Omit<Debt, "debt_id">): Promise<Debt> {

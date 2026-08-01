@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -20,6 +21,7 @@ import {
   Repeat,
   CheckCircle2,
   Circle,
+  CheckCheck,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -32,6 +34,7 @@ import {
   useDeleteDebt,
   useUpdateDebt,
   useDuplicatePreviousMonthDebts,
+  useBulkPayDebtorMonth,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
 import { brl, competenciaLabel, shiftCompetencia } from "@/utils/format";
@@ -52,6 +55,7 @@ export function DebtorsPage() {
   const deleteDebt = useDeleteDebt();
   const updateDebt = useUpdateDebt();
   const duplicatePreviousMonth = useDuplicatePreviousMonthDebts();
+  const bulkPayDebtorMonth = useBulkPayDebtorMonth();
 
   const [debtorDialogOpen, setDebtorDialogOpen] = useState(false);
   const [editingDebtor, setEditingDebtor] = useState<Debtor | null>(null);
@@ -151,26 +155,28 @@ export function DebtorsPage() {
         title="Devedores"
         description="Controle de empréstimos e valores a receber de outras pessoas."
         actions={
-          <>
+          <div className="flex items-center gap-2 flex-nowrap">
             <CompetenciaSelector />
             <Button
               variant="outline"
               onClick={handleOpenCopyDialog}
               disabled={duplicatePreviousMonth.isPending}
+              title="Duplicar dívidas recorrentes do mês anterior"
             >
               <CopyPlus className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Duplicar mês anterior</span>
+              <span className="hidden sm:inline">Duplicar</span>
             </Button>
             <Button
               onClick={() => {
                 setEditingDebtor(null);
                 setDebtorDialogOpen(true);
               }}
+              title="Novo devedor"
             >
               <Plus className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Novo devedor</span>
+              <span className="hidden sm:inline">Novo</span>
             </Button>
-          </>
+          </div>
         }
       />
 
@@ -257,6 +263,23 @@ export function DebtorsPage() {
                       Cobrar
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      disabled={!hasPending || bulkPayDebtorMonth.isPending}
+                      title={
+                        !hasPending
+                          ? "Nenhuma pendência neste mês"
+                          : "Marcar todas as dívidas do mês como pagas"
+                      }
+                      onClick={() =>
+                        bulkPayDebtorMonth.mutate({ debtor_id: debtor.debtor_id, competencia })
+                      }
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Pagar mês
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
@@ -320,27 +343,12 @@ export function DebtorsPage() {
                                 {brl(debt.valor)}
                               </td>
                               <td className="px-3 py-2">
-                                <Button
+                                <Badge
                                   variant="outline"
-                                  size="sm"
                                   className={cn(
                                     "h-6 gap-1 px-2 text-xs border-transparent",
                                     STATUS_TONES[debt.status],
                                   )}
-                                  disabled={updateDebt.isPending}
-                                  onClick={() =>
-                                    updateDebt.mutate({
-                                      id: debt.debt_id,
-                                      patch: {
-                                        status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
-                                      },
-                                    })
-                                  }
-                                  title={
-                                    debt.status === "PAGO"
-                                      ? "Marcar como pendente"
-                                      : "Marcar como pago"
-                                  }
                                 >
                                   {debt.status === "PAGO" ? (
                                     <CheckCircle2 className="h-3 w-3" />
@@ -348,10 +356,35 @@ export function DebtorsPage() {
                                     <Circle className="h-3 w-3" />
                                   )}
                                   {debt.status}
-                                </Button>
+                                </Badge>
                               </td>
                               <td className="px-3 py-2">
                                 <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    disabled={updateDebt.isPending}
+                                    onClick={() =>
+                                      updateDebt.mutate({
+                                        id: debt.debt_id,
+                                        patch: {
+                                          status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
+                                        },
+                                      })
+                                    }
+                                    title={
+                                      debt.status === "PAGO"
+                                        ? "Marcar como pendente"
+                                        : "Marcar como pago"
+                                    }
+                                  >
+                                    {debt.status === "PAGO" ? (
+                                      <Circle className="h-3 w-3" />
+                                    ) : (
+                                      <CheckCircle2 className="h-3 w-3" />
+                                    )}
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -443,7 +476,7 @@ export function DebtorsPage() {
             </DialogTitle>
             <DialogDescription>
               {pendingRecurringDebts.length === 0
-                ? "Nenhuma dívida recorrente pendente de cópia neste mês."
+                ? `Nenhuma dívida recorrente de ${competenciaLabel(prevCompetencia)} pendente de cópia para ${competenciaLabel(competencia)}.`
                 : `${selectedDebtIds.size} de ${pendingRecurringDebts.length} dívida(s) serão copiadas:`}
             </DialogDescription>
           </DialogHeader>
