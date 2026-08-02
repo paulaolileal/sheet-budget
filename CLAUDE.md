@@ -16,7 +16,7 @@ There are no automated tests in this project.
 
 ## Architecture
 
-This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own.
+This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own, and there is no mock/offline mode: every user authenticates with Google and reads/writes a real spreadsheet via the Sheets API.
 
 ### Layer dependency rule
 
@@ -27,50 +27,60 @@ presentation → hooks → domain ← infrastructure
 ```
 
 - **UI and hooks** depend on `domain` types and never import from `infrastructure` directly.
-- **`application/repositoryProvider.ts`** is the single decision point: it returns either `MockRepository` or `GoogleSheetsRepository` based on env vars, and caches the instance.
+- **`application/repositoryProvider.ts`** is the single decision point: it builds a `GoogleSheetsRepository` for the current user's spreadsheet (resolved via `spreadsheetStore`, keyed by email) and caches the instance per spreadsheet id.
 - Adding a new backend means: create a new class implementing `FinanceRepository` (`src/domain/repository.ts`), then switch the provider — zero UI changes needed.
 
 ### Key files
 
 | Path                                                  | Role                                                                                                         |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `src/domain/types.ts`                                 | All domain types (Transaction, RecurrenceTemplate, Account, Category, PaymentGroup)                          |
+| `src/domain/types.ts`                                 | All domain types (Transaction, RecurrenceTemplate, Account, Category, Income, InvoiceAmount, Debtor, Debt)   |
 | `src/domain/schemas.ts`                               | Zod schemas — input validation and sanitization gate                                                         |
+| `src/domain/importSchemas.ts`                         | Zod schemas for CSV import rows (one per entity) plus the CSV column layout per entity                       |
 | `src/domain/repository.ts`                            | `FinanceRepository` interface — the contract every backend must implement                                    |
-| `src/application/repositoryProvider.ts`               | Singleton factory — picks Mock vs Google Sheets at runtime                                                   |
+| `src/application/repositoryProvider.ts`               | Singleton factory — builds/caches the `GoogleSheetsRepository` for the active user's spreadsheet             |
 | `src/hooks/queries.ts`                                | All TanStack Query hooks + mutations; `withSync()` drives the sync indicator                                 |
 | `src/store/uiStore.ts`                                | Zustand: active `competencia` (YYYY-MM) + sync state (`idle/syncing/saved/error`)                            |
-| `src/services/config.ts`                              | Reads `VITE_GOOGLE_CLIENT_ID` / `VITE_SPREADSHEET_ID`; exposes `useMock` flag                                |
+| `src/store/spreadsheetStore.ts`                       | Zustand: maps each user's email to their spreadsheet id (multi-tenant, one Sheet per user)                   |
+| `src/services/config.ts`                              | Reads `VITE_GOOGLE_CLIENT_ID` and the Drive OAuth scope                                                      |
 | `src/services/googleAuth.ts`                          | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage |
-| `src/infrastructure/repositories/MockRepository.ts`   | Seeds from `public/seed/*.csv` via PapaParse; mutations persist to `localStorage`                            |
-| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4                                                                                   |
+| `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4 — the only `FinanceRepository` implementation today                               |
+| `src/lib/csvParser.ts`, `src/lib/importTemplates.ts`  | CSV parsing (papaparse) and downloadable model CSVs used by the import feature                               |
 
 ### Routes
 
-| Path            | Page                              |
-| --------------- | --------------------------------- |
-| `/`             | Dashboard (totals, charts)        |
-| `/transactions` | Transactions table with filters   |
-| `/cards`        | Cards & invoices (PaymentGroups)  |
-| `/recurrences`  | RecurrenceTemplates               |
-| `/settings`     | Settings: Google auth, mock reset |
+| Path            | Page                                         |
+| --------------- | -------------------------------------------- |
+| `/login`        | Google sign-in                               |
+| `/setup`        | First-run: create/locate the user's Sheet    |
+| `/`             | Dashboard (totals, charts)                   |
+| `/transactions` | Transactions table with filters              |
+| `/incomes`      | Incomes                                      |
+| `/debtors`      | Debtors/debts owed to the user               |
+| `/cards`        | Cards & invoices                             |
+| `/recurrences`  | RecurrenceTemplates                          |
+| `/settings`     | Categories, data source (Sheet, import), app |
 
 ### Data conventions
 
 - `competencia` is always `YYYY-MM` (string). It is the primary filter throughout the app.
-- Monetary values are JS numbers. Seed CSVs use Brazilian comma notation; the CSV parser converts on load.
-- `status=PAGO` requires `valor_final` — enforced by `transactionInputSchema` refinement.
-- Records are never deleted (soft cancel via `status=CANCELADO`).
-- Paying a `PaymentGroup` (fatura) propagates `status=PAGO` to all linked transactions.
+- Monetary values are JS numbers. The Sheets repository and the CSV importer both parse Brazilian comma notation (`parseCurrency` in `src/lib/currency.ts`).
+- Records are never deleted from `transactions`/`debts` (soft cancel via `status`); `accounts`/`categories`/`debtors` support hard delete.
+- Entity ids (`category_id`, `account_id`, `debtor_id`, etc.) are generated by the repository from the name/description + timestamp (`src/lib/idgen.ts`) — never supplied by the caller. This matters for CSV import: external files can't know these ids, so relations are resolved by **name**, not by id (see below).
+
+### Importing data from a CSV
+
+`src/presentation/components/ImportDialog.tsx` (opened from Settings → "Fonte de dados" and from the Dashboard's empty state) lets the user upload a CSV per entity — Categorias, Contas, Receitas, Devedores, Transações or Dívidas — using the friendly column layout defined in `src/domain/importSchemas.ts` (`IMPORT_COLUMNS`/`IMPORT_ROW_SCHEMAS`). A "baixar modelo" button generates a template file via `src/lib/importTemplates.ts`.
+
+Transações/Dívidas reference Categoria/Conta/Devedor **by name** in the CSV. The `useImportRows` mutation (`src/hooks/queries.ts`) resolves each name to an id against the existing entities (case-insensitive), creating the entity on the fly if no match exists, before calling `createTransactionsBatch`/`createDebtsBatch`.
 
 ### Environment variables
 
 ```
 VITE_GOOGLE_CLIENT_ID=   # OAuth Client ID (Web application type)
-VITE_SPREADSHEET_ID=     # Google Sheets document ID
 ```
 
-Without these, the app runs in mock mode automatically (`config.useMock = true`).
+The spreadsheet id is not an env var — it's resolved per user at runtime (`spreadsheetStore`, populated during `/setup` via the Drive API).
 
 ### Adding mutations
 
@@ -78,7 +88,7 @@ All mutations live in `src/hooks/queries.ts`. Wrap the repo call in `withSync()`
 
 ### Routing
 
-React Router v7 with a single layout route (`AppShell`). Unknown routes redirect to `/404`.
+React Router v7 with a single layout route (`AppShell`), guarded by `ProtectedRoute` (auth) and `SpreadsheetRoute` (has a linked Sheet). Unknown routes redirect to `/404`.
 
 ### UI components
 

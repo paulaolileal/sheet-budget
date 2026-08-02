@@ -16,7 +16,9 @@ const MONTH_ABBR = [
   "dez",
 ];
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Upload } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -36,6 +38,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
+import { ImportDialog } from "../components/ImportDialog";
 import { useUiStore } from "@/store/uiStore";
 import {
   useAccounts,
@@ -56,6 +59,7 @@ export function DashboardPage() {
 
   const [summaryStart, setSummaryStart] = useState(() => centeredMonthRange(competencia, 3)[0]);
   const [summaryEnd, setSummaryEnd] = useState(() => centeredMonthRange(competencia, 3)[6]);
+  const [importOpen, setImportOpen] = useState(false);
 
   const rangeMonths = useMemo(() => {
     const result: string[] = [];
@@ -241,6 +245,36 @@ export function DashboardPage() {
     fontSize: 12,
     color: "var(--color-popover-foreground)",
   };
+
+  const hasNoData =
+    !isLoading &&
+    (txs?.length ?? 0) === 0 &&
+    (accounts?.length ?? 0) === 0 &&
+    (categories?.length ?? 0) === 0;
+
+  if (hasNoData) {
+    return (
+      <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">
+        <PageHeader title="Dashboard" description="Resumo financeiro" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Nenhum dado ainda</CardTitle>
+            <CardDescription>
+              Comece cadastrando categorias, contas e lançamentos, ou importe uma planilha CSV que
+              você já tenha.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
+              <Upload className="h-3.5 w-3.5" />
+              Importar planilha
+            </Button>
+          </CardContent>
+        </Card>
+        <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-4 md:p-8 max-w-7xl mx-auto">

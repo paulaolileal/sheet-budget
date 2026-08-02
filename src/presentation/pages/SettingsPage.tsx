@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
 import { CategoryDialog } from "../components/CategoryDialog";
+import { ImportDialog } from "../components/ImportDialog";
 import { AppIcon } from "../components/AppIcon";
 import { InstallAppCard } from "../components/InstallAppCard";
 import { useCategories, useDeleteCategory } from "@/hooks/queries";
 import { config } from "@/services/config";
-import { Plus, Pencil, Trash2, ExternalLink, Database } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Database, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/domain/types";
 import { useAuthStore } from "@/store/authStore";
@@ -144,6 +145,7 @@ function DataSourceTab() {
   const user = useAuthStore((s) => s.user);
   const byEmail = useSpreadsheetStore((s) => s.byEmail);
   const spreadsheetId = user ? byEmail[user.email] : undefined;
+  const [importOpen, setImportOpen] = useState(false);
 
   function handleSwitch() {
     if (!user) return;
@@ -181,11 +183,18 @@ function DataSourceTab() {
             )}
           </div>
         </div>
-        <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitch}>
-          <Database className="h-3.5 w-3.5" />
-          Trocar planilha
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitch}>
+            <Database className="h-3.5 w-3.5" />
+            Trocar planilha
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
+            <Upload className="h-3.5 w-3.5" />
+            Importar planilha
+          </Button>
+        </div>
       </CardContent>
+      <ImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </Card>
   );
 }

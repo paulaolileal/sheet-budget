@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSheetProvider } from "@/application/repositoryProvider";
 import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type {
+  Account,
   Category,
   Debt,
+  Debtor,
   Income,
   InvoiceAmount,
   Transaction,
@@ -25,6 +27,16 @@ import {
   type InvoiceAmountInput,
   type TransactionInput,
 } from "@/domain/schemas";
+import {
+  IMPORT_KIND_LABELS,
+  type AccountImportRow,
+  type CategoryImportRow,
+  type DebtImportRow,
+  type DebtorImportRow,
+  type ImportKind,
+  type IncomeImportRow,
+  type TransactionImportRow,
+} from "@/domain/importSchemas";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaLabel } from "@/utils/format";
 import { transactionId } from "@/lib/idgen";
@@ -591,6 +603,172 @@ export function useBulkPayDebtorMonth() {
       toast.success("Dívidas do mês marcadas como pagas");
     },
     onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+/** Resolves entity names to ids, creating any name not found among `existing`. */
+async function resolveIdsByName<T>(
+  names: string[],
+  existing: T[],
+  nomeOf: (item: T) => string,
+  idOf: (item: T) => string,
+  create: (nome: string) => Promise<T>,
+): Promise<Map<string, string>> {
+  const byLowerName = new Map(existing.map((item) => [nomeOf(item).toLowerCase(), idOf(item)]));
+  const uniqueNames = [...new Set(names.map((n) => n.toLowerCase()))];
+  for (const lower of uniqueNames) {
+    if (byLowerName.has(lower)) continue;
+    const original = names.find((n) => n.toLowerCase() === lower)!;
+    const created = await create(original);
+    byLowerName.set(lower, idOf(created));
+  }
+  return byLowerName;
+}
+
+type ImportPayload =
+  | { kind: "categorias"; rows: CategoryImportRow[] }
+  | { kind: "contas"; rows: AccountImportRow[] }
+  | { kind: "receitas"; rows: IncomeImportRow[] }
+  | { kind: "devedores"; rows: DebtorImportRow[] }
+  | { kind: "transacoes"; rows: TransactionImportRow[] }
+  | { kind: "dividas"; rows: DebtImportRow[] };
+
+/** Imports validated CSV rows for the given entity kind, creating referenced entities (by name) on the fly. */
+export function useImportRows() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: ImportPayload): Promise<{ kind: ImportKind; count: number }> => {
+      const label = IMPORT_KIND_LABELS[payload.kind];
+      toast.loading(`Importando ${label.toLowerCase()}...`, { id: "import-rows" });
+
+      return withSync(async () => {
+        switch (payload.kind) {
+          case "categorias": {
+            for (const row of payload.rows) {
+              const data = categoryInputSchema.parse({ nome: row.nome, icon_id: row.icone });
+              await repo().createCategory(data);
+            }
+            return { kind: payload.kind, count: payload.rows.length };
+          }
+          case "contas": {
+            for (const row of payload.rows) {
+              const data = accountInputSchema.parse({
+                nome: row.nome,
+                tipo: row.tipo,
+                color: row.cor,
+                icon_id: row.icone,
+              });
+              await repo().createAccount(data);
+            }
+            return { kind: payload.kind, count: payload.rows.length };
+          }
+          case "receitas": {
+            for (const row of payload.rows) {
+              const data = incomeInputSchema.parse({
+                competencia: row.competencia,
+                descricao: row.descricao,
+                valor: row.valor,
+                icon_id: row.icone,
+              });
+              await repo().createIncome(data);
+            }
+            return { kind: payload.kind, count: payload.rows.length };
+          }
+          case "devedores": {
+            for (const row of payload.rows) {
+              const data = debtorInputSchema.parse({ nome: row.nome, telefone: row.telefone });
+              await repo().createDebtor(data);
+            }
+            return { kind: payload.kind, count: payload.rows.length };
+          }
+          case "transacoes": {
+            const [categories, accounts] = await Promise.all([
+              repo().getCategories(),
+              repo().getAccounts(),
+            ]);
+            const categoriaIds = await resolveIdsByName<Category>(
+              payload.rows.map((r) => r.categoria),
+              categories,
+              (c) => c.nome,
+              (c) => c.category_id,
+              (nome) => repo().createCategory({ nome }),
+            );
+            const contaNames = payload.rows.map((r) => r.conta).filter((v): v is string => !!v);
+            const contaIds = await resolveIdsByName<Account>(
+              contaNames,
+              accounts,
+              (a) => a.nome,
+              (a) => a.account_id,
+              (nome) => repo().createAccount({ nome, tipo: "CONTA" }),
+            );
+            const toCreate = payload.rows.map((row) =>
+              transactionInputSchema.parse({
+                competencia: row.competencia,
+                descricao: row.descricao,
+                categoria_id: categoriaIds.get(row.categoria.toLowerCase())!,
+                valor: row.valor,
+                status: row.status,
+                payment_account_id: row.conta
+                  ? (contaIds.get(row.conta.toLowerCase()) ?? null)
+                  : null,
+                tipo_lancamento: row.tipo_lancamento,
+                template_id: null,
+              }),
+            );
+            const created = await repo().createTransactionsBatch(
+              toCreate as (Omit<Transaction, "transaction_id"> & { transaction_id?: string })[],
+            );
+            return { kind: payload.kind, count: created.length };
+          }
+          case "dividas": {
+            const debtors = await repo().getDebtors();
+            const devedorIds = await resolveIdsByName<Debtor>(
+              payload.rows.map((r) => r.devedor),
+              debtors,
+              (d) => d.nome,
+              (d) => d.debtor_id,
+              (nome) => repo().createDebtor({ nome }),
+            );
+            const toCreate = payload.rows.map((row) =>
+              debtInputSchema.parse({
+                debtor_id: devedorIds.get(row.devedor.toLowerCase())!,
+                competencia: row.competencia,
+                descricao: row.descricao,
+                valor: row.valor,
+                status: row.status,
+                tipo: row.tipo,
+              }),
+            );
+            const created = await repo().createDebtsBatch(toCreate);
+            return { kind: payload.kind, count: created.length };
+          }
+        }
+      });
+    },
+    onSuccess: async ({ kind, count }) => {
+      const primaryKey: Record<ImportKind, (typeof qk)[keyof typeof qk]> = {
+        categorias: qk.categories,
+        contas: qk.accounts,
+        receitas: qk.incomes,
+        devedores: qk.debtors,
+        transacoes: qk.transactions,
+        dividas: qk.debts,
+      };
+      await qc.invalidateQueries({ queryKey: primaryKey[kind] });
+      if (kind === "transacoes") {
+        await qc.invalidateQueries({ queryKey: qk.categories });
+        await qc.invalidateQueries({ queryKey: qk.accounts });
+      }
+      if (kind === "dividas") {
+        await qc.invalidateQueries({ queryKey: qk.debtors });
+      }
+      const label = IMPORT_KIND_LABELS[kind];
+      toast.success(`${count} registro(s) importado(s) em ${label}`, { id: "import-rows" });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message, { id: "import-rows" });
+    },
   });
 }
 

@@ -30,13 +30,9 @@ import type {
   Transaction,
 } from "@/domain/types";
 import { accountId, categoryId, debtId, debtorId, incomeId, transactionId } from "@/lib/idgen";
+import { parseCurrency } from "@/lib/currency";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
-
-function parseCurrency(raw: string): number {
-  // Handles "20,9" (BR decimal) and plain "20.9"
-  return Number(raw.trim().replace(/\./g, "").replace(",", ".")) || 0;
-}
 
 const SHEETS = {
   transactions: "transactions",
