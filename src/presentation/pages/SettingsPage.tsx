@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
 import { CategoryDialog } from "../components/CategoryDialog";
 import { AppIcon } from "../components/AppIcon";
+import { InstallAppCard } from "../components/InstallAppCard";
 import { useCategories, useDeleteCategory } from "@/hooks/queries";
 import { config } from "@/services/config";
 import { Plus, Pencil, Trash2, ExternalLink, Database } from "lucide-react";
@@ -198,6 +199,7 @@ export function SettingsPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="categories">Categorias</TabsTrigger>
           <TabsTrigger value="data">Fonte de dados</TabsTrigger>
+          <TabsTrigger value="app">Aplicativo</TabsTrigger>
         </TabsList>
 
         <TabsContent value="categories">
@@ -206,6 +208,10 @@ export function SettingsPage() {
 
         <TabsContent value="data">
           <DataSourceTab />
+        </TabsContent>
+
+        <TabsContent value="app">
+          <InstallAppCard />
         </TabsContent>
       </Tabs>
     </div>
