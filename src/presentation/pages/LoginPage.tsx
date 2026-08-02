@@ -77,14 +77,15 @@ export function LoginPage() {
       <div
         className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 relative overflow-hidden text-white"
         style={{
-          background: "linear-gradient(145deg, oklch(0.20 0.12 265) 0%, oklch(0.32 0.14 265) 100%)",
+          background:
+            "linear-gradient(145deg, color-mix(in oklch, var(--accent-brand) 45%, black) 0%, color-mix(in oklch, var(--accent-brand) 65%, black) 100%)",
         }}
       >
         <div
           className="absolute inset-0 opacity-20 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse at 30% 20%, oklch(0.50 0.18 265 / 40%) 0%, transparent 60%)",
+              "radial-gradient(ellipse at 30% 20%, color-mix(in oklch, var(--accent-brand) 40%, transparent) 0%, transparent 60%)",
           }}
         />
 
