@@ -72,7 +72,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="min-h-screen flex bg-[oklch(0.14_0.006_260)] text-white">
       {/* Painel esquerdo — visível apenas lg+ */}
       <div
         className="hidden lg:flex lg:w-[55%] flex-col justify-between p-12 relative overflow-hidden text-white"
@@ -148,32 +148,30 @@ export function LoginPage() {
             <div className="flex items-center justify-center gap-3">
               <img src="/logo-bs.png" alt="Budget" className="h-12 w-12 object-contain" />
               <div className="text-left">
-                <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                <p className="text-xs font-semibold tracking-widest text-white/55 uppercase">
                   lealtek
                 </p>
                 <h1 className="text-3xl font-bold tracking-tight">Budget</h1>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">Gestão de finanças pessoais</p>
+            <p className="text-sm text-white/65">Gestão de finanças pessoais</p>
           </div>
 
           {/* Heading — lg+ */}
           <div className="hidden lg:block">
             <h2 className="text-2xl font-semibold tracking-tight">Bem-vindo</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Entre com sua conta Google para continuar.
-            </p>
+            <p className="text-sm text-white/65 mt-1">Entre com sua conta Google para continuar.</p>
           </div>
 
           {loading ? (
-            <div className="flex flex-col items-center gap-2 py-4 text-sm text-muted-foreground">
+            <div className="flex flex-col items-center gap-2 py-4 text-sm text-white/65">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>{user ? "Reconectando sua conta…" : "Entrando…"}</span>
             </div>
           ) : (
             <div className="space-y-3">
               {error && (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="rounded-md border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-destructive">
                   {error}
                 </p>
               )}
@@ -181,7 +179,7 @@ export function LoginPage() {
                 <GoogleIcon />
                 {user ? "Reconectar com Google" : "Entrar com Google"}
               </Button>
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-xs text-white/65">
                 Seus dados ficam no seu Google Drive
               </p>
             </div>
