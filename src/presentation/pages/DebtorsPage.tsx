@@ -440,15 +440,10 @@ export function DebtorsPage() {
                                   <Badge
                                     variant="outline"
                                     className={cn(
-                                      "h-6 gap-1 px-2 text-xs border-transparent whitespace-nowrap",
+                                      "font-normal border-0 text-xs",
                                       STATUS_TONES[effectiveStatus(debt)],
                                     )}
                                   >
-                                    {effectiveStatus(debt) === "PAGO" ? (
-                                      <CheckCircle2 className="h-3 w-3" />
-                                    ) : (
-                                      <Circle className="h-3 w-3" />
-                                    )}
                                     {statusLabel(debt)}
                                   </Badge>
                                 </td>
