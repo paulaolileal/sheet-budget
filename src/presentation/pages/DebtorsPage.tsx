@@ -24,6 +24,7 @@ import {
   Circle,
   CheckCheck,
   Loader2,
+  History,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -491,7 +492,11 @@ export function DebtorsPage() {
                                         debt.tipo === "EMPRESTIMO" ? "Abater / histórico" : "Editar"
                                       }
                                     >
-                                      <Pencil className="h-3 w-3" />
+                                      {debt.tipo === "EMPRESTIMO" ? (
+                                        <History className="h-3 w-3" />
+                                      ) : (
+                                        <Pencil className="h-3 w-3" />
+                                      )}
                                     </Button>
                                     {(debt.tipo !== "EMPRESTIMO" ||
                                       (loanChainLengths.get(debt.debt_id) ?? 1) <= 1) && (

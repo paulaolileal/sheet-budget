@@ -26,6 +26,7 @@ import { useUiStore } from "@/store/uiStore";
 import { brl, competenciaLabel } from "@/utils/format";
 import { cn } from "@/lib/utils";
 import type { Debt, DebtTipo } from "@/domain/types";
+import { MonthYearPicker } from "./MonthYearPicker";
 
 export function DebtDialog({
   open,
@@ -196,12 +197,9 @@ export function DebtDialog({
                     value={abateValor}
                     onChange={(e) => setAbateValor(e.target.value)}
                   />
-                  <Input
-                    type="month"
-                    value={abateCompetencia}
-                    onChange={(e) => setAbateCompetencia(e.target.value)}
-                    className="w-36 shrink-0"
-                  />
+                  <div className="w-36 shrink-0">
+                    <MonthYearPicker value={abateCompetencia} onChange={setAbateCompetencia} />
+                  </div>
                 </div>
                 {abateError && <p className="text-xs text-destructive">{abateError}</p>}
                 <Button
