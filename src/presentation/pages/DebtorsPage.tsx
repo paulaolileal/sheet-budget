@@ -175,6 +175,10 @@ export function DebtorsPage() {
     let pago = 0;
     for (const list of debtsByDebtor.values()) {
       for (const debt of list) {
+        // "EMPRESTIMO" balances aren't a monthly charge — they carry over every
+        // month until abated, so including them here would double-count the
+        // same outstanding balance across consecutive months.
+        if (debt.tipo === "EMPRESTIMO") continue;
         if (effectiveStatus(debt) === "PAGO") pago += debt.valor;
         else pendente += debt.valor;
       }
