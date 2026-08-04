@@ -88,7 +88,7 @@ export interface InvoiceAmount {
 export const DEBT_STATUS = ["PENDENTE", "PAGO"] as const;
 export type DebtStatus = (typeof DEBT_STATUS)[number];
 
-export const DEBT_TIPO = ["UNICO", "RECORRENTE"] as const;
+export const DEBT_TIPO = ["UNICO", "RECORRENTE", "EMPRESTIMO"] as const;
 export type DebtTipo = (typeof DEBT_TIPO)[number];
 
 export interface Debtor {
@@ -104,7 +104,20 @@ export interface Debt {
   debtor_id: string;
   competencia: Competencia;
   descricao: string;
+  /**
+   * For `tipo: "EMPRESTIMO"`, this is a running balance snapshot, not a delta:
+   * the root row holds the principal lent, and each subsequent row in the same
+   * chain (linked via `parent_debt_id`) holds the remaining balance after that
+   * abatement — see `parent_debt_id` doc below.
+   */
   valor: number;
+  /** Not meaningful for `tipo: "EMPRESTIMO"` — paid/settled state is derived from `valor` instead. */
   status: DebtStatus;
   tipo: DebtTipo;
+  /**
+   * Only used for `tipo: "EMPRESTIMO"`. Links an abatement row back to the root
+   * row of its loan (the first row, which has no `parent_debt_id`). Absent on
+   * every other debt and on the root row itself.
+   */
+  parent_debt_id?: string;
 }

@@ -19,6 +19,7 @@ import {
   MessageCircle,
   CopyPlus,
   Repeat,
+  Landmark,
   CheckCircle2,
   Circle,
   CheckCheck,
@@ -47,6 +48,22 @@ const STATUS_TONES: Record<DebtStatus, string> = {
   PENDENTE: "bg-[color:var(--color-warning)]/20 text-[color:var(--color-warning)]",
   PAGO: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
 };
+
+/**
+ * "EMPRESTIMO" rows never carry a meaningful `status` — pending/settled is
+ * derived from the running balance (`valor`) instead, since abatements only
+ * ever append new rows rather than rewriting the loan's status field.
+ */
+function effectiveStatus(debt: Debt): DebtStatus {
+  if (debt.tipo === "EMPRESTIMO") return debt.valor <= 0 ? "PAGO" : "PENDENTE";
+  return debt.status;
+}
+
+function statusLabel(debt: Debt): string {
+  const status = effectiveStatus(debt);
+  if (debt.tipo === "EMPRESTIMO" && status === "PAGO") return "Quitado";
+  return status;
+}
 
 export function DebtorsPage() {
   const competencia = useUiStore((s) => s.competencia);
@@ -77,16 +94,63 @@ export function DebtorsPage() {
     [debtors],
   );
 
+  // "EMPRESTIMO" debts are chains of rows sharing a root (see DebtDialog): group
+  // them by root id and sort each chain chronologically so we can resolve the
+  // balance that "counts" for any given month.
+  const loanChains = useMemo(() => {
+    const groups = new Map<string, Debt[]>();
+    for (const d of debts ?? []) {
+      if (d.tipo !== "EMPRESTIMO") continue;
+      const rootId = d.parent_debt_id ?? d.debt_id;
+      const list = groups.get(rootId) ?? [];
+      list.push(d);
+      groups.set(rootId, list);
+    }
+    for (const list of groups.values()) {
+      list.sort(
+        (a, b) => a.competencia.localeCompare(b.competencia) || a.debt_id.localeCompare(b.debt_id),
+      );
+    }
+    return groups;
+  }, [debts]);
+
+  // For the active month, a loan is represented by the most recent row in its
+  // chain whose competencia is not after the selected month — that row's `valor`
+  // is already the current balance, so it can be displayed like any other debt.
+  const loanRepresentatives = useMemo(() => {
+    const reps: { debt: Debt; chainLength: number }[] = [];
+    for (const chain of loanChains.values()) {
+      let rep: Debt | null = null;
+      for (const entry of chain) {
+        if (entry.competencia > competencia) break;
+        rep = entry;
+      }
+      if (rep) reps.push({ debt: rep, chainLength: chain.length });
+    }
+    return reps;
+  }, [loanChains, competencia]);
+
+  const loanChainLengths = useMemo(
+    () => new Map(loanRepresentatives.map((r) => [r.debt.debt_id, r.chainLength])),
+    [loanRepresentatives],
+  );
+
   const debtsByDebtor = useMemo(() => {
     const map = new Map<string, Debt[]>();
     for (const debt of debts ?? []) {
+      if (debt.tipo === "EMPRESTIMO") continue; // handled via loanRepresentatives below
       if (debt.competencia !== competencia) continue;
       const list = map.get(debt.debtor_id) ?? [];
       list.push(debt);
       map.set(debt.debtor_id, list);
     }
+    for (const { debt } of loanRepresentatives) {
+      const list = map.get(debt.debtor_id) ?? [];
+      list.push(debt);
+      map.set(debt.debtor_id, list);
+    }
     return map;
-  }, [debts, competencia]);
+  }, [debts, competencia, loanRepresentatives]);
 
   const prevCompetencia = useMemo(() => shiftCompetencia(competencia, -1), [competencia]);
 
@@ -108,13 +172,14 @@ export function DebtorsPage() {
   const { totalPendente, totalPago } = useMemo(() => {
     let pendente = 0;
     let pago = 0;
-    for (const debt of debts ?? []) {
-      if (debt.competencia !== competencia) continue;
-      if (debt.status === "PAGO") pago += debt.valor;
-      else pendente += debt.valor;
+    for (const list of debtsByDebtor.values()) {
+      for (const debt of list) {
+        if (effectiveStatus(debt) === "PAGO") pago += debt.valor;
+        else pendente += debt.valor;
+      }
     }
     return { totalPendente: pendente, totalPago: pago };
-  }, [debts, competencia]);
+  }, [debtsByDebtor]);
 
   function handleOpenCopyDialog() {
     setSelectedDebtIds(new Set(pendingRecurringDebts.map((d) => d.debt_id)));
@@ -144,7 +209,7 @@ export function DebtorsPage() {
 
   function handleCharge(debtor: Debtor) {
     const pending = (debtsByDebtor.get(debtor.debtor_id) ?? []).filter(
-      (d) => d.status === "PENDENTE",
+      (d) => effectiveStatus(d) === "PENDENTE",
     );
     const message = buildChargeMessage(debtor.nome, pending);
     window.open(whatsappChargeUrl(debtor.telefone ?? "", message), "_blank", "noopener,noreferrer");
@@ -234,7 +299,12 @@ export function DebtorsPage() {
           {(debtors ?? []).map((debtor) => {
             const debtorDebts = debtsByDebtor.get(debtor.debtor_id) ?? [];
             const total = debtorDebts.reduce((s, d) => s + d.valor, 0);
-            const hasPending = debtorDebts.some((d) => d.status === "PENDENTE");
+            const hasPendingCharge = debtorDebts.some((d) => effectiveStatus(d) === "PENDENTE");
+            // Bulk "pay month" only toggles the status field, which loans ignore —
+            // abatements are the only way to reduce a loan's balance.
+            const hasPendingBulkPay = debtorDebts.some(
+              (d) => d.tipo !== "EMPRESTIMO" && d.status === "PENDENTE",
+            );
             const isPayingMonth =
               bulkPayDebtorMonth.isPending &&
               bulkPayDebtorMonth.variables?.debtor_id === debtor.debtor_id;
@@ -253,11 +323,11 @@ export function DebtorsPage() {
                       variant="outline"
                       size="sm"
                       className="h-7 gap-1.5 text-xs"
-                      disabled={!hasPending || !debtor.telefone}
+                      disabled={!hasPendingCharge || !debtor.telefone}
                       title={
                         !debtor.telefone
                           ? "Cadastre o telefone do devedor"
-                          : !hasPending
+                          : !hasPendingCharge
                             ? "Nenhuma pendência neste mês"
                             : "Cobrar no WhatsApp"
                       }
@@ -270,9 +340,9 @@ export function DebtorsPage() {
                       variant="outline"
                       size="sm"
                       className="h-7 gap-1.5 text-xs"
-                      disabled={!hasPending || bulkPayDebtorMonth.isPending}
+                      disabled={!hasPendingBulkPay || bulkPayDebtorMonth.isPending}
                       title={
-                        !hasPending
+                        !hasPendingBulkPay
                           ? "Nenhuma pendência neste mês"
                           : "Marcar todas as dívidas do mês como pagas"
                       }
@@ -354,6 +424,12 @@ export function DebtorsPage() {
                                         aria-label="Recorrente"
                                       />
                                     )}
+                                    {debt.tipo === "EMPRESTIMO" && (
+                                      <Landmark
+                                        className="h-3 w-3 text-muted-foreground shrink-0"
+                                        aria-label="Empréstimo"
+                                      />
+                                    )}
                                   </span>
                                 </td>
                                 <td className="px-3 py-2 text-right tabular-nums">
@@ -364,84 +440,92 @@ export function DebtorsPage() {
                                     variant="outline"
                                     className={cn(
                                       "h-6 gap-1 px-2 text-xs border-transparent whitespace-nowrap",
-                                      STATUS_TONES[debt.status],
+                                      STATUS_TONES[effectiveStatus(debt)],
                                     )}
                                   >
-                                    {debt.status === "PAGO" ? (
+                                    {effectiveStatus(debt) === "PAGO" ? (
                                       <CheckCircle2 className="h-3 w-3" />
                                     ) : (
                                       <Circle className="h-3 w-3" />
                                     )}
-                                    {debt.status}
+                                    {statusLabel(debt)}
                                   </Badge>
                                 </td>
                                 <td className="px-3 py-2">
                                   <div className="flex items-center justify-end gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-6 w-6"
-                                      disabled={updateDebt.isPending}
-                                      onClick={() =>
-                                        updateDebt.mutate({
-                                          id: debt.debt_id,
-                                          patch: {
-                                            status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
-                                          },
-                                        })
-                                      }
-                                      title={
-                                        debt.status === "PAGO"
-                                          ? "Marcar como pendente"
-                                          : "Marcar como pago"
-                                      }
-                                    >
-                                      {isTogglingStatus ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
-                                      ) : debt.status === "PAGO" ? (
-                                        <Circle className="h-3 w-3" />
-                                      ) : (
-                                        <CheckCircle2 className="h-3 w-3" />
-                                      )}
-                                    </Button>
+                                    {debt.tipo !== "EMPRESTIMO" && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        disabled={updateDebt.isPending}
+                                        onClick={() =>
+                                          updateDebt.mutate({
+                                            id: debt.debt_id,
+                                            patch: {
+                                              status: debt.status === "PAGO" ? "PENDENTE" : "PAGO",
+                                            },
+                                          })
+                                        }
+                                        title={
+                                          debt.status === "PAGO"
+                                            ? "Marcar como pendente"
+                                            : "Marcar como pago"
+                                        }
+                                      >
+                                        {isTogglingStatus ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : debt.status === "PAGO" ? (
+                                          <Circle className="h-3 w-3" />
+                                        ) : (
+                                          <CheckCircle2 className="h-3 w-3" />
+                                        )}
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-6 w-6"
                                       onClick={() => openEditDebt(debt)}
+                                      title={
+                                        debt.tipo === "EMPRESTIMO" ? "Abater / histórico" : "Editar"
+                                      }
                                     >
                                       <Pencil className="h-3 w-3" />
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className={cn(
-                                        "h-6 w-6",
-                                        deletingDebtId === debt.debt_id
-                                          ? "text-destructive hover:text-destructive"
-                                          : "text-muted-foreground",
-                                      )}
-                                      disabled={deleteDebt.isPending}
-                                      onClick={async () => {
-                                        if (deletingDebtId !== debt.debt_id) {
-                                          setDeletingDebtId(debt.debt_id);
-                                          return;
-                                        }
-                                        await deleteDebt.mutateAsync(debt.debt_id);
-                                        setDeletingDebtId(null);
-                                      }}
-                                      onBlur={() => {
-                                        if (deletingDebtId === debt.debt_id)
+                                    {(debt.tipo !== "EMPRESTIMO" ||
+                                      (loanChainLengths.get(debt.debt_id) ?? 1) <= 1) && (
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn(
+                                          "h-6 w-6",
+                                          deletingDebtId === debt.debt_id
+                                            ? "text-destructive hover:text-destructive"
+                                            : "text-muted-foreground",
+                                        )}
+                                        disabled={deleteDebt.isPending}
+                                        onClick={async () => {
+                                          if (deletingDebtId !== debt.debt_id) {
+                                            setDeletingDebtId(debt.debt_id);
+                                            return;
+                                          }
+                                          await deleteDebt.mutateAsync(debt.debt_id);
                                           setDeletingDebtId(null);
-                                      }}
-                                      title={
-                                        deletingDebtId === debt.debt_id
-                                          ? "Confirmar exclusão"
-                                          : "Excluir"
-                                      }
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
+                                        }}
+                                        onBlur={() => {
+                                          if (deletingDebtId === debt.debt_id)
+                                            setDeletingDebtId(null);
+                                        }}
+                                        title={
+                                          deletingDebtId === debt.debt_id
+                                            ? "Confirmar exclusão"
+                                            : "Excluir"
+                                        }
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>

@@ -56,7 +56,16 @@ const SHEET_SPECS: SheetSpec[] = [
   },
   {
     title: "debts",
-    headers: ["debt_id", "debtor_id", "competencia", "descricao", "valor", "status", "tipo"],
+    headers: [
+      "debt_id",
+      "debtor_id",
+      "competencia",
+      "descricao",
+      "valor",
+      "status",
+      "tipo",
+      "parent_debt_id",
+    ],
   },
 ];
 

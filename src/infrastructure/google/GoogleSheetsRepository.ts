@@ -657,6 +657,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
         valor: parseCurrency(r.valor),
         status: (r.status as Debt["status"]) || "PENDENTE",
         tipo: (r.tipo as Debt["tipo"]) || "UNICO",
+        parent_debt_id: r.parent_debt_id || undefined,
       }));
     } catch (err) {
       if (isMissingSheetError(err)) return [];
@@ -665,13 +666,26 @@ export class GoogleSheetsRepository implements FinanceRepository {
   }
 
   private debtToRow(d: Debt): (string | number)[] {
-    return [d.debt_id, d.debtor_id, d.competencia, d.descricao, d.valor, d.status, d.tipo];
+    return [
+      d.debt_id,
+      d.debtor_id,
+      d.competencia,
+      d.descricao,
+      d.valor,
+      d.status,
+      d.tipo,
+      d.parent_debt_id ?? "",
+    ];
   }
 
   async bulkPayDebtorMonth(debtor_id: string, competencia: string): Promise<void> {
     const debts = await this.getDebts();
     const affected = debts.filter(
-      (d) => d.debtor_id === debtor_id && d.competencia === competencia && d.status !== "PAGO",
+      (d) =>
+        d.debtor_id === debtor_id &&
+        d.competencia === competencia &&
+        d.status !== "PAGO" &&
+        d.tipo !== "EMPRESTIMO",
     );
     for (const d of affected) {
       await this.updateDebt(d.debt_id, { status: "PAGO" });
@@ -688,7 +702,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     } catch (err) {
       if (isMissingSheetError(err)) {
         throw new Error(
-          "Crie a aba 'debts' no Google Sheets com as colunas: debt_id | debtor_id | competencia | descricao | valor | status | tipo",
+          "Crie a aba 'debts' no Google Sheets com as colunas: debt_id | debtor_id | competencia | descricao | valor | status | tipo | parent_debt_id",
         );
       }
       throw err;
@@ -715,13 +729,17 @@ export class GoogleSheetsRepository implements FinanceRepository {
     const updated: Debt = { ...current, ...patch, debt_id: id };
     const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
     await this.request(
-      `/values/${SHEETS.debts}!A${rowIdx}:G${rowIdx}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.debts}!A${rowIdx}:H${rowIdx}?valueInputOption=USER_ENTERED`,
       { method: "PUT", body: JSON.stringify({ values: [this.debtToRow(updated)] }) },
     );
     return updated;
   }
 
   async deleteDebt(id: string): Promise<void> {
+    const debts = await this.getDebts();
+    if (debts.some((d) => d.parent_debt_id === id)) {
+      throw new Error("Exclua os abatimentos desse empréstimo antes de removê-lo.");
+    }
     const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
     const sheetId = await this.getSheetId(SHEETS.debts);
     await this.request("/:batchUpdate", {

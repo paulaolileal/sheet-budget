@@ -114,17 +114,32 @@ export const debtorSchema = z.object({
 
 export const debtorInputSchema = debtorSchema.omit({ debtor_id: true });
 
-export const debtSchema = z.object({
+const debtBaseSchema = z.object({
   debt_id: z.string().min(1),
   debtor_id: z.string().min(1),
   competencia: competenciaSchema,
   descricao: safeString(120),
-  valor: z.number().positive(),
+  // "EMPRESTIMO" rows store a running balance snapshot, which reaches 0 once settled.
+  valor: z.number().nonnegative(),
   status: z.enum(DEBT_STATUS),
   tipo: z.enum(DEBT_TIPO),
+  parent_debt_id: z.string().optional(),
 });
 
-export const debtInputSchema = debtSchema.omit({ debt_id: true });
+const requirePositiveValorUnlessLoan = (d: { tipo: (typeof DEBT_TIPO)[number]; valor: number }) =>
+  d.tipo === "EMPRESTIMO" || d.valor > 0;
+
+export const debtSchema = debtBaseSchema.refine(requirePositiveValorUnlessLoan, {
+  message: "Valor deve ser maior que zero.",
+  path: ["valor"],
+});
+
+export const debtInputSchema = debtBaseSchema
+  .omit({ debt_id: true })
+  .refine(requirePositiveValorUnlessLoan, {
+    message: "Valor deve ser maior que zero.",
+    path: ["valor"],
+  });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
