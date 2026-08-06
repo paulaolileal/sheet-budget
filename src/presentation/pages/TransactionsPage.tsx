@@ -8,8 +8,10 @@ import {
   ChevronDown,
   MoreHorizontal,
   Pencil,
-  ArrowUp,
-  ArrowDown,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ArrowLeftRight,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
@@ -51,7 +53,7 @@ import {
   useUpdateTransaction,
 } from "@/hooks/queries";
 import { useUiStore } from "@/store/uiStore";
-import { brl, competenciaLabel } from "@/utils/format";
+import { brl, competenciaLabel, shiftCompetencia } from "@/utils/format";
 import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type { Transaction, TransactionStatus, TipoLancamento } from "@/domain/types";
 import { TransactionDialog } from "../components/TransactionDialog";
@@ -106,6 +108,51 @@ function stripParcela(descricao: string): string {
 
 function isSettled(tx: Transaction): boolean {
   return tx.status === "PAGO" || tx.status === "ADIANTADO" || tx.status === "IGNORADO";
+}
+
+interface FilterState {
+  competencia: string;
+  categoryFilter: string;
+  accountFilter: string;
+  statusFilter: string;
+  tipoFilter: string;
+  search: string;
+}
+
+function matchesFilters(t: Transaction, f: FilterState): boolean {
+  if (t.competencia !== f.competencia) return false;
+  if (f.categoryFilter !== "all" && t.categoria_id !== f.categoryFilter) return false;
+  if (f.accountFilter !== "all" && t.payment_account_id !== f.accountFilter) return false;
+  if (f.statusFilter !== "all" && t.status !== f.statusFilter) return false;
+  if (f.tipoFilter !== "all" && t.tipo_lancamento !== f.tipoFilter) return false;
+  if (f.search && !t.descricao.toLowerCase().includes(f.search.toLowerCase())) return false;
+  return true;
+}
+
+interface TxSummary {
+  aPagar: number;
+  aPagarCount: number;
+  pago: number;
+  pagoCount: number;
+  adiantado: number;
+  adiantadoCount: number;
+}
+
+// Only PENDENTE + PAGO feed the totals/comparison — same rule used across the whole summary bar.
+// ADIANTADO is tracked separately (shown only when present) and never counted here.
+function summarize(list: Transaction[]): TxSummary {
+  const active = list.filter((t) => t.status !== "IGNORADO");
+  const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
+  const pagoItems = active.filter((t) => t.status === "PAGO");
+  const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
+  return {
+    aPagar: aPagarItems.reduce((s, t) => s + t.valor, 0),
+    aPagarCount: aPagarItems.length,
+    pago: pagoItems.reduce((s, t) => s + t.valor, 0),
+    pagoCount: pagoItems.length,
+    adiantado: adiantadoItems.reduce((s, t) => s + t.valor, 0),
+    adiantadoCount: adiantadoItems.length,
+  };
 }
 
 interface CategoryGroup {
@@ -198,17 +245,33 @@ export function TransactionsPage() {
     });
   }, [templates, txs, competencia]);
 
+  const prevCompetencia = useMemo(() => shiftCompetencia(competencia, -1), [competencia]);
+
   const filtered = useMemo(() => {
-    return (txs ?? []).filter((t) => {
-      if (t.competencia !== competencia) return false;
-      if (categoryFilter !== "all" && t.categoria_id !== categoryFilter) return false;
-      if (accountFilter !== "all" && t.payment_account_id !== accountFilter) return false;
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
-      if (tipoFilter !== "all" && t.tipo_lancamento !== tipoFilter) return false;
-      if (search && !t.descricao.toLowerCase().includes(search.toLowerCase())) return false;
-      return true;
-    });
+    const f: FilterState = {
+      competencia,
+      categoryFilter,
+      accountFilter,
+      statusFilter,
+      tipoFilter,
+      search,
+    };
+    return (txs ?? []).filter((t) => matchesFilters(t, f));
   }, [txs, competencia, categoryFilter, accountFilter, statusFilter, tipoFilter, search]);
+
+  // Same filters as `filtered`, but for the previous month — keeps the month-over-month
+  // comparison apples-to-apples with whatever category/account/status/tipo/search is active.
+  const prevFiltered = useMemo(() => {
+    const f: FilterState = {
+      competencia: prevCompetencia,
+      categoryFilter,
+      accountFilter,
+      statusFilter,
+      tipoFilter,
+      search,
+    };
+    return (txs ?? []).filter((t) => matchesFilters(t, f));
+  }, [txs, prevCompetencia, categoryFilter, accountFilter, statusFilter, tipoFilter, search]);
 
   const grouped = useMemo<CategoryGroup[]>(() => {
     const map = new Map<string, Transaction[]>();
@@ -266,47 +329,15 @@ export function TransactionsPage() {
     return map;
   }, [txs]);
 
-  const {
-    globalAPagar,
-    globalAPagarCount,
-    globalPago,
-    globalPagoCount,
-    globalAdiantado,
-    globalAdiantadoCount,
-  } = useMemo(() => {
-    const active = filtered.filter((t) => t.status !== "IGNORADO");
-    const aPagarItems = active.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
-    const pagoItems = active.filter((t) => t.status === "PAGO");
-    const adiantadoItems = active.filter((t) => t.status === "ADIANTADO");
-    return {
-      globalAPagar: aPagarItems.reduce((s, t) => s + t.valor, 0),
-      globalAPagarCount: aPagarItems.length,
-      globalPago: pagoItems.reduce((s, t) => s + t.valor, 0),
-      globalPagoCount: pagoItems.length,
-      globalAdiantado: adiantadoItems.reduce((s, t) => s + t.valor, 0),
-      globalAdiantadoCount: adiantadoItems.length,
-    };
-  }, [filtered]);
+  const currentSummary = useMemo(() => summarize(filtered), [filtered]);
+  const prevSummary = useMemo(() => summarize(prevFiltered), [prevFiltered]);
 
-  const prevCompetencia = useMemo(() => {
-    const [y, m] = competencia.split("-").map(Number);
-    const d = new Date(y, m - 2, 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-  }, [competencia]);
-
-  const prevTotals = useMemo(() => {
-    const prevActive = (txs ?? []).filter(
-      (t) => t.competencia === prevCompetencia && t.status !== "IGNORADO",
-    );
-    const aPagarItems = prevActive.filter((t) => t.status !== "PAGO" && t.status !== "ADIANTADO");
-    const pagoItems = prevActive.filter((t) => t.status === "PAGO");
-    return {
-      aPagar: aPagarItems.reduce((s, t) => s + t.valor, 0),
-      aPagarCount: aPagarItems.length,
-      pago: pagoItems.reduce((s, t) => s + t.valor, 0),
-      pagoCount: pagoItems.length,
-    };
-  }, [txs, prevCompetencia]);
+  const globalAPagar = currentSummary.aPagar;
+  const globalAPagarCount = currentSummary.aPagarCount;
+  const globalPago = currentSummary.pago;
+  const globalPagoCount = currentSummary.pagoCount;
+  const globalAdiantado = currentSummary.adiantado;
+  const globalAdiantadoCount = currentSummary.adiantadoCount;
 
   function handleStatusChange(tx: Transaction, newStatus: TransactionStatus) {
     updateTransaction({ id: tx.transaction_id, patch: { status: newStatus } });
@@ -361,14 +392,13 @@ export function TransactionsPage() {
             </span>
           </>
         )}
-        <div className="ml-auto text-xs">
-          <MonthDelta
-            current={globalAPagar + globalPago}
-            prev={prevTotals.aPagar + prevTotals.pago}
-            currentCount={globalAPagarCount + globalPagoCount}
-            prevCount={prevTotals.aPagarCount + prevTotals.pagoCount}
-          />
-        </div>
+        <MonthComparison
+          currentValue={globalAPagar + globalPago}
+          prevValue={prevSummary.aPagar + prevSummary.pago}
+          currentCount={globalAPagarCount + globalPagoCount}
+          prevCount={prevSummary.aPagarCount + prevSummary.pagoCount}
+          prevCompetencia={prevCompetencia}
+        />
       </div>
 
       <div className="flex flex-col gap-2 mb-4 md:flex-row md:flex-wrap md:items-center">
@@ -961,40 +991,85 @@ function isLastParcela(parcela: string | null): boolean {
   return a === b;
 }
 
-function MonthDelta({
-  current,
-  prev,
+type Verdict = "melhor" | "pior" | "misto" | "igual";
+
+const VERDICT_LABEL: Record<Verdict, string> = {
+  melhor: "Melhor",
+  pior: "Pior",
+  misto: "Misto",
+  igual: "Igual",
+};
+
+const VERDICT_TONE: Record<Verdict, string> = {
+  melhor: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
+  pior: "bg-red-500/15 text-red-500",
+  misto: "bg-amber-500/15 text-amber-600",
+  igual: "bg-muted text-muted-foreground",
+};
+
+const VERDICT_ICON: Record<Verdict, typeof TrendingDown> = {
+  melhor: TrendingDown,
+  pior: TrendingUp,
+  misto: ArrowLeftRight,
+  igual: Minus,
+};
+
+// "Melhor" = fewer and/or cheaper than last month (never more, never pricier).
+// "Pior" is the mirror image; opposite signs on count vs. value are "Misto".
+function verdictFor(deltaCount: number, deltaValue: number): Verdict {
+  if (deltaCount === 0 && deltaValue === 0) return "igual";
+  if (deltaCount <= 0 && deltaValue <= 0) return "melhor";
+  if (deltaCount >= 0 && deltaValue >= 0) return "pior";
+  return "misto";
+}
+
+// Individual delta color, independent of the overall verdict: fewer/cheaper is good (green),
+// more/pricier is bad (red), unchanged stays neutral.
+function deltaTone(delta: number): string {
+  if (delta < 0) return "text-[color:var(--color-success)]";
+  if (delta > 0) return "text-red-500";
+  return "text-muted-foreground";
+}
+
+/** Month-over-month comparison for the PENDENTE+PAGO total, styled like the other summary stats. */
+function MonthComparison({
+  currentValue,
+  prevValue,
   currentCount,
   prevCount,
+  prevCompetencia,
 }: {
-  current: number;
-  prev: number;
+  currentValue: number;
+  prevValue: number;
   currentCount: number;
   prevCount: number;
+  prevCompetencia: string;
 }) {
-  if (prev === 0 && current === 0) return null;
-  const deltaVal = current - prev;
-  const deltaCnt = currentCount - prevCount;
-  const up = deltaVal > 0;
-  const Icon = up ? ArrowUp : ArrowDown;
-  const color = up ? "text-red-500" : "text-green-500";
-  const sign = deltaCnt >= 0 ? "+" : "";
-  const valSign = deltaVal >= 0 ? "+" : "-";
+  if (prevValue === 0 && currentValue === 0) return null;
+  const deltaCount = currentCount - prevCount;
+  const deltaValue = currentValue - prevValue;
+  const verdict = verdictFor(deltaCount, deltaValue);
+  const VerdictIcon = VERDICT_ICON[verdict];
+  const countLabel = `${deltaCount > 0 ? "+" : ""}${deltaCount}`;
+  const valueLabel = `${deltaValue > 0 ? "+" : deltaValue < 0 ? "-" : ""}${brl(Math.abs(deltaValue))}`;
+
   return (
-    <span className={cn("flex items-center gap-0.5 tabular-nums", color)}>
-      <Icon className="h-3 w-3" />
-      <span>
-        ({sign}
-        {deltaCnt})
-      </span>
-      <span className="ml-1">
-        R$ {valSign}
-        {Math.abs(deltaVal).toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
-      </span>
-    </span>
+    <div className="ml-auto flex items-center gap-x-3 gap-y-1 text-sm flex-wrap">
+      <span className="text-xs text-muted-foreground">vs {competenciaLabel(prevCompetencia)}</span>
+      <Badge
+        variant="outline"
+        className={cn("font-normal border-0 text-xs gap-1", VERDICT_TONE[verdict])}
+      >
+        <VerdictIcon className="h-3 w-3" />
+        {VERDICT_LABEL[verdict]}
+      </Badge>
+      <div className="h-4 w-px bg-border" />
+      <span className="text-muted-foreground">Itens</span>
+      <span className={cn("font-semibold tabular-nums", deltaTone(deltaCount))}>{countLabel}</span>
+      <div className="h-4 w-px bg-border" />
+      <span className="text-muted-foreground">Valor</span>
+      <span className={cn("font-semibold tabular-nums", deltaTone(deltaValue))}>{valueLabel}</span>
+    </div>
   );
 }
 
