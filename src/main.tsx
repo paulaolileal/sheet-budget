@@ -1,18 +1,28 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryCache, QueryClient, MutationCache } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { registerSW } from "virtual:pwa-register";
 import { App } from "./presentation/App";
 import { ThemeProvider } from "./presentation/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { GoogleAuthError } from "@/infrastructure/google/googleApiFetch";
+import { showReconnectToast } from "@/lib/googleAuthToast";
+import { initAuthScheduler } from "@/services/googleAuth";
 import "./styles.css";
 
 registerSW({ immediate: true });
+initAuthScheduler();
 
 const TEN_MINUTES = 10 * 60 * 1000;
+
+/** Surfaces session-expiry consistently across every query and mutation, regardless
+ *  of whether the call site wires its own `onError` — see `showReconnectToast`. */
+function handleAuthError(error: unknown) {
+  if (error instanceof GoogleAuthError) showReconnectToast();
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +33,8 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
+  queryCache: new QueryCache({ onError: handleAuthError }),
+  mutationCache: new MutationCache({ onError: handleAuthError }),
 });
 
 const persister = createSyncStoragePersister({

@@ -18,6 +18,7 @@
  */
 
 import type { FinanceRepository } from "@/domain/repository";
+import { googleApiFetch } from "./googleApiFetch";
 import type {
   Account,
   Category,
@@ -74,28 +75,16 @@ function isMissingSheetError(err: unknown): boolean {
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
-  getAccessToken: () => string | null;
 }
 
 export class GoogleSheetsRepository implements FinanceRepository {
   constructor(private readonly cfg: GoogleSheetsConfig) {}
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const token = this.cfg.getAccessToken();
-    if (!token) throw new Error("Sem token Google — faça login novamente.");
-    const res = await fetch(`${API}/${this.cfg.spreadsheetId}${path}`, {
+    return googleApiFetch<T>(`${API}/${this.cfg.spreadsheetId}${path}`, {
       ...init,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
+      apiLabel: "Sheets API",
     });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Sheets API ${res.status}: ${body}`);
-    }
-    return res.json() as Promise<T>;
   }
 
   private async getValues(range: string): Promise<string[][]> {

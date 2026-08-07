@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { DriveApiClient } from "@/infrastructure/google/DriveApiClient";
 import { SheetsInitializer } from "@/infrastructure/google/SheetsInitializer";
-import { getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
 import { useSpreadsheetStore } from "@/store/spreadsheetStore";
 import { clearSheetProvider } from "@/application/repositoryProvider";
@@ -38,8 +37,8 @@ export function SetupPage() {
     connectingRef.current = true;
 
     async function connect() {
-      const drive = new DriveApiClient(getAccessToken);
-      const initializer = new SheetsInitializer(getAccessToken);
+      const drive = new DriveApiClient();
+      const initializer = new SheetsInitializer();
       const found = await drive.listSpreadsheets(SPREADSHEET_TITLE);
 
       let spreadsheetId: string;

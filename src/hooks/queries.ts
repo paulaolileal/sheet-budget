@@ -40,9 +40,36 @@ import {
 import { useUiStore } from "@/store/uiStore";
 import { competenciaLabel } from "@/utils/format";
 import { transactionId } from "@/lib/idgen";
+import { GoogleAuthError } from "@/infrastructure/google/googleApiFetch";
 import { toast } from "sonner";
 
 const repo = () => getSheetProvider();
+
+/**
+ * Shared `onError` for mutations. Session-expiry (`GoogleAuthError`) is already
+ * surfaced once, globally, by the QueryClient's `mutationCache.onError` (see
+ * main.tsx) with a persistent "Reconectar" toast — skip it here to avoid a
+ * duplicate, generic-text toast on top of it.
+ */
+function onErrorToast(e: Error) {
+  if (e instanceof GoogleAuthError) return;
+  toast.error(e.message);
+}
+
+/**
+ * Same as `onErrorToast`, but for mutations that open a `toast.loading(..., { id })`
+ * from within `mutationFn` — on a session expiry that loading toast must be
+ * dismissed instead of left spinning forever under the global reconnect toast.
+ */
+function onErrorDismissLoading(id: string) {
+  return (e: Error) => {
+    if (e instanceof GoogleAuthError) {
+      toast.dismiss(id);
+      return;
+    }
+    toast.error(e.message, { id });
+  };
+}
 
 export const qk = {
   transactions: ["transactions"] as const,
@@ -145,7 +172,7 @@ export function useCreateTransaction() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.transactions });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -156,7 +183,7 @@ export function useCreateTemplate() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.templates });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -168,7 +195,7 @@ export function useUpdateTemplate() {
       qc.invalidateQueries({ queryKey: qk.templates });
       toast.success("Recorrência atualizada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -180,7 +207,7 @@ export function useDeleteTemplate() {
       qc.invalidateQueries({ queryKey: qk.templates });
       toast.success("Recorrência excluída");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -193,7 +220,7 @@ export function useUpdateTransaction() {
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Lançamento atualizado");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -202,7 +229,7 @@ export function useDeleteTransaction() {
   return useMutation({
     mutationFn: (id: string) => withSync(() => repo().deleteTransaction(id)),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.transactions }),
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -277,7 +304,7 @@ export function useUpdateTransactionSeries() {
       qc.invalidateQueries({ queryKey: qk.templates });
       toast.success("Série atualizada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -292,7 +319,7 @@ export function useCreateAccount() {
       qc.invalidateQueries({ queryKey: qk.accounts });
       toast.success("Conta criada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -307,7 +334,7 @@ export function useUpdateAccount() {
       qc.invalidateQueries({ queryKey: qk.accounts });
       toast.success("Conta atualizada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -320,7 +347,7 @@ export function useDeleteAccount() {
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Conta excluída");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -335,7 +362,7 @@ export function useCreateCategory() {
       qc.invalidateQueries({ queryKey: qk.categories });
       toast.success("Categoria criada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -347,7 +374,7 @@ export function useUpdateCategory() {
       qc.invalidateQueries({ queryKey: qk.categories });
       toast.success("Categoria atualizada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -361,7 +388,7 @@ export function useDeleteCategory() {
       qc.invalidateQueries({ queryKey: qk.templates });
       toast.success("Categoria excluída");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -376,7 +403,7 @@ export function useCreateIncome() {
       qc.invalidateQueries({ queryKey: qk.incomes });
       toast.success("Receita adicionada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -389,7 +416,7 @@ export function useUpdateIncome() {
       qc.invalidateQueries({ queryKey: qk.incomes });
       toast.success("Receita atualizada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -401,7 +428,7 @@ export function useDeleteIncome() {
       qc.invalidateQueries({ queryKey: qk.incomes });
       toast.success("Receita excluída");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -416,7 +443,7 @@ export function useSaveInvoiceAmount() {
       qc.invalidateQueries({ queryKey: qk.invoice_amounts });
       toast.success("Valor da fatura salvo");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -434,7 +461,7 @@ export function useBulkPayByAccount() {
       qc.invalidateQueries({ queryKey: qk.transactions });
       toast.success("Fatura marcada como paga");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -505,9 +532,7 @@ export function useGenerateRecurring() {
         toast.success(`${count} recorrências criadas para ${monthLabel}`, { id: "gen-recurring" });
       }
     },
-    onError: (e: Error) => {
-      toast.error(e.message, { id: "gen-recurring" });
-    },
+    onError: onErrorDismissLoading("gen-recurring"),
   });
 }
 
@@ -522,7 +547,7 @@ export function useCreateDebtor() {
       qc.invalidateQueries({ queryKey: qk.debtors });
       toast.success("Devedor criado");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -537,7 +562,7 @@ export function useUpdateDebtor() {
       qc.invalidateQueries({ queryKey: qk.debtors });
       toast.success("Devedor atualizado");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -550,7 +575,7 @@ export function useDeleteDebtor() {
       qc.invalidateQueries({ queryKey: qk.debts });
       toast.success("Devedor excluído");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -565,7 +590,7 @@ export function useCreateDebt() {
       qc.invalidateQueries({ queryKey: qk.debts });
       toast.success("Dívida adicionada");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -577,7 +602,7 @@ export function useUpdateDebt() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.debts });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -589,7 +614,7 @@ export function useDeleteDebt() {
       qc.invalidateQueries({ queryKey: qk.debts });
       toast.success("Dívida excluída");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -602,7 +627,7 @@ export function useBulkPayDebtorMonth() {
       qc.invalidateQueries({ queryKey: qk.debts });
       toast.success("Dívidas do mês marcadas como pagas");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: onErrorToast,
   });
 }
 
@@ -766,9 +791,7 @@ export function useImportRows() {
       const label = IMPORT_KIND_LABELS[kind];
       toast.success(`${count} registro(s) importado(s) em ${label}`, { id: "import-rows" });
     },
-    onError: (e: Error) => {
-      toast.error(e.message, { id: "import-rows" });
-    },
+    onError: onErrorDismissLoading("import-rows"),
   });
 }
 
@@ -810,8 +833,6 @@ export function useDuplicatePreviousMonthDebts() {
         toast.success(`${count} dívida(s) duplicada(s) para ${monthLabel}`, { id: "dup-debts" });
       }
     },
-    onError: (e: Error) => {
-      toast.error(e.message, { id: "dup-debts" });
-    },
+    onError: onErrorDismissLoading("dup-debts"),
   });
 }

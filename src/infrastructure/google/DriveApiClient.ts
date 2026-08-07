@@ -1,3 +1,5 @@
+import { googleApiFetch } from "./googleApiFetch";
+
 const DRIVE_API = "https://www.googleapis.com/drive/v3";
 
 export interface DriveFile {
@@ -7,24 +9,8 @@ export interface DriveFile {
 }
 
 export class DriveApiClient {
-  constructor(private readonly getAccessToken: () => string | null) {}
-
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
-    const token = this.getAccessToken();
-    if (!token) throw new Error("Sem token Google — faça login novamente.");
-    const res = await fetch(`${DRIVE_API}${path}`, {
-      ...init,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
-      },
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Drive API ${res.status}: ${body}`);
-    }
-    return res.json() as Promise<T>;
+    return googleApiFetch<T>(`${DRIVE_API}${path}`, { ...init, apiLabel: "Drive API" });
   }
 
   async listSpreadsheets(name: string): Promise<DriveFile[]> {

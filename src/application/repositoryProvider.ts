@@ -1,5 +1,4 @@
 import { GoogleSheetsRepository } from "@/infrastructure/google/GoogleSheetsRepository";
-import { getAccessToken } from "@/services/googleAuth";
 import { useAuthStore } from "@/store/authStore";
 import { useSpreadsheetStore } from "@/store/spreadsheetStore";
 
@@ -14,7 +13,7 @@ export function getSheetProvider(): GoogleSheetsRepository {
 
   if (cached?.id === spreadsheetId) return cached.repo;
 
-  const repo = new GoogleSheetsRepository({ spreadsheetId, getAccessToken });
+  const repo = new GoogleSheetsRepository({ spreadsheetId });
   cached = { id: spreadsheetId, repo };
   return repo;
 }

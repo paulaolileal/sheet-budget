@@ -46,7 +46,8 @@ presentation → hooks → domain ← infrastructure
 | `src/store/spreadsheetStore.ts`                       | Zustand: maps each user's email to their spreadsheet id (multi-tenant, one Sheet per user)                   |
 | `src/store/authStore.ts`                              | Zustand (persisted): the signed-in Google user info (`UserInfo`) shown in the UI                             |
 | `src/services/config.ts`                              | Reads `VITE_GOOGLE_CLIENT_ID` and the Drive OAuth scope                                                      |
-| `src/services/googleAuth.ts`                          | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage |
+| `src/services/googleAuth.ts`                          | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage. `initAuthScheduler()` (called once in `main.tsx`) proactively renews the token in the background before it expires and on tab focus/visibility, so `ensureFreshToken()` keeps the session alive transparently |
+| `src/infrastructure/google/googleApiFetch.ts`         | Shared fetch wrapper used by all Google REST clients (`GoogleSheetsRepository`, `DriveApiClient`, `SheetsInitializer`); ensures a fresh token per call and throws `GoogleAuthError` when silent refresh genuinely fails |
 | `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4 — the only `FinanceRepository` implementation today                               |
 | `src/infrastructure/google/SheetsInitializer.ts`      | Creates a brand-new spreadsheet with the 8 required tabs/headers (see schema below) during `/setup`          |
 | `src/infrastructure/google/DriveApiClient.ts`         | Finds/creates the user's Sheet and its parent Drive folder during `/setup`                                   |
