@@ -18,7 +18,7 @@ There are no automated tests in this project.
 
 ## Architecture
 
-This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own, and there is no mock/offline mode: every user authenticates with Google and reads/writes a real spreadsheet via the Sheets API. The app is also an installable PWA (`vite-plugin-pwa`), but the service worker is configured with `NetworkOnly` for `googleapis.com`/`accounts.google.com` — finance data is never served from cache, only the app shell is precached.
+This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own, and there is no mock/offline mode: every user authenticates with Google and reads/writes a real spreadsheet via the Sheets API. The app is also an installable PWA (`vite-plugin-pwa`), using the `injectManifest` strategy with a hand-written service worker (`src/sw.ts`, not the default `generateSW`) — required to intercept the Android Web Share Target POST (see "Sharing a receipt" below). `src/sw.ts` precaches the app shell and replicates a `NetworkOnly` rule for `googleapis.com`/`accounts.google.com` — finance data is never served from cache.
 
 ### Layer dependency rule
 
@@ -53,6 +53,10 @@ presentation → hooks → domain ← infrastructure
 | `src/infrastructure/google/DriveApiClient.ts`         | Finds/creates the user's Sheet and its parent Drive folder during `/setup`                                   |
 | `src/lib/csvParser.ts`, `src/lib/importTemplates.ts`  | CSV parsing (papaparse) and downloadable model CSVs used by the import feature                               |
 | `src/utils/iconRegistry.ts`                           | Lucide icon registry (`ICON_REGISTRY`/`ICON_LIST`/`getIcon`) backing every `icon_id` field                   |
+| `src/sw.ts`                                           | Custom service worker (`injectManifest`) — precache, `NetworkOnly` for Google APIs, and the Web Share Target `fetch` handler |
+| `src/lib/receiptStore.ts`                             | IndexedDB hand-off for a shared receipt image, from `src/sw.ts` to `ShareTargetPage`                          |
+| `src/lib/receiptParser.ts`                            | Regex-based extraction of valor/descrição/competência from OCR text of a Nubank receipt                       |
+| `src/presentation/pages/ShareTargetPage.tsx`          | `/share-target` route: runs OCR (`tesseract.js`) on the shared image and opens `TransactionDialog` pre-filled  |
 
 ### Google Sheets schema
 
@@ -83,6 +87,7 @@ If you add a field to a domain type, it must be added both here (so `/setup` cre
 | `/debtors`      | Debtors/debts owed to the user (charge via WhatsApp, `src/utils/whatsapp.ts`) |
 | `/cards`        | Cards & invoices                             |
 | `/recurrences`  | RecurrenceTemplates                          |
+| `/share-target` | Landing page for a shared receipt image (see "Sharing a receipt" below); lazy-loaded, not in the nav |
 | `/settings`     | Categories, data source (Sheet, import), app |
 
 ### Data conventions
@@ -98,6 +103,17 @@ If you add a field to a domain type, it must be added both here (so `/setup` cre
 `src/presentation/components/ImportDialog.tsx` (opened from Settings → "Fonte de dados" and from the Dashboard's empty state) lets the user upload a CSV per entity — Categorias, Contas, Receitas, Devedores, Transações or Dívidas — using the friendly column layout defined in `src/domain/importSchemas.ts` (`IMPORT_COLUMNS`/`IMPORT_ROW_SCHEMAS`). A "baixar modelo" button generates a template file via `src/lib/importTemplates.ts`.
 
 Transações/Dívidas reference Categoria/Conta/Devedor **by name** in the CSV. The `useImportRows` mutation (`src/hooks/queries.ts`) resolves each name to an id against the existing entities (case-insensitive), creating the entity on the fly if no match exists, before calling `createTransactionsBatch`/`createDebtsBatch`.
+
+### Sharing a receipt (Android Web Share Target)
+
+When the app is installed as a PWA on Android, it's listed in the OS "Share" menu for images. Sharing a Nubank transfer receipt screenshot ("Comprovante de transferência") pre-fills a new Pix transaction (`tipo_lancamento: "MANUAL"`, `status: "PAGO"`):
+
+1. `manifest.share_target` (`vite.config.ts`) makes Android POST the shared image (multipart, field `receipt`) to `/share-target`.
+2. `src/sw.ts`'s `fetch` handler intercepts that POST, stores the image Blob in IndexedDB (`src/lib/receiptStore.ts`), and redirects to `/share-target?receiptId=...`.
+3. `ShareTargetPage` reads the Blob back, runs on-device OCR with `tesseract.js` (no image or API key ever leaves the device — this is why `injectManifest`/OCR was chosen over calling a vision LLM), and extracts fields with `parseNubankReceipt` (`src/lib/receiptParser.ts`), which is regex-based and specific to today's Nubank layout.
+4. The extracted `{ descricao, valor, competencia }` are passed to `TransactionDialog` via its `draft` prop (used only in create mode) — the user still picks categoria/conta and confirms before anything is saved; fields the parser couldn't find are just left blank.
+
+If Nubank changes the receipt layout, `parseNubankReceipt` simply won't find the fields — the dialog still opens, just empty, no crash.
 
 ### Environment variables
 

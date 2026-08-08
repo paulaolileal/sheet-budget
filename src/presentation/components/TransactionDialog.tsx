@@ -41,7 +41,7 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { Transaction, TipoLancamento } from "@/domain/types";
+import type { Transaction, TipoLancamento, TransactionStatus } from "@/domain/types";
 import { useUiStore } from "@/store/uiStore";
 import { competenciaSchema } from "@/domain/schemas";
 import {
@@ -94,10 +94,23 @@ export function TransactionDialog({
   open,
   onOpenChange,
   transaction,
+  draft,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   transaction?: Transaction;
+  /**
+   * Pre-fills the "new transaction" form (ignored when editing an existing
+   * `transaction`). Used by `ShareTargetPage` to seed values extracted from a
+   * shared receipt — categoria/conta are intentionally left out, they still
+   * require the user to pick.
+   */
+  draft?: {
+    descricao?: string;
+    valor?: number;
+    competencia?: string;
+    status?: TransactionStatus;
+  };
 }) {
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
@@ -153,13 +166,13 @@ export function TransactionDialog({
     useForm<FormValues>({
       resolver: zodResolver(formSchema),
       defaultValues: {
-        descricao: transaction?.descricao ?? "",
-        competencia: transaction?.competencia ?? competencia,
+        descricao: transaction?.descricao ?? draft?.descricao ?? "",
+        competencia: transaction?.competencia ?? draft?.competencia ?? competencia,
         categoria_id: transaction?.categoria_id ?? "",
         payment_account_id: transaction?.payment_account_id ?? "",
-        valor: transaction?.valor ?? 0,
+        valor: transaction?.valor ?? draft?.valor ?? 0,
         valor_total: 0,
-        status: transaction?.status ?? "PENDENTE",
+        status: transaction?.status ?? draft?.status ?? "PENDENTE",
         tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
         parcelas: 1,
       },
@@ -168,20 +181,20 @@ export function TransactionDialog({
   useEffect(() => {
     if (open) {
       reset({
-        descricao: transaction?.descricao ?? "",
-        competencia: transaction?.competencia ?? competencia,
+        descricao: transaction?.descricao ?? draft?.descricao ?? "",
+        competencia: transaction?.competencia ?? draft?.competencia ?? competencia,
         categoria_id: transaction?.categoria_id ?? "",
         payment_account_id: transaction?.payment_account_id ?? "",
-        valor: transaction?.valor ?? 0,
+        valor: transaction?.valor ?? draft?.valor ?? 0,
         valor_total: 0,
-        status: transaction?.status ?? "PENDENTE",
+        status: transaction?.status ?? draft?.status ?? "PENDENTE",
         tipo_lancamento: transaction?.tipo_lancamento ?? "MANUAL",
         parcelas: 1,
       });
       setConfirmDelete(false);
       setSummaryOpen(false);
     }
-  }, [open, transaction, competencia, reset]);
+  }, [open, transaction, competencia, reset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tipo = watch("tipo_lancamento");
   const numParcelas = watch("parcelas") ?? 1;

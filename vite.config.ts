@@ -24,6 +24,16 @@ export default defineConfig(({ mode }) => {
       VitePWA({
         registerType: "autoUpdate",
         includeAssets: ["favicon.svg"],
+        // `injectManifest` (a hand-written src/sw.ts) instead of the default
+        // `generateSW` — required to intercept the Android Web Share Target
+        // POST below with a custom `fetch` handler; see src/sw.ts for the
+        // precache + NetworkOnly rules that generateSW used to add for us.
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
+        injectManifest: {
+          globPatterns: ["**/*.{js,css,html,svg,png,ico}"],
+        },
         manifest: {
           name: "Finanças — Gestão Pessoal",
           short_name: "Finanças",
@@ -42,17 +52,16 @@ export default defineConfig(({ mode }) => {
               purpose: "maskable",
             },
           ],
-        },
-        workbox: {
-          // Google Sheets/Drive data must never be served stale from cache —
-          // this app has no offline mode by design.
-          runtimeCaching: [
-            {
-              urlPattern: ({ url }) =>
-                url.hostname.endsWith("googleapis.com") || url.hostname === "accounts.google.com",
-              handler: "NetworkOnly",
+          // Lets Android list the app in the image-sharing menu; the POST it
+          // sends to `share-target` is caught by the fetch handler in src/sw.ts.
+          share_target: {
+            action: "share-target",
+            method: "POST",
+            enctype: "multipart/form-data",
+            params: {
+              files: [{ name: "receipt", accept: ["image/*"] }],
             },
-          ],
+          },
         },
       }),
     ],
