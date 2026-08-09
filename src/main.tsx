@@ -4,16 +4,16 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryCache, QueryClient, MutationCache } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { registerSW } from "virtual:pwa-register";
 import { App } from "./presentation/App";
 import { ThemeProvider } from "./presentation/theme/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { GoogleAuthError } from "@/infrastructure/google/googleApiFetch";
 import { showReconnectToast } from "@/lib/googleAuthToast";
 import { initAuthScheduler } from "@/services/googleAuth";
+import { initServiceWorkerAutoUpdate } from "@/services/swUpdater";
 import "./styles.css";
 
-registerSW({ immediate: true });
+initServiceWorkerAutoUpdate();
 initAuthScheduler();
 
 const TEN_MINUTES = 10 * 60 * 1000;
