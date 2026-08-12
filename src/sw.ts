@@ -9,8 +9,9 @@
  * `src/lib/receiptStore.ts` and `src/presentation/pages/ShareTargetPage.tsx`.
  *
  * Everything else here reproduces what `generateSW` used to do for us:
- * precache the app shell and never let googleapis.com/accounts.google.com
- * responses be served from cache (finance data has no offline mode by design).
+ * precache the app shell and never let googleapis.com/api.lealtek.com
+ * responses be served from cache (finance data has no offline mode by design,
+ * and auth token calls must never be served stale).
  */
 import { precacheAndRoute, cleanupOutdatedCaches } from "workbox-precaching";
 import { clientsClaim } from "workbox-core";
@@ -27,7 +28,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 registerRoute(
-  ({ url }) => url.hostname.endsWith("googleapis.com") || url.hostname === "accounts.google.com",
+  ({ url }) => url.hostname.endsWith("googleapis.com") || url.hostname === "api.lealtek.com",
   new NetworkOnly(),
 );
 

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "../theme/ThemeProvider";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
-import { clearAccessToken } from "@/services/googleAuth";
+import { signOut } from "@/services/googleAuth";
 import { useSpreadsheetStore } from "@/store/spreadsheetStore";
 import { clearSheetProvider } from "@/application/repositoryProvider";
 import { useQueryClient } from "@tanstack/react-query";
@@ -70,7 +70,7 @@ export function AppShell() {
   const { user, clearUser } = useAuthStore();
 
   function handleLogout() {
-    clearAccessToken();
+    signOut();
     clearUser();
     navigate("/login", { replace: true });
   }

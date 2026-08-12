@@ -18,7 +18,7 @@ There are no automated tests in this project.
 
 ## Architecture
 
-This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own, and there is no mock/offline mode: every user authenticates with Google and reads/writes a real spreadsheet via the Sheets API. The app is also an installable PWA (`vite-plugin-pwa`), using the `injectManifest` strategy with a hand-written service worker (`src/sw.ts`, not the default `generateSW`) — required to intercept the Android Web Share Target POST (see "Sharing a receipt" below). `src/sw.ts` precaches the app shell and replicates a `NetworkOnly` rule for `googleapis.com`/`accounts.google.com` — finance data is never served from cache.
+This is a **frontend-only SPA** (React 19 + Vite + TypeScript) for personal finance management. The backend is Google Sheets — there is no server of our own, and there is no mock/offline mode: every user authenticates with Google and reads/writes a real spreadsheet via the Sheets API. The app is also an installable PWA (`vite-plugin-pwa`), using the `injectManifest` strategy with a hand-written service worker (`src/sw.ts`, not the default `generateSW`) — required to intercept the Android Web Share Target POST (see "Sharing a receipt" below). `src/sw.ts` precaches the app shell and replicates a `NetworkOnly` rule for `googleapis.com`/`api.lealtek.com` — finance data and auth calls are never served from cache.
 
 ### Layer dependency rule
 
@@ -45,8 +45,9 @@ presentation → hooks → domain ← infrastructure
 | `src/store/uiStore.ts`                                | Zustand: active `competencia` (YYYY-MM) + sync state (`idle/syncing/saved/error`)                            |
 | `src/store/spreadsheetStore.ts`                       | Zustand: maps each user's email to their spreadsheet id (multi-tenant, one Sheet per user)                   |
 | `src/store/authStore.ts`                              | Zustand (persisted): the signed-in Google user info (`UserInfo`) shown in the UI                             |
-| `src/services/config.ts`                              | Reads `VITE_GOOGLE_CLIENT_ID` and the Drive OAuth scope                                                      |
-| `src/services/googleAuth.ts`                          | Google Identity Services OAuth flow; access token lives **in memory only** (closure) — never in localStorage. `initAuthScheduler()` (called once in `main.tsx`) proactively renews the token in the background before it expires and on tab focus/visibility, so `ensureFreshToken()` keeps the session alive transparently |
+| `src/services/config.ts`                              | Reads `VITE_LEALTEK_API_URL` (the shared auth/backend base URL)                                              |
+| `src/services/googleAuth.ts`                          | OAuth via the shared `lealtek-api` backend (Authorization Code + PKCE — see the `lealtek-api` repo); access token lives **in memory + sessionStorage** — never localStorage, and there is no client-side client_id/secret. `signIn()` is a full-page redirect to `lealtek-api`'s login endpoint; `initAuthScheduler()` (called once in `main.tsx`) consumes the token left in the URL after that redirect, then proactively renews it in the background (`POST /api/auth/refresh`, reading an httpOnly cookie server-side) before it expires and on tab focus/visibility, so `ensureFreshToken()` keeps the session alive transparently |
+| `src/services/inAppBrowser.ts`                        | Detects in-app browsers (Instagram/Facebook/etc.) client-side, mirroring the authoritative check `lealtek-api` enforces server-side — Google refuses to render its OAuth screen inside these regardless of backend architecture |
 | `src/services/swUpdater.ts`                           | `initServiceWorkerAutoUpdate()` (called once in `main.tsx`) registers the service worker, polls `registration.update()` hourly and on focus, and reloads once a new worker takes control — immediately if backgrounded, otherwise deferred to the next time it is — so an installed PWA self-updates without a manual reinstall |
 | `src/infrastructure/google/googleApiFetch.ts`         | Shared fetch wrapper used by all Google REST clients (`GoogleSheetsRepository`, `DriveApiClient`, `SheetsInitializer`); ensures a fresh token per call and throws `GoogleAuthError` when silent refresh genuinely fails |
 | `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4 — the only `FinanceRepository` implementation today                               |
@@ -119,7 +120,7 @@ If Nubank changes the receipt layout, `parseNubankReceipt` simply won't find the
 ### Environment variables
 
 ```
-VITE_GOOGLE_CLIENT_ID=   # OAuth Client ID (Web application type), required
+VITE_LEALTEK_API_URL=    # base URL of the shared lealtek-api backend (auth), required
 VITE_BASE_PATH=          # optional; router basename and Vite `base` for sub-path deployments
 ```
 

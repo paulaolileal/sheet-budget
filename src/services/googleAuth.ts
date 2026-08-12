@@ -8,7 +8,6 @@ export interface UserInfo {
 
 let accessToken: string | null = null;
 let expiresAt = 0;
-let scriptPromise: Promise<void> | null = null;
 
 // Proactive refresh: renew the token in the background well before it expires,
 // so the user never hits an expired-token error mid-action.
@@ -65,42 +64,6 @@ function setToken(token: string, expiresIn: number) {
   scheduleProactiveRefresh();
 }
 
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        oauth2: {
-          initTokenClient: (cfg: {
-            client_id: string;
-            scope: string;
-            callback: (resp: {
-              access_token?: string;
-              expires_in?: number;
-              error?: string;
-            }) => void;
-          }) => { requestAccessToken: (opts?: { prompt?: string }) => void };
-        };
-      };
-    };
-  }
-}
-
-function loadGsi(): Promise<void> {
-  if (scriptPromise) return scriptPromise;
-  scriptPromise = new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("SSR"));
-    if (window.google?.accounts?.oauth2) return resolve();
-    const s = document.createElement("script");
-    s.src = "https://accounts.google.com/gsi/client";
-    s.async = true;
-    s.defer = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Falha ao carregar Google Identity Services"));
-    document.head.appendChild(s);
-  });
-  return scriptPromise;
-}
-
 async function fetchUserInfo(token: string): Promise<UserInfo> {
   const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${token}` },
@@ -109,33 +72,38 @@ async function fetchUserInfo(token: string): Promise<UserInfo> {
   return res.json() as Promise<UserInfo>;
 }
 
-/**
- * Runs the GIS token client with the given prompt mode, resolving with a fresh
- * access token (and persisting it via setToken) or rejecting with the GIS error.
- * `prompt: "none"` never opens a popup or requires a user gesture — on failure
- * it just rejects (e.g. "user_logged_out", "immediate_failed").
- */
-async function runTokenClient(prompt: "" | "none"): Promise<string> {
-  if (!config.googleClientId) {
-    throw new Error("VITE_GOOGLE_CLIENT_ID não configurado.");
-  }
-  await loadGsi();
-  return new Promise<string>((resolve, reject) => {
-    const tokenClient = window.google!.accounts.oauth2.initTokenClient({
-      client_id: config.googleClientId!,
-      scope: `${config.scopes} openid email profile`,
-      callback: (resp) => {
-        if (resp.error || !resp.access_token) {
-          return reject(
-            new Error(resp.error ?? (prompt === "none" ? "silent_failed" : "Login cancelado")),
-          );
-        }
-        setToken(resp.access_token, resp.expires_in ?? 3600);
-        resolve(resp.access_token);
-      },
+// Reads #access_token=...&expires_in=... left in the URL by lealtek-api's
+// /api/auth/callback redirect, applies it, and strips the fragment so the
+// token doesn't linger in the address bar/history. Called once from
+// initAuthScheduler() on app boot.
+function consumeRedirectResult(): void {
+  if (typeof window === "undefined" || !window.location.hash) return;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const token = params.get("access_token");
+  const expiresIn = params.get("expires_in");
+  if (!token || !expiresIn) return;
+  setToken(token, Number(expiresIn));
+  const url = new URL(window.location.href);
+  url.hash = "";
+  window.history.replaceState({}, "", url.toString());
+}
+
+async function refreshFromServer(): Promise<string | null> {
+  try {
+    const res = await fetch(`${config.apiBaseUrl}/api/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
     });
-    tokenClient.requestAccessToken({ prompt });
-  });
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as { access_token?: string; expires_in?: number };
+    if (!data.access_token || !data.expires_in) return null;
+
+    setToken(data.access_token, data.expires_in);
+    return data.access_token;
+  } catch {
+    return null;
+  }
 }
 
 export function getAccessToken(): string | null {
@@ -152,7 +120,10 @@ export function getAccessToken(): string | null {
   return null;
 }
 
-export function clearAccessToken() {
+// Clears local state and revokes the session server-side (best-effort — the
+// local state is already cleared regardless of whether the network call
+// succeeds). Fire-and-forget, matching the original synchronous call sites.
+export function signOut(): void {
   accessToken = null;
   expiresAt = 0;
   if (refreshTimer) {
@@ -165,13 +136,17 @@ export function clearAccessToken() {
   } catch {
     // ignore
   }
+  void fetch(`${config.apiBaseUrl}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
 }
 
 /**
  * Returns a token guaranteed to be fresh for at least FRESH_ENOUGH_MARGIN_MS,
  * silently renewing it in the background if needed. Never throws — returns
- * null when renewal genuinely fails (dead Google session, blocked cookies,
- * revoked consent), leaving the decision of what to do to the caller.
+ * null when renewal genuinely fails (expired/revoked refresh_token cookie,
+ * network error), leaving the decision of what to do to the caller.
  * Concurrent calls share a single in-flight renewal.
  */
 export async function ensureFreshToken(opts?: { forceRefresh?: boolean }): Promise<string | null> {
@@ -182,23 +157,24 @@ export async function ensureFreshToken(opts?: { forceRefresh?: boolean }): Promi
     if (token && expiresAt - Date.now() > FRESH_ENOUGH_MARGIN_MS) return token;
   }
 
-  inFlightRefresh = runTokenClient("none")
-    .catch(() => null)
-    .finally(() => {
-      inFlightRefresh = null;
-    });
+  inFlightRefresh = refreshFromServer().finally(() => {
+    inFlightRefresh = null;
+  });
   return inFlightRefresh;
 }
 
 /**
- * Starts the background session-keepalive: schedules a proactive silent
- * refresh ahead of the current token's expiry (if any), and revalidates
- * whenever the tab regains visibility/focus — covering timers suspended by a
- * backgrounded tab or a sleeping laptop. Call once on app boot.
+ * Starts the background session-keepalive: consumes a fresh token left in
+ * the URL by a just-completed redirect sign-in (if any), schedules a
+ * proactive silent refresh ahead of the current token's expiry, and
+ * revalidates whenever the tab regains visibility/focus — covering timers
+ * suspended by a backgrounded tab or a sleeping laptop. Call once on app boot.
  */
 export function initAuthScheduler(): void {
   if (schedulerInitialized || typeof window === "undefined") return;
   schedulerInitialized = true;
+
+  consumeRedirectResult();
 
   const revalidate = () => {
     if (document.visibilityState === "visible") void ensureFreshToken();
@@ -210,16 +186,36 @@ export function initAuthScheduler(): void {
 }
 
 export async function silentSignIn(): Promise<UserInfo | null> {
-  if (!config.googleClientId) return null;
+  const token = await ensureFreshToken();
+  if (!token) return null;
   try {
-    const token = await runTokenClient("none");
     return await fetchUserInfo(token);
   } catch {
     return null;
   }
 }
 
-export async function signIn(): Promise<UserInfo> {
-  const token = await runTokenClient("");
-  return fetchUserInfo(token);
+// Reads the profile for whatever token is already held locally (e.g. right
+// after consumeRedirectResult() picked one up from the URL) — unlike
+// silentSignIn(), this never attempts a network refresh.
+export async function getCurrentUserInfo(): Promise<UserInfo | null> {
+  const token = getAccessToken();
+  if (!token) return null;
+  try {
+    return await fetchUserInfo(token);
+  } catch {
+    return null;
+  }
+}
+
+// Interactive sign-in navigates the whole tab to lealtek-api's login
+// endpoint (full-page redirect, not a popup) — more robust in the installed
+// PWA and mobile browsers than window.open(), and it's what lets
+// lealtek-api detect and block in-app browsers before ever reaching Google.
+// Control returns to this app only when the browser lands back here with
+// #access_token=... in the URL, picked up by consumeRedirectResult() on the
+// next boot.
+export function signIn(): void {
+  const returnTo = window.location.href;
+  window.location.href = `${config.apiBaseUrl}/api/auth/login?return_to=${encodeURIComponent(returnTo)}`;
 }
