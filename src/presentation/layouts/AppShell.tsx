@@ -143,9 +143,6 @@ export function AppShell() {
               </button>
             </div>
           )}
-          <div className="flex items-center px-4 py-2">
-            <SyncIndicator />
-          </div>
           {/* LealTEK credit — same idea as the marketing site footer, sized to fit this sidebar slot */}
           <a
             href="https://lealtek.com"
