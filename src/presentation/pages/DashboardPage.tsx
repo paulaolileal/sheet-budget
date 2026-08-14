@@ -39,7 +39,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { ImportDialog } from "../components/ImportDialog";
-import { MonthComparison } from "../components/MonthComparison";
+import { MonthComparisonCard } from "../components/MonthComparisonCard";
 import {
   InstallmentEndingCarousel,
   installmentsEndingIn,
@@ -53,19 +53,6 @@ import {
   useTransactions,
 } from "@/hooks/queries";
 import { brl, centeredMonthRange, competenciaLabel, shiftCompetencia } from "@/utils/format";
-
-function countPhrase(delta: number): string {
-  if (delta === 0) return "a quantidade de lançamentos se manteve";
-  const verb = delta > 0 ? "aumentou" : "diminuiu";
-  const n = Math.abs(delta);
-  return `a quantidade de lançamentos ${verb} em ${n} ${n === 1 ? "item" : "itens"}`;
-}
-
-function valuePhrase(delta: number): string {
-  if (delta === 0) return "o valor total se manteve";
-  const verb = delta > 0 ? "subiu" : "desceu";
-  return `o valor ${verb} em ${brl(Math.abs(delta))}`;
-}
 
 export function DashboardPage() {
   const competencia = useUiStore((s) => s.competencia);
@@ -341,25 +328,6 @@ export function DashboardPage() {
             <CompetenciaSelector />
           </div>
 
-          {!isLoading && (monthComparison.currentValue > 0 || monthComparison.prevValue > 0) && (
-            <Card className="mb-4">
-              <CardContent className="py-3 flex flex-col gap-2">
-                <p className="text-sm text-muted-foreground">
-                  Em relação a {competenciaLabel(prevCompetencia)},{" "}
-                  {countPhrase(monthComparison.deltaCount)} e{" "}
-                  {valuePhrase(monthComparison.deltaValue)}.
-                </p>
-                <MonthComparison
-                  currentValue={monthComparison.currentValue}
-                  prevValue={monthComparison.prevValue}
-                  currentCount={monthComparison.currentCount}
-                  prevCount={monthComparison.prevCount}
-                  prevCompetencia={prevCompetencia}
-                />
-              </CardContent>
-            </Card>
-          )}
-
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <SummaryCard
               label="Total de receitas"
@@ -426,12 +394,27 @@ export function DashboardPage() {
             <Card className="mb-4">
               <CardHeader>
                 <CardTitle className="text-base">Parcelas terminando</CardTitle>
-                <CardDescription>Compras parceladas na última parcela este mês</CardDescription>
+                <CardDescription>
+                  {endingInstallments.length}{" "}
+                  {endingInstallments.length === 1
+                    ? "compra parcelada terminando este mês"
+                    : "compras parceladas terminando este mês"}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <InstallmentEndingCarousel items={endingInstallments} categories={categories} />
               </CardContent>
             </Card>
+          )}
+
+          {!isLoading && (monthComparison.currentValue > 0 || monthComparison.prevValue > 0) && (
+            <MonthComparisonCard
+              currentValue={monthComparison.currentValue}
+              prevValue={monthComparison.prevValue}
+              currentCount={monthComparison.currentCount}
+              prevCount={monthComparison.prevCount}
+              prevCompetencia={prevCompetencia}
+            />
           )}
 
           <Card className="mb-4">

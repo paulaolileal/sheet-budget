@@ -5,21 +5,21 @@ import { cn } from "@/lib/utils";
 
 export type Verdict = "melhor" | "pior" | "misto" | "igual";
 
-const VERDICT_LABEL: Record<Verdict, string> = {
+export const VERDICT_LABEL: Record<Verdict, string> = {
   melhor: "Melhor",
   pior: "Pior",
   misto: "Misto",
   igual: "Igual",
 };
 
-const VERDICT_TONE: Record<Verdict, string> = {
+export const VERDICT_TONE: Record<Verdict, string> = {
   melhor: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
   pior: "bg-red-500/15 text-red-500",
   misto: "bg-amber-500/15 text-amber-600",
   igual: "bg-muted text-muted-foreground",
 };
 
-const VERDICT_ICON: Record<Verdict, typeof TrendingDown> = {
+export const VERDICT_ICON: Record<Verdict, typeof TrendingDown> = {
   melhor: TrendingDown,
   pior: TrendingUp,
   misto: ArrowLeftRight,

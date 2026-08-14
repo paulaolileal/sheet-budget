@@ -11,20 +11,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Dashboard: "Parcelas terminando" carousel — auto-rotating cards for
   installment purchases (`PARCELADO`) whose final installment falls in the
   selected competência, each showing "Parcela finalizada" (already paid) or
-  "Parcela acaba esse mês" (still pending) plus the installment value.
-- Dashboard: month-over-month comparison card (same Itens/Valor delta and
-  Melhor/Pior/Misto/Igual verdict already shown on Lançamentos), plus a
-  plain-language summary sentence, e.g. "a quantidade de lançamentos
-  aumentou em 2 itens e o valor subiu em R$ 150,00".
+  "Parcela acaba esse mês" (still pending) plus the installment value; the
+  card subtitle states how many purchases are ending ("3 compras parceladas
+  terminando este mês").
+- Dashboard: month-over-month comparison card, positioned below the
+  installment carousel — a dedicated KPI layout (two stat tiles, Lançamentos
+  and Valor total, each with its own delta chip) plus a plain-language
+  summary sentence and a Melhor/Pior/Misto/Igual verdict badge, rather than
+  reusing Lançamentos' thin inline stat-bar as-is.
 
 ### Changed
 
-- Extracted `MonthComparison` (Lançamentos' month-over-month badge) and the
+- Extracted the verdict/delta color logic behind the month-over-month
+  comparison (`verdictFor`/`deltaTone`/verdict label/tone/icon maps) and the
   installment-grouping helpers (`stripParcela`/`parseParcela`/
   `groupInstallments`) into shared modules
   (`src/presentation/components/MonthComparison.tsx`, `src/lib/parcela.ts`)
-  so the Dashboard's new sections could reuse them instead of duplicating
-  the logic.
+  so the Dashboard's new KPI card and carousel reuse the same logic as
+  Lançamentos instead of duplicating it, while each page renders its own
+  presentation.
 
 ## [2026-08-14]
 
