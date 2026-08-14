@@ -15,6 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Moved the theme toggle out of the sidebar and mobile header into
   Settings → Aplicativo (new "Aparência" card), freeing up room in the
   sidebar's user info row for the signed-in user's name and email.
+- Removed the desktop sidebar's sync indicator row, which collapsed to a
+  stray empty line whenever sync was idle; sync status is still shown in
+  the mobile header.
 
 ### Removed
 
