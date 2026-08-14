@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,15 +8,13 @@ import { CategoryDialog } from "../components/CategoryDialog";
 import { ImportDialog } from "../components/ImportDialog";
 import { AppIcon } from "../components/AppIcon";
 import { InstallAppCard } from "../components/InstallAppCard";
+import { AppearanceCard } from "../components/AppearanceCard";
 import { useCategories, useDeleteCategory } from "@/hooks/queries";
-import { config } from "@/services/config";
-import { Plus, Pencil, Trash2, ExternalLink, Database, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/domain/types";
 import { useAuthStore } from "@/store/authStore";
 import { useSpreadsheetStore } from "@/store/spreadsheetStore";
-import { clearSheetProvider } from "@/application/repositoryProvider";
-import { useQueryClient } from "@tanstack/react-query";
 
 function CategoriesTab() {
   const { data: categories, isLoading } = useCategories();
@@ -140,20 +137,10 @@ function CategoriesTab() {
 }
 
 function DataSourceTab() {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const byEmail = useSpreadsheetStore((s) => s.byEmail);
   const spreadsheetId = user ? byEmail[user.email] : undefined;
   const [importOpen, setImportOpen] = useState(false);
-
-  function handleSwitch() {
-    if (!user) return;
-    useSpreadsheetStore.getState().clearSpreadsheetId(user.email);
-    clearSheetProvider();
-    qc.clear();
-    navigate("/setup", { replace: true });
-  }
 
   return (
     <Card>
@@ -162,32 +149,22 @@ function DataSourceTab() {
         <CardDescription>Google Sheets como fonte de verdade.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <div className="text-xs text-muted-foreground">VITE_LEALTEK_API_URL</div>
-            <div className="font-mono">{config.apiBaseUrl || "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">Planilha ativa</div>
-            <div className="font-mono text-xs truncate">{spreadsheetId ?? "—"}</div>
-            {spreadsheetId && (
-              <a
-                href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                Abrir no Google Sheets
-              </a>
-            )}
-          </div>
+        <div className="text-sm">
+          <div className="text-xs text-muted-foreground">Planilha ativa</div>
+          <div className="font-mono text-xs truncate">{spreadsheetId ?? "—"}</div>
+          {spreadsheetId && (
+            <a
+              href={`https://docs.google.com/spreadsheets/d/${spreadsheetId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Abrir no Google Sheets
+            </a>
+          )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleSwitch}>
-            <Database className="h-3.5 w-3.5" />
-            Trocar planilha
-          </Button>
           <Button variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}>
             <Upload className="h-3.5 w-3.5" />
             Importar planilha
@@ -219,7 +196,8 @@ export function SettingsPage() {
           <DataSourceTab />
         </TabsContent>
 
-        <TabsContent value="app">
+        <TabsContent value="app" className="space-y-4">
+          <AppearanceCard />
           <InstallAppCard />
         </TabsContent>
       </Tabs>

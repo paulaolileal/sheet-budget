@@ -144,4 +144,4 @@ Categories, accounts, incomes, debtors and recurrence templates each carry an `i
 
 ### Theme and PWA install
 
-`src/presentation/theme/ThemeProvider.tsx` is a light/dark context persisted to `localStorage` (`finapp:theme`), defaulting to the OS preference. `src/hooks/useInstallPrompt.ts` + `src/presentation/components/InstallAppCard.tsx` surface the native "Add to Home Screen" prompt (and an iOS-specific manual-install hint, since iOS Safari has no `beforeinstallprompt` event).
+`src/presentation/theme/ThemeProvider.tsx` is a light/dark context persisted to `localStorage` (`finapp:theme`), defaulting to the OS preference. The toggle itself lives in `src/presentation/components/AppearanceCard.tsx`, shown on the Settings → Aplicativo tab — there is no theme toggle in the sidebar/header, to keep that space for the signed-in user's name and email. `src/hooks/useInstallPrompt.ts` + `src/presentation/components/InstallAppCard.tsx` (same tab) surface the native "Add to Home Screen" prompt (and an iOS-specific manual-install hint, since iOS Safari has no `beforeinstallprompt` event).

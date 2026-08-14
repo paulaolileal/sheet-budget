@@ -7,22 +7,15 @@ import {
   Settings,
   TrendingUp,
   HandCoins,
-  Moon,
-  Sun,
   CloudCheck,
   CloudOff,
   RefreshCw,
   LogOut,
-  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "../theme/ThemeProvider";
 import { useUiStore } from "@/store/uiStore";
 import { useAuthStore } from "@/store/authStore";
 import { signOut } from "@/services/googleAuth";
-import { useSpreadsheetStore } from "@/store/spreadsheetStore";
-import { clearSheetProvider } from "@/application/repositoryProvider";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,23 +57,13 @@ function SyncIndicator() {
 }
 
 export function AppShell() {
-  const { theme, toggle } = useTheme();
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const { user, clearUser } = useAuthStore();
 
   function handleLogout() {
     signOut();
     clearUser();
     navigate("/login", { replace: true });
-  }
-
-  function handleSwitchSpreadsheet() {
-    if (!user) return;
-    useSpreadsheetStore.getState().clearSpreadsheetId(user.email);
-    clearSheetProvider();
-    qc.clear();
-    navigate("/setup", { replace: true });
   }
 
   return (
@@ -130,15 +113,15 @@ export function AppShell() {
         </nav>
         <div className="border-t">
           {user && (
-            <div className="flex items-center gap-2 px-3 py-3 border-b">
+            <div className="flex items-center gap-3 px-4 py-4 border-b">
               <img
                 src={user.picture}
                 alt={user.name}
-                className="h-7 w-7 rounded-full flex-shrink-0"
+                className="h-9 w-9 rounded-full flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <div className="text-xs font-medium truncate">{user.name}</div>
-                <div className="text-[10px] text-muted-foreground truncate leading-tight">
+                <div className="text-sm font-medium truncate">{user.name}</div>
+                <div className="text-xs text-muted-foreground truncate leading-tight">
                   {user.email}
                 </div>
               </div>
@@ -151,26 +134,6 @@ export function AppShell() {
                 <Settings className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={handleSwitchSpreadsheet}
-                className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                aria-label="Trocar planilha"
-                title="Trocar planilha"
-              >
-                <Database className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={toggle}
-                className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                aria-label="Alternar tema"
-                title="Alternar tema"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-3.5 w-3.5" />
-                ) : (
-                  <Moon className="h-3.5 w-3.5" />
-                )}
-              </button>
-              <button
                 onClick={handleLogout}
                 className="h-7 w-7 grid place-items-center rounded-md hover:bg-sidebar-accent text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
                 aria-label="Sair"
@@ -180,18 +143,20 @@ export function AppShell() {
               </button>
             </div>
           )}
-          <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center px-4 py-2">
             <SyncIndicator />
-            <a
-              href="https://lealtek.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opacity-35 hover:opacity-60 transition-opacity"
-              title="Desenvolvido por LealTEK"
-            >
-              <img src="/lealtek-full.png" alt="LealTEK" className="h-5 object-contain" />
-            </a>
           </div>
+          {/* LealTEK credit — same idea as the marketing site footer, sized to fit this sidebar slot */}
+          <a
+            href="https://lealtek.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Conheça a LealTEK"
+            className="flex flex-col items-center gap-1.5 px-4 py-4 border-t transition-opacity hover:opacity-80"
+          >
+            <img src="/lealtek-full.png" alt="LealTEK" className="h-8 object-contain" />
+            <span className="text-[10px] text-muted-foreground">Desenvolvido pela LealTEK</span>
+          </a>
         </div>
       </aside>
 
@@ -213,13 +178,6 @@ export function AppShell() {
           </div>
           <div className="flex items-center gap-2">
             <SyncIndicator />
-            <button
-              onClick={toggle}
-              className="h-8 w-8 grid place-items-center rounded-md hover:bg-accent transition-colors"
-              aria-label="Alternar tema"
-            >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
             {user && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -237,13 +195,6 @@ export function AppShell() {
                   >
                     <Settings className="h-3.5 w-3.5" />
                     Configurações
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="text-xs gap-2 cursor-pointer"
-                    onClick={handleSwitchSpreadsheet}
-                  >
-                    <Database className="h-3.5 w-3.5" />
-                    Trocar planilha
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
