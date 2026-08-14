@@ -8,14 +8,11 @@ import {
   ChevronDown,
   MoreHorizontal,
   Pencil,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  ArrowLeftRight,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { CompetenciaSelector } from "../components/CompetenciaSelector";
 import { AppIcon } from "../components/AppIcon";
+import { MonthComparison } from "../components/MonthComparison";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +55,7 @@ import { isDueForCompetencia, isTemplateActive } from "@/domain/types";
 import type { Transaction, TransactionStatus, TipoLancamento } from "@/domain/types";
 import { TransactionDialog } from "../components/TransactionDialog";
 import { cn } from "@/lib/utils";
+import { groupInstallments, isLastParcela, parseParcela, stripParcela } from "@/lib/parcela";
 
 const STATUS_TONES: Record<TransactionStatus, string> = {
   PENDENTE: "bg-[color:var(--color-warning)]/20 text-[color:var(--color-warning)]",
@@ -95,16 +93,6 @@ const CAT_PALETTE = [
 ] as const;
 
 const COL_COUNT = 6;
-
-function parseParcela(descricao: string, tipo: TipoLancamento): string | null {
-  if (tipo !== "PARCELADO") return null;
-  const m = descricao.match(/\((\d+\/\d+)\)$/);
-  return m ? m[1] : null;
-}
-
-function stripParcela(descricao: string): string {
-  return descricao.replace(/\s*\(\d+\/\d+\)$/, "");
-}
 
 function isSettled(tx: Transaction): boolean {
   return tx.status === "PAGO" || tx.status === "ADIANTADO" || tx.status === "IGNORADO";
@@ -315,16 +303,10 @@ export function TransactionsPage() {
   const parcelaMap = useMemo<Map<string, string>>(() => {
     const map = new Map<string, string>();
     if (!txs) return map;
-    const parcelados = txs.filter((t) => t.tipo_lancamento === "PARCELADO");
-    const groups = new Map<string, Transaction[]>();
-    for (const tx of parcelados) {
-      const key = tx.template_id ?? stripParcela(tx.descricao);
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key)!.push(tx);
-    }
-    for (const group of groups.values()) {
-      group.sort((a, b) => a.competencia.localeCompare(b.competencia));
-      group.forEach((tx, i) => map.set(tx.transaction_id, `${i + 1}/${group.length}`));
+    for (const group of groupInstallments(txs)) {
+      group.transactions.forEach((tx, i) =>
+        map.set(tx.transaction_id, `${i + 1}/${group.transactions.length}`),
+      );
     }
     return map;
   }, [txs]);
@@ -981,94 +963,6 @@ export function TransactionsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-function isLastParcela(parcela: string | null): boolean {
-  if (!parcela) return false;
-  const [a, b] = parcela.split("/");
-  return a === b;
-}
-
-type Verdict = "melhor" | "pior" | "misto" | "igual";
-
-const VERDICT_LABEL: Record<Verdict, string> = {
-  melhor: "Melhor",
-  pior: "Pior",
-  misto: "Misto",
-  igual: "Igual",
-};
-
-const VERDICT_TONE: Record<Verdict, string> = {
-  melhor: "bg-[color:var(--color-success)]/15 text-[color:var(--color-success)]",
-  pior: "bg-red-500/15 text-red-500",
-  misto: "bg-amber-500/15 text-amber-600",
-  igual: "bg-muted text-muted-foreground",
-};
-
-const VERDICT_ICON: Record<Verdict, typeof TrendingDown> = {
-  melhor: TrendingDown,
-  pior: TrendingUp,
-  misto: ArrowLeftRight,
-  igual: Minus,
-};
-
-// "Melhor" = fewer and/or cheaper than last month (never more, never pricier).
-// "Pior" is the mirror image; opposite signs on count vs. value are "Misto".
-function verdictFor(deltaCount: number, deltaValue: number): Verdict {
-  if (deltaCount === 0 && deltaValue === 0) return "igual";
-  if (deltaCount <= 0 && deltaValue <= 0) return "melhor";
-  if (deltaCount >= 0 && deltaValue >= 0) return "pior";
-  return "misto";
-}
-
-// Individual delta color, independent of the overall verdict: fewer/cheaper is good (green),
-// more/pricier is bad (red), unchanged stays neutral.
-function deltaTone(delta: number): string {
-  if (delta < 0) return "text-[color:var(--color-success)]";
-  if (delta > 0) return "text-red-500";
-  return "text-muted-foreground";
-}
-
-/** Month-over-month comparison for the PENDENTE+PAGO total, styled like the other summary stats. */
-function MonthComparison({
-  currentValue,
-  prevValue,
-  currentCount,
-  prevCount,
-  prevCompetencia,
-}: {
-  currentValue: number;
-  prevValue: number;
-  currentCount: number;
-  prevCount: number;
-  prevCompetencia: string;
-}) {
-  if (prevValue === 0 && currentValue === 0) return null;
-  const deltaCount = currentCount - prevCount;
-  const deltaValue = currentValue - prevValue;
-  const verdict = verdictFor(deltaCount, deltaValue);
-  const VerdictIcon = VERDICT_ICON[verdict];
-  const countLabel = `${deltaCount > 0 ? "+" : ""}${deltaCount}`;
-  const valueLabel = `${deltaValue > 0 ? "+" : deltaValue < 0 ? "-" : ""}${brl(Math.abs(deltaValue))}`;
-
-  return (
-    <div className="ml-auto flex items-center gap-x-3 gap-y-1 text-sm flex-wrap">
-      <span className="text-xs text-muted-foreground">vs {competenciaLabel(prevCompetencia)}</span>
-      <Badge
-        variant="outline"
-        className={cn("font-normal border-0 text-xs gap-1", VERDICT_TONE[verdict])}
-      >
-        <VerdictIcon className="h-3 w-3" />
-        {VERDICT_LABEL[verdict]}
-      </Badge>
-      <div className="h-4 w-px bg-border" />
-      <span className="text-muted-foreground">Itens</span>
-      <span className={cn("font-semibold tabular-nums", deltaTone(deltaCount))}>{countLabel}</span>
-      <div className="h-4 w-px bg-border" />
-      <span className="text-muted-foreground">Valor</span>
-      <span className={cn("font-semibold tabular-nums", deltaTone(deltaValue))}>{valueLabel}</span>
     </div>
   );
 }
