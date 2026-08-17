@@ -93,7 +93,9 @@ function defaultValues(existing?: PurchasePlan): FormValues {
     descricao: existing?.descricao ?? "",
     valor_compra: existing?.valor_compra ?? 0,
     valor_entrada: existing?.valor_entrada ?? 0,
-    taxa_juros: existing?.taxa_juros ?? 0.0199,
+    // Form field is a percentage (e.g. 1.19 for 1.19% a.m.); PurchasePlan.taxa_juros
+    // stores the decimal fraction (0.0119) — convert at the form/domain boundary.
+    taxa_juros: existing ? existing.taxa_juros * 100 : 1.99,
     taxa_juros_periodicidade: existing?.taxa_juros_periodicidade ?? "MENSAL",
     numero_parcelas: existing?.numero_parcelas ?? 12,
     forma_amortizacao: existing?.forma_amortizacao ?? "PRICE",
@@ -144,7 +146,7 @@ export function PurchasePlanDetailPage() {
 
   const values = watch();
 
-  const taxaMensal = toMonthlyRate(values.taxa_juros || 0, values.taxa_juros_periodicidade);
+  const taxaMensal = toMonthlyRate((values.taxa_juros || 0) / 100, values.taxa_juros_periodicidade);
   const principal = financedAmount({
     valor_compra: values.valor_compra || 0,
     valor_entrada: values.valor_entrada || 0,
@@ -221,7 +223,7 @@ export function PurchasePlanDetailPage() {
       descricao: data.descricao || undefined,
       valor_compra: data.valor_compra,
       valor_entrada: data.valor_entrada,
-      taxa_juros: data.taxa_juros,
+      taxa_juros: data.taxa_juros / 100,
       taxa_juros_periodicidade: data.taxa_juros_periodicidade,
       numero_parcelas: data.numero_parcelas,
       forma_amortizacao: data.forma_amortizacao,
@@ -367,11 +369,12 @@ export function PurchasePlanDetailPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
-                <Label htmlFor="taxa_juros">Taxa de juros</Label>
+                <Label htmlFor="taxa_juros">Taxa de juros (%)</Label>
                 <Input
                   id="taxa_juros"
                   type="number"
-                  step="0.0001"
+                  step="0.01"
+                  placeholder="Ex: 1,19"
                   disabled={isConfirmed}
                   {...register("taxa_juros", { valueAsNumber: true })}
                 />
