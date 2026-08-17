@@ -186,11 +186,17 @@ export function suggestBestStartCompetencia(params: {
   });
 }
 
+/** The amount actually financed: full price minus any down payment, floored at 0. */
+export function financedAmount(plan: Pick<PurchasePlan, "valor_compra" | "valor_entrada">): number {
+  return Math.max(0, plan.valor_compra - (plan.valor_entrada || 0));
+}
+
 /** Convenience: builds the amortization schedule directly from a saved/draft PurchasePlan. */
 export function buildPlanAmortization(
   plan: Pick<
     PurchasePlan,
     | "valor_compra"
+    | "valor_entrada"
     | "taxa_juros"
     | "taxa_juros_periodicidade"
     | "numero_parcelas"
@@ -199,7 +205,7 @@ export function buildPlanAmortization(
 ): AmortizationInstallment[] {
   const taxaMensal = toMonthlyRate(plan.taxa_juros, plan.taxa_juros_periodicidade);
   return buildAmortizationTable({
-    principal: plan.valor_compra,
+    principal: financedAmount(plan),
     taxaMensal,
     parcelas: plan.numero_parcelas,
     metodo: plan.forma_amortizacao,

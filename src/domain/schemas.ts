@@ -145,11 +145,12 @@ export const debtInputSchema = debtBaseSchema
     path: ["valor"],
   });
 
-export const purchasePlanSchema = z.object({
+const purchasePlanBaseSchema = z.object({
   plan_id: z.string().min(1),
   nome: safeString(120),
   descricao: safeString(500).optional(),
   valor_compra: z.number().positive(),
+  valor_entrada: z.number().nonnegative().default(0),
   taxa_juros: z.number().nonnegative(),
   taxa_juros_periodicidade: z.enum(RATE_PERIODICITY),
   numero_parcelas: z.number().int().min(1).max(120),
@@ -163,11 +164,24 @@ export const purchasePlanSchema = z.object({
   updated_at: z.string().min(1),
 });
 
-export const purchasePlanInputSchema = purchasePlanSchema.omit({
-  plan_id: true,
-  created_at: true,
-  updated_at: true,
+const requireFinancedAmount = (p: { valor_compra: number; valor_entrada: number }) =>
+  p.valor_entrada < p.valor_compra;
+
+export const purchasePlanSchema = purchasePlanBaseSchema.refine(requireFinancedAmount, {
+  message: "A entrada deve ser menor que o valor da compra.",
+  path: ["valor_entrada"],
 });
+
+export const purchasePlanInputSchema = purchasePlanBaseSchema
+  .omit({
+    plan_id: true,
+    created_at: true,
+    updated_at: true,
+  })
+  .refine(requireFinancedAmount, {
+    message: "A entrada deve ser menor que o valor da compra.",
+    path: ["valor_entrada"],
+  });
 
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;

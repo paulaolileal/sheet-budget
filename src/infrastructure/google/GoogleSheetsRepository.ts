@@ -766,6 +766,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
         nome: r.nome,
         descricao: r.descricao || undefined,
         valor_compra: parseCurrency(r.valor_compra),
+        valor_entrada: parseCurrency(r.valor_entrada),
         taxa_juros: Number(r.taxa_juros) || 0,
         taxa_juros_periodicidade:
           (r.taxa_juros_periodicidade as PurchasePlan["taxa_juros_periodicidade"]) || "MENSAL",
@@ -791,6 +792,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       p.nome,
       p.descricao ?? "",
       p.valor_compra,
+      p.valor_entrada,
       p.taxa_juros,
       p.taxa_juros_periodicidade,
       p.numero_parcelas,
@@ -823,7 +825,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     } catch (err) {
       if (isMissingSheetError(err)) {
         throw new Error(
-          "Crie a aba 'purchase_plans' no Google Sheets com as colunas: plan_id | nome | descricao | valor_compra | taxa_juros | taxa_juros_periodicidade | numero_parcelas | forma_amortizacao | competencia_inicio | margem_minima | categoria_id | payment_account_id | status | created_at | updated_at",
+          "Crie a aba 'purchase_plans' no Google Sheets com as colunas: plan_id | nome | descricao | valor_compra | valor_entrada | taxa_juros | taxa_juros_periodicidade | numero_parcelas | forma_amortizacao | competencia_inicio | margem_minima | categoria_id | payment_account_id | status | created_at | updated_at",
         );
       }
       throw err;
@@ -843,7 +845,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
     };
     const rowIdx = await this.findRowIndex(SHEETS.purchase_plans, "plan_id", id);
     await this.request(
-      `/values/${SHEETS.purchase_plans}!A${rowIdx}:O${rowIdx}?valueInputOption=USER_ENTERED`,
+      `/values/${SHEETS.purchase_plans}!A${rowIdx}:P${rowIdx}?valueInputOption=USER_ENTERED`,
       { method: "PUT", body: JSON.stringify({ values: [this.purchasePlanToRow(updated)] }) },
     );
     return updated;

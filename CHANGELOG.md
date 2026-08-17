@@ -27,10 +27,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the real `PARCELADO` transactions in Lançamentos (via the existing batch
   creation) with the calculated — not linear — installment values, linked
   back to the plan through a new `plan_id` field on `Transaction`/`transactions`.
+  A plan's `valor_compra` (full price) and optional `valor_entrada` (down
+  payment) are entered separately — the financed principal used in every
+  calculation is `valor_compra - valor_entrada` — so the user doesn't have
+  to do that subtraction by hand before simulating.
 - Mobile bottom nav: items beyond the four most-frequent ones (Dashboard,
   Lançamentos, Receitas, Cartões) — Recorrências, Devedores and the new
   Planejamento — now collapse into a "Mais" overflow sheet instead of
   cramming a 7th column into the nav grid.
+- Schema self-healing: `repositoryProvider.ts` now fires
+  `SheetsInitializer.ensureSheets()` in the background the first time it
+  builds a repository for a spreadsheet in a session, so a tab or column a
+  shipped feature needs (e.g. this release's `purchase_plans` sheet and
+  `Transaction.plan_id` column) reaches an already-onboarded user's
+  spreadsheet automatically — no more asking users in production to edit
+  their Sheet by hand or revisit `/setup`.
 
 ### Changed
 

@@ -130,8 +130,9 @@ export function PlanningPage() {
                       <div className="min-w-0">
                         <CardTitle className="text-base truncate">{p.nome}</CardTitle>
                         <CardDescription className="text-xs">
-                          {brl(p.valor_compra)} em {p.numero_parcelas}x ·{" "}
-                          {AMORT_LABEL[p.forma_amortizacao]}
+                          {brl(p.valor_compra)}
+                          {p.valor_entrada > 0 && ` (entrada ${brl(p.valor_entrada)})`} em{" "}
+                          {p.numero_parcelas}x · {AMORT_LABEL[p.forma_amortizacao]}
                         </CardDescription>
                       </div>
                       <Badge

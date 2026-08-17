@@ -143,8 +143,10 @@ export interface PurchasePlan {
   plan_id: string;
   nome: string;
   descricao?: string;
-  /** Principal amount of the purchase, before interest. */
+  /** Full price of the good, before any down payment. */
   valor_compra: number;
+  /** Down payment, paid upfront and subtracted from `valor_compra` before amortizing. Defaults to 0. */
+  valor_entrada: number;
   /** Interest rate as typed by the user (decimal, e.g. 0.0199), kept in its original periodicity. */
   taxa_juros: number;
   taxa_juros_periodicidade: RatePeriodicity;

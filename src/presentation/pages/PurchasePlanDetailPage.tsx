@@ -49,6 +49,7 @@ import { useMonthlyBalanceProjection } from "@/hooks/useMonthlyBalanceProjection
 import {
   buildPlanAmortization,
   evaluatePlanFit,
+  financedAmount,
   nextCompetencias,
   suggestBestStartCompetencia,
 } from "@/domain/purchasePlanning";
@@ -64,19 +65,25 @@ const AMORT_LABEL: Record<AmortizationMethod, string> = {
   SEM_JUROS: "Sem juros",
 };
 
-const formSchema = z.object({
-  nome: z.string().trim().min(1, "Obrigatório").max(120),
-  descricao: z.string().trim().max(500).optional(),
-  valor_compra: z.coerce.number().positive("Informe um valor"),
-  taxa_juros: z.coerce.number().nonnegative(),
-  taxa_juros_periodicidade: z.enum(RATE_PERIODICITY),
-  numero_parcelas: z.coerce.number().int().min(1).max(120),
-  forma_amortizacao: z.enum(AMORTIZATION_METHOD),
-  competencia_inicio: competenciaSchema,
-  margem_minima: z.coerce.number().nonnegative(),
-  categoria_id: z.string().optional(),
-  payment_account_id: z.string().optional(),
-});
+const formSchema = z
+  .object({
+    nome: z.string().trim().min(1, "Obrigatório").max(120),
+    descricao: z.string().trim().max(500).optional(),
+    valor_compra: z.coerce.number().positive("Informe um valor"),
+    valor_entrada: z.coerce.number().nonnegative(),
+    taxa_juros: z.coerce.number().nonnegative(),
+    taxa_juros_periodicidade: z.enum(RATE_PERIODICITY),
+    numero_parcelas: z.coerce.number().int().min(1).max(120),
+    forma_amortizacao: z.enum(AMORTIZATION_METHOD),
+    competencia_inicio: competenciaSchema,
+    margem_minima: z.coerce.number().nonnegative(),
+    categoria_id: z.string().optional(),
+    payment_account_id: z.string().optional(),
+  })
+  .refine((v) => v.valor_entrada < v.valor_compra, {
+    message: "A entrada deve ser menor que o valor da compra.",
+    path: ["valor_entrada"],
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -85,6 +92,7 @@ function defaultValues(existing?: PurchasePlan): FormValues {
     nome: existing?.nome ?? "",
     descricao: existing?.descricao ?? "",
     valor_compra: existing?.valor_compra ?? 0,
+    valor_entrada: existing?.valor_entrada ?? 0,
     taxa_juros: existing?.taxa_juros ?? 0.0199,
     taxa_juros_periodicidade: existing?.taxa_juros_periodicidade ?? "MENSAL",
     numero_parcelas: existing?.numero_parcelas ?? 12,
@@ -137,16 +145,20 @@ export function PurchasePlanDetailPage() {
   const values = watch();
 
   const taxaMensal = toMonthlyRate(values.taxa_juros || 0, values.taxa_juros_periodicidade);
+  const principal = financedAmount({
+    valor_compra: values.valor_compra || 0,
+    valor_entrada: values.valor_entrada || 0,
+  });
 
   const amortization = useMemo(
     () =>
       buildAmortizationTable({
-        principal: values.valor_compra || 0,
+        principal,
         taxaMensal,
         parcelas: values.numero_parcelas || 1,
         metodo: values.forma_amortizacao,
       }),
-    [values.valor_compra, taxaMensal, values.numero_parcelas, values.forma_amortizacao],
+    [principal, taxaMensal, values.numero_parcelas, values.forma_amortizacao],
   );
 
   const evaluations = useMemo(() => {
@@ -163,7 +175,7 @@ export function PurchasePlanDetailPage() {
     if (!projection) return [];
     return suggestBestStartCompetencia({
       projection,
-      principal: values.valor_compra || 0,
+      principal,
       taxaMensal,
       parcelas: values.numero_parcelas || 1,
       metodo: values.forma_amortizacao,
@@ -172,7 +184,7 @@ export function PurchasePlanDetailPage() {
     });
   }, [
     projection,
-    values.valor_compra,
+    principal,
     taxaMensal,
     values.numero_parcelas,
     values.forma_amortizacao,
@@ -182,13 +194,12 @@ export function PurchasePlanDetailPage() {
   const bestSuggestion = suggestions[0];
 
   const comparison = useMemo(() => {
-    const principal = values.valor_compra || 0;
     const parcelas = values.numero_parcelas || 1;
     return AMORTIZATION_METHOD.map((metodo) => ({
       metodo,
       total: totalInterest(buildAmortizationTable({ principal, taxaMensal, parcelas, metodo })),
     }));
-  }, [values.valor_compra, taxaMensal, values.numero_parcelas]);
+  }, [principal, taxaMensal, values.numero_parcelas]);
 
   const planTxs = useMemo(
     () => (allTxs ?? []).filter((t) => t.plan_id === plan?.plan_id),
@@ -209,6 +220,7 @@ export function PurchasePlanDetailPage() {
       nome: data.nome,
       descricao: data.descricao || undefined,
       valor_compra: data.valor_compra,
+      valor_entrada: data.valor_entrada,
       taxa_juros: data.taxa_juros,
       taxa_juros_periodicidade: data.taxa_juros_periodicidade,
       numero_parcelas: data.numero_parcelas,
@@ -231,7 +243,7 @@ export function PurchasePlanDetailPage() {
   const onConfirm = handleSubmit(async (data) => {
     const saved = await persist(data, plan?.status ?? "SIMULANDO");
     const installments = buildAmortizationTable({
-      principal: saved.valor_compra,
+      principal: financedAmount(saved),
       taxaMensal: toMonthlyRate(saved.taxa_juros, saved.taxa_juros_periodicidade),
       parcelas: saved.numero_parcelas,
       metodo: saved.forma_amortizacao,
@@ -321,19 +333,37 @@ export function PurchasePlanDetailPage() {
               <Textarea id="descricao" rows={2} {...register("descricao")} />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="valor_compra">Valor da compra</Label>
-              <Input
-                id="valor_compra"
-                type="number"
-                step="0.01"
-                disabled={isConfirmed}
-                {...register("valor_compra", { valueAsNumber: true })}
-              />
-              {errors.valor_compra && (
-                <p className="text-xs text-destructive">{errors.valor_compra.message}</p>
-              )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="valor_compra">Valor do bem</Label>
+                <Input
+                  id="valor_compra"
+                  type="number"
+                  step="0.01"
+                  disabled={isConfirmed}
+                  {...register("valor_compra", { valueAsNumber: true })}
+                />
+                {errors.valor_compra && (
+                  <p className="text-xs text-destructive">{errors.valor_compra.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="valor_entrada">Entrada</Label>
+                <Input
+                  id="valor_entrada"
+                  type="number"
+                  step="0.01"
+                  disabled={isConfirmed}
+                  {...register("valor_entrada", { valueAsNumber: true })}
+                />
+                {errors.valor_entrada && (
+                  <p className="text-xs text-destructive">{errors.valor_entrada.message}</p>
+                )}
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground -mt-3">
+              Valor financiado: <span className="font-medium tabular-nums">{brl(principal)}</span>
+            </p>
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">

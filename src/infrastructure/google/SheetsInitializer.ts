@@ -77,6 +77,7 @@ const SHEET_SPECS: SheetSpec[] = [
       "nome",
       "descricao",
       "valor_compra",
+      "valor_entrada",
       "taxa_juros",
       "taxa_juros_periodicidade",
       "numero_parcelas",
