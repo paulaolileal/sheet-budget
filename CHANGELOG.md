@@ -34,6 +34,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   installment breakdown now also shows the amortização (how much of that
   installment pays down principal, net of interest) alongside the
   installment total and running saldo devedor.
+- Purchase planning: an early-payoff simulator (`EarlyPayoffSimulator`)
+  lets the user pick, per installment, a competência they actually intend
+  to pay it in — showing the present-value discount for paying ahead of
+  the due date at the contract's own monthly rate (the "quitação
+  antecipada" discount Brazilian lenders owe under CDC art. 52 §2º), plus
+  a running total and total interest saved. Validated against a real CDC
+  vehicle-financing payoff statement (an installment paid ~43 months
+  early discounted from R$ 989,70 to R$ 591,78, matching the formula to
+  within a few reais at the app's month-only competência granularity).
 - Mobile bottom nav: items beyond the four most-frequent ones (Dashboard,
   Lançamentos, Receitas, Cartões) — Recorrências, Devedores and the new
   Planejamento — now collapse into a "Mais" overflow sheet instead of

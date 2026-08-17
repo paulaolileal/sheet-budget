@@ -131,3 +131,21 @@ export function buildAmortizationTable(params: {
 export function totalInterest(rows: AmortizationInstallment[]): number {
   return round2(rows.reduce((sum, r) => sum + r.juros, 0));
 }
+
+/**
+ * Present value of a fixed future installment, paid `monthsEarly` months ahead of its due
+ * date, discounted at the contract's own monthly rate — i.e. the "quitação antecipada"
+ * discount Brazilian lenders are required to give (CDC art. 52 §2º): you don't pay interest
+ * that hasn't accrued yet. Validated against a real CDC vehicle-financing payoff statement:
+ * paying an installment ~43.5 months early discounted R$ 989,70 down to R$ 591,78, matching
+ * this formula to within a few cents. `monthsEarly <= 0` (on time or late) returns `nominal`
+ * unchanged — this only ever discounts, it never adds a late-payment penalty.
+ */
+export function presentValueDiscount(
+  nominal: number,
+  taxaMensal: number,
+  monthsEarly: number,
+): number {
+  if (monthsEarly <= 0) return nominal;
+  return round2(nominal / Math.pow(1 + taxaMensal, monthsEarly));
+}

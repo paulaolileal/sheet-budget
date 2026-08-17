@@ -10,6 +10,7 @@ import { PlanVerdictBadge, VERDICT_LABEL, VERDICT_TONE } from "../components/Pla
 import { cn } from "@/lib/utils";
 import { AmortizationChart } from "../components/AmortizationChart";
 import { AmortizationTable } from "../components/AmortizationTable";
+import { EarlyPayoffSimulator } from "../components/EarlyPayoffSimulator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,7 @@ import {
 import { buildAmortizationTable, toMonthlyRate, totalInterest } from "@/lib/amortization";
 import { competenciaSchema } from "@/domain/schemas";
 import { AMORTIZATION_METHOD, RATE_PERIODICITY } from "@/domain/types";
-import type { AmortizationMethod, PurchasePlan } from "@/domain/types";
+import type { AmortizationMethod, Competencia, PurchasePlan } from "@/domain/types";
 import {
   brl,
   competenciaLabel,
@@ -135,6 +136,11 @@ export function PurchasePlanDetailPage() {
   const deletePlan = useDeletePurchasePlan();
   const confirmPlan = useConfirmPurchasePlan();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // "When do I intend to pay each installment" for the early-payoff simulator — ephemeral,
+  // keyed by numero_parcela, defaulting to that installment's own due competência when absent.
+  const [payoffDates, setPayoffDates] = useState<Record<number, Competencia>>({});
+  const handleChangePayoffDate = (numeroParcela: number, competencia: Competencia) =>
+    setPayoffDates((prev) => ({ ...prev, [numeroParcela]: competencia }));
 
   const {
     control,
@@ -151,6 +157,7 @@ export function PurchasePlanDetailPage() {
 
   useEffect(() => {
     if (plan) reset(defaultValues(plan));
+    setPayoffDates({});
   }, [plan, reset]);
 
   const values = watch();
@@ -690,6 +697,14 @@ export function PurchasePlanDetailPage() {
               <AmortizationTable rows={amortization} evaluations={evaluations} />
             </CardContent>
           </Card>
+
+          <EarlyPayoffSimulator
+            rows={amortization}
+            competenciaInicio={values.competencia_inicio}
+            taxaMensal={taxaMensal}
+            payoffDates={payoffDates}
+            onChangePayoffDate={handleChangePayoffDate}
+          />
 
           <Card>
             <CardHeader className="pb-2">
