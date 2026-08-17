@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Receipt,
@@ -7,6 +8,8 @@ import {
   Settings,
   TrendingUp,
   HandCoins,
+  PiggyBank,
+  MoreHorizontal,
   CloudCheck,
   CloudOff,
   RefreshCw,
@@ -23,15 +26,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
+// `primary` marks the items that stay pinned in the mobile bottom nav — the rest
+// collapse into a "Mais" overflow sheet so the nav grid doesn't outgrow the screen.
+// The desktop sidebar ignores this flag and always lists every item.
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/transactions", label: "Lançamentos", icon: Receipt },
-  { to: "/incomes", label: "Receitas", icon: TrendingUp },
-  { to: "/cards", label: "Cartões", icon: CreditCard },
-  { to: "/recurrences", label: "Recorrências", icon: Repeat },
-  { to: "/debtors", label: "Devedores", icon: HandCoins },
+  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true, primary: true },
+  { to: "/transactions", label: "Lançamentos", icon: Receipt, primary: true },
+  { to: "/incomes", label: "Receitas", icon: TrendingUp, primary: true },
+  { to: "/cards", label: "Cartões", icon: CreditCard, primary: true },
+  { to: "/recurrences", label: "Recorrências", icon: Repeat, primary: false },
+  { to: "/debtors", label: "Devedores", icon: HandCoins, primary: false },
+  { to: "/planning", label: "Planejamento", icon: PiggyBank, primary: false },
 ];
+
+const NAV_PRIMARY = NAV.filter((n) => n.primary);
+const NAV_OVERFLOW = NAV.filter((n) => !n.primary);
 
 function SyncIndicator() {
   const sync = useUiStore((s) => s.sync);
@@ -58,7 +69,10 @@ function SyncIndicator() {
 
 export function AppShell() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, clearUser } = useAuthStore();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const isOverflowActive = NAV_OVERFLOW.some((n) => location.pathname.startsWith(n.to));
 
   function handleLogout() {
     signOut();
@@ -214,8 +228,8 @@ export function AppShell() {
 
         {/* Mobile bottom nav — shrink-0 keeps it fixed-height at the bottom of the flex column */}
         <nav className="shrink-0 md:hidden h-16 bg-background/95 backdrop-blur-sm border-t z-50">
-          <div className="grid grid-cols-6 h-full">
-            {NAV.map(({ to, label, icon: Icon, end }) => (
+          <div className="grid grid-cols-5 h-full">
+            {NAV_PRIMARY.map(({ to, label, icon: Icon, end }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -238,8 +252,52 @@ export function AppShell() {
                 )}
               </NavLink>
             ))}
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={cn(
+                "relative flex flex-col items-center justify-center gap-0.5 text-[10.5px] font-medium transition-colors",
+                isOverflowActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {isOverflowActive && (
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-6 rounded-full bg-primary" />
+              )}
+              <MoreHorizontal className="h-4 w-4" />
+              <span>Mais</span>
+            </button>
           </div>
         </nav>
+
+        {/* Overflow sheet for the mobile bottom nav — esoteric/infrequent sections live here */}
+        <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+          <SheetContent side="bottom" className="md:hidden rounded-t-xl">
+            <SheetHeader>
+              <SheetTitle className="text-base">Mais</SheetTitle>
+            </SheetHeader>
+            <div className="py-2 space-y-1">
+              {NAV_OVERFLOW.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors",
+                      isActive
+                        ? "bg-accent text-accent-foreground font-medium"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
+                    )
+                  }
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );

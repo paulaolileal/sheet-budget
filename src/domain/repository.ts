@@ -6,6 +6,7 @@ import type {
   Debtor,
   Income,
   InvoiceAmount,
+  PurchasePlan,
   RecurrenceTemplate,
   Transaction,
 } from "./types";
@@ -75,4 +76,12 @@ export interface FinanceRepository {
   updateDebt(id: string, patch: Partial<Debt>): Promise<Debt>;
   deleteDebt(id: string): Promise<void>;
   bulkPayDebtorMonth(debtor_id: string, competencia: string): Promise<void>;
+
+  // purchase plans
+  getPurchasePlans(): Promise<PurchasePlan[]>;
+  createPurchasePlan(
+    data: Omit<PurchasePlan, "plan_id" | "created_at" | "updated_at">,
+  ): Promise<PurchasePlan>;
+  updatePurchasePlan(id: string, patch: Partial<PurchasePlan>): Promise<PurchasePlan>;
+  deletePurchasePlan(id: string): Promise<void>;
 }

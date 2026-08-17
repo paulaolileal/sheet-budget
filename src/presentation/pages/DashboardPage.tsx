@@ -53,6 +53,7 @@ import {
   useTransactions,
 } from "@/hooks/queries";
 import { brl, centeredMonthRange, competenciaLabel, shiftCompetencia } from "@/utils/format";
+import { projectMonthlyBalance } from "@/domain/purchasePlanning";
 
 export function DashboardPage() {
   const competencia = useUiStore((s) => s.competencia);
@@ -195,54 +196,28 @@ export function DashboardPage() {
   );
 
   const trendData = useMemo(() => {
-    const today = new Date();
-    const todayMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-    const lastIncomeMonth = [...new Set((incomes ?? []).map((i) => i.competencia))]
-      .filter((m) => m <= todayMonth)
-      .sort()
-      .at(-1);
-    const lastIncomeValue = lastIncomeMonth
-      ? Math.round(
-          (incomes ?? [])
-            .filter((i) => i.competencia === lastIncomeMonth)
-            .reduce((s, i) => s + i.valor, 0) * 100,
-        ) / 100
-      : 0;
-
+    // Shared with the purchase-planning feature (`src/hooks/useMonthlyBalanceProjection.ts`) —
+    // keep this the single source of truth for "what's my projected balance N months out".
+    const projection = projectMonthlyBalance(
+      txs ?? [],
+      incomes ?? [],
+      invoiceAmounts ?? [],
+      accounts ?? [],
+      rangeMonths,
+    );
     const currentYear = Number(competencia.slice(0, 4));
-    return rangeMonths.map((month) => {
-      const year = Number(month.slice(0, 4));
-      const monthNum = Number(month.slice(5));
-      const abbr = MONTH_ABBR[monthNum - 1] ?? month.slice(5);
-      const monthTxs = (txs ?? []).filter(
-        (t) => t.competencia === month && (t.status === "PAGO" || t.status === "PENDENTE"),
-      );
-      const monthIncomes = (incomes ?? []).filter((i) => i.competencia === month);
-      const cardTxTotal = monthTxs
-        .filter((t) => cardIds.has(t.payment_account_id ?? ""))
-        .reduce((s, t) => s + t.valor, 0);
-      const invoiceTotal = (invoiceAmounts ?? [])
-        .filter((ia) => ia.competencia === month)
-        .reduce((s, ia) => s + ia.valor_real, 0);
-      const extra = Math.max(0, invoiceTotal - cardTxTotal);
-
-      const hasIncome = monthIncomes.length > 0;
-      const isFuture = month > todayMonth;
-      const isProjected = isFuture && !hasIncome;
-
+    return projection.map((p) => {
+      const year = Number(p.competencia.slice(0, 4));
+      const monthNum = Number(p.competencia.slice(5));
+      const abbr = MONTH_ABBR[monthNum - 1] ?? p.competencia.slice(5);
       return {
         mes: year !== currentYear ? `${abbr}/${String(year).slice(2)}` : abbr,
-        entradas: hasIncome
-          ? Math.round(monthIncomes.reduce((s, i) => s + i.valor, 0) * 100) / 100
-          : isProjected
-            ? lastIncomeValue
-            : 0,
-        saidas: Math.round((monthTxs.reduce((s, t) => s + t.valor, 0) + extra) * 100) / 100,
-        projecao: isProjected,
+        entradas: p.receitas,
+        saidas: p.despesas,
+        projecao: p.isProjected,
       };
     });
-  }, [txs, incomes, invoiceAmounts, cardIds, competencia, rangeMonths]);
+  }, [txs, incomes, invoiceAmounts, accounts, competencia, rangeMonths]);
 
   const countData = useMemo(() => {
     const currentYear = Number(competencia.slice(0, 4));

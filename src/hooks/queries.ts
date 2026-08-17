@@ -8,6 +8,7 @@ import type {
   Debtor,
   Income,
   InvoiceAmount,
+  PurchasePlan,
   Transaction,
   RecurrenceTemplate,
 } from "@/domain/types";
@@ -18,6 +19,7 @@ import {
   debtorInputSchema,
   incomeInputSchema,
   invoiceAmountInputSchema,
+  purchasePlanInputSchema,
   transactionInputSchema,
   type AccountInput,
   type CategoryInput,
@@ -25,8 +27,10 @@ import {
   type DebtorInput,
   type IncomeInput,
   type InvoiceAmountInput,
+  type PurchasePlanInput,
   type TransactionInput,
 } from "@/domain/schemas";
+import type { AmortizationInstallment } from "@/lib/amortization";
 import {
   IMPORT_KIND_LABELS,
   type AccountImportRow,
@@ -38,7 +42,7 @@ import {
   type TransactionImportRow,
 } from "@/domain/importSchemas";
 import { useUiStore } from "@/store/uiStore";
-import { competenciaLabel } from "@/utils/format";
+import { competenciaLabel, shiftCompetencia } from "@/utils/format";
 import { transactionId } from "@/lib/idgen";
 import { GoogleAuthError } from "@/infrastructure/google/googleApiFetch";
 import { toast } from "sonner";
@@ -80,6 +84,7 @@ export const qk = {
   invoice_amounts: ["invoice_amounts"] as const,
   debtors: ["debtors"] as const,
   debts: ["debts"] as const,
+  purchase_plans: ["purchase_plans"] as const,
 };
 
 const STALE = {
@@ -141,6 +146,13 @@ export const useDebts = () =>
   useQuery({
     queryKey: qk.debts,
     queryFn: () => repo().getDebts(),
+    staleTime: STALE.transactional,
+  });
+
+export const usePurchasePlans = () =>
+  useQuery({
+    queryKey: qk.purchase_plans,
+    queryFn: () => repo().getPurchasePlans(),
     staleTime: STALE.transactional,
   });
 
@@ -518,6 +530,7 @@ export function useGenerateRecurring() {
           payment_account_id: tpl.payment_account_id,
           tipo_lancamento: "RECORRENTE" as const,
           template_id: tpl.template_id,
+          plan_id: null,
         })),
       );
 
@@ -834,5 +847,86 @@ export function useDuplicatePreviousMonthDebts() {
       }
     },
     onError: onErrorDismissLoading("dup-debts"),
+  });
+}
+
+export function useCreatePurchasePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: PurchasePlanInput) => {
+      const parsed = purchasePlanInputSchema.parse(input);
+      return withSync(() => repo().createPurchasePlan(parsed));
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.purchase_plans });
+      toast.success("Planejamento salvo");
+    },
+    onError: onErrorToast,
+  });
+}
+
+export function useUpdatePurchasePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, patch }: { id: string; patch: Partial<PurchasePlan> }) =>
+      withSync(() => repo().updatePurchasePlan(id, patch)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.purchase_plans });
+      toast.success("Planejamento atualizado");
+    },
+    onError: onErrorToast,
+  });
+}
+
+export function useDeletePurchasePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => withSync(() => repo().deletePurchasePlan(id)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.purchase_plans });
+      toast.success("Planejamento excluído");
+    },
+    onError: onErrorToast,
+  });
+}
+
+/**
+ * Confirms a purchase plan: creates the real PARCELADO transactions for the given
+ * (already computed) amortization schedule, linked back to the plan via `plan_id`,
+ * then flips the plan's status to CONFIRMADO.
+ */
+export function useConfirmPurchasePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      plan,
+      installments,
+    }: {
+      plan: PurchasePlan;
+      installments: AmortizationInstallment[];
+    }) =>
+      withSync(async () => {
+        const created = await repo().createTransactionsBatch(
+          installments.map((row) => ({
+            competencia: shiftCompetencia(plan.competencia_inicio, row.numero_parcela - 1),
+            descricao: `${plan.nome} (${row.numero_parcela}/${installments.length})`,
+            categoria_id: plan.categoria_id ?? "",
+            valor: row.valor_parcela,
+            status: "PENDENTE" as const,
+            payment_account_id: plan.payment_account_id ?? null,
+            tipo_lancamento: "PARCELADO" as const,
+            template_id: null,
+            plan_id: plan.plan_id,
+          })),
+        );
+        await repo().updatePurchasePlan(plan.plan_id, { status: "CONFIRMADO" });
+        return created;
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.transactions });
+      qc.invalidateQueries({ queryKey: qk.purchase_plans });
+      toast.success("Compra confirmada — parcelas criadas em Lançamentos");
+    },
+    onError: onErrorToast,
   });
 }

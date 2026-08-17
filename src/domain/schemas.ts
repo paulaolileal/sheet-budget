@@ -1,8 +1,11 @@
 import { z } from "zod";
 import {
   ACCOUNT_TIPO,
+  AMORTIZATION_METHOD,
   DEBT_STATUS,
   DEBT_TIPO,
+  PURCHASE_PLAN_STATUS,
+  RATE_PERIODICITY,
   RECURRENCE_TYPE,
   TIPO_LANCAMENTO,
   TRANSACTION_STATUS,
@@ -35,6 +38,7 @@ export const transactionSchema = z.object({
   status: z.enum(TRANSACTION_STATUS),
   payment_account_id: z.string().nullable(),
   tipo_lancamento: z.enum(TIPO_LANCAMENTO),
+  plan_id: z.string().nullable().default(null),
 });
 
 export const transactionInputSchema = transactionSchema.extend({
@@ -141,6 +145,30 @@ export const debtInputSchema = debtBaseSchema
     path: ["valor"],
   });
 
+export const purchasePlanSchema = z.object({
+  plan_id: z.string().min(1),
+  nome: safeString(120),
+  descricao: safeString(500).optional(),
+  valor_compra: z.number().positive(),
+  taxa_juros: z.number().nonnegative(),
+  taxa_juros_periodicidade: z.enum(RATE_PERIODICITY),
+  numero_parcelas: z.number().int().min(1).max(120),
+  forma_amortizacao: z.enum(AMORTIZATION_METHOD),
+  competencia_inicio: competenciaSchema,
+  margem_minima: z.number().nonnegative(),
+  categoria_id: z.string().optional(),
+  payment_account_id: z.string().optional(),
+  status: z.enum(PURCHASE_PLAN_STATUS),
+  created_at: z.string().min(1),
+  updated_at: z.string().min(1),
+});
+
+export const purchasePlanInputSchema = purchasePlanSchema.omit({
+  plan_id: true,
+  created_at: true,
+  updated_at: true,
+});
+
 export type TransactionInput = z.infer<typeof transactionInputSchema>;
 export type TemplateInput = z.infer<typeof templateSchema>;
 export type TemplateFormInput = z.infer<typeof templateInputSchema>;
@@ -150,3 +178,4 @@ export type IncomeInput = z.infer<typeof incomeInputSchema>;
 export type InvoiceAmountInput = z.infer<typeof invoiceAmountInputSchema>;
 export type DebtorInput = z.infer<typeof debtorInputSchema>;
 export type DebtInput = z.infer<typeof debtInputSchema>;
+export type PurchasePlanInput = z.infer<typeof purchasePlanInputSchema>;

@@ -13,6 +13,8 @@ import { TemplatesPage } from "./pages/TemplatesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { IncomePage } from "./pages/IncomePage";
 import { DebtorsPage } from "./pages/DebtorsPage";
+import { PlanningPage } from "./pages/PlanningPage";
+import { PurchasePlanDetailPage } from "./pages/PurchasePlanDetailPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 // Lazy-loaded: pulls in tesseract.js (OCR engine), which is too heavy to ship
@@ -43,6 +45,8 @@ export function App() {
             <Route path="debtors" element={<DebtorsPage />} />
             <Route path="cards" element={<CardsPage />} />
             <Route path="recurrences" element={<TemplatesPage />} />
+            <Route path="planning" element={<PlanningPage />} />
+            <Route path="planning/:planId" element={<PurchasePlanDetailPage />} />
             <Route
               path="share-target"
               element={

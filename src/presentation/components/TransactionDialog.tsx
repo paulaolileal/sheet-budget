@@ -209,6 +209,7 @@ export function TransactionDialog({
       valor: values.valor,
       status: values.status,
       tipo_lancamento: values.tipo_lancamento,
+      plan_id: null,
     };
 
     if (isEditing && transaction) {

@@ -8,6 +8,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Purchase planning ("Planejamento"): a new dedicated page
+  (`/planning`, `/planning/:planId`) to simulate a large financed purchase
+  (e.g. a car) before committing to it. A plan records the purchase value,
+  interest rate, number of installments and desired start competência;
+  the simulation is computed entirely client-side and supports three
+  amortization methods — Price (fixed installment), SAC (constant
+  amortization) and Sem juros (linear, the same math as today's simple
+  installment split, used as a no-interest baseline) — switchable instantly
+  to compare total interest paid. The simulation cross-references the
+  installment schedule against the user's projected monthly free balance
+  (receitas − despesas, reusing the Dashboard's trend logic) plus a
+  configurable minimum monthly margin, surfacing a per-month fit verdict
+  (cabe com folga / aperta o orçamento / não recomendado) and suggesting
+  the best of the next 12 competências to start the purchase. Plans persist
+  to a new `purchase_plans` sheet so they can be reopened and re-simulated
+  (change installments/rate/start month) later. Confirming a plan generates
+  the real `PARCELADO` transactions in Lançamentos (via the existing batch
+  creation) with the calculated — not linear — installment values, linked
+  back to the plan through a new `plan_id` field on `Transaction`/`transactions`.
+- Mobile bottom nav: items beyond the four most-frequent ones (Dashboard,
+  Lançamentos, Receitas, Cartões) — Recorrências, Devedores and the new
+  Planejamento — now collapse into a "Mais" overflow sheet instead of
+  cramming a 7th column into the nav grid.
+
+### Changed
+
+- Extracted the Dashboard's month-over-month projection logic
+  (`trendData`'s "receita projetada = último valor conhecido" +
+  `extraFatura` rule) into `projectMonthlyBalance`
+  (`src/domain/purchasePlanning.ts`), shared with the new purchase-planning
+  feature via `useMonthlyBalanceProjection` so both features read from the
+  same projection instead of duplicating it.
+
+## [2026-08-17]
+
+### Added
+
 - Dashboard: "Parcelas terminando" carousel — auto-rotating cards for
   installment purchases (`PARCELADO`) whose final installment falls in the
   selected competência, each showing "Parcela finalizada" (already paid) or

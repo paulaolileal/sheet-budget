@@ -36,10 +36,12 @@ presentation → hooks → domain ← infrastructure
 
 | Path                                                  | Role                                                                                                         |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `src/domain/types.ts`                                 | All domain types (Transaction, RecurrenceTemplate, Account, Category, Income, InvoiceAmount, Debtor, Debt)   |
+| `src/domain/types.ts`                                 | All domain types (Transaction, RecurrenceTemplate, Account, Category, Income, InvoiceAmount, Debtor, Debt, PurchasePlan)   |
 | `src/domain/schemas.ts`                               | Zod schemas — input validation and sanitization gate                                                         |
 | `src/domain/importSchemas.ts`                         | Zod schemas for CSV import rows (one per entity) plus the CSV column layout per entity                       |
 | `src/domain/repository.ts`                            | `FinanceRepository` interface — the contract every backend must implement                                    |
+| `src/domain/purchasePlanning.ts`                      | Purchase-planning business rules: `projectMonthlyBalance` (shared monthly free-balance projection, also used by the Dashboard), `evaluatePlanFit`/`suggestBestStartCompetencia` (budget-fit verdicts), `buildPlanAmortization` — see "Purchase planning" below |
+| `src/lib/amortization.ts`                             | Pure amortization math (Price/SAC/no-interest schedules) — no domain types, no I/O                            |
 | `src/application/repositoryProvider.ts`               | Singleton factory — builds/caches the `GoogleSheetsRepository` for the active user's spreadsheet             |
 | `src/hooks/queries.ts`                                | All TanStack Query hooks + mutations; `withSync()` drives the sync indicator                                 |
 | `src/store/uiStore.ts`                                | Zustand: active `competencia` (YYYY-MM) + sync state (`idle/syncing/saved/error`)                            |
@@ -51,7 +53,7 @@ presentation → hooks → domain ← infrastructure
 | `src/services/swUpdater.ts`                           | `initServiceWorkerAutoUpdate()` (called once in `main.tsx`) registers the service worker, polls `registration.update()` hourly and on focus, and reloads once a new worker takes control — immediately if backgrounded, otherwise deferred to the next time it is — so an installed PWA self-updates without a manual reinstall |
 | `src/infrastructure/google/googleApiFetch.ts`         | Shared fetch wrapper used by all Google REST clients (`GoogleSheetsRepository`, `DriveApiClient`, `SheetsInitializer`); ensures a fresh token per call and throws `GoogleAuthError` when silent refresh genuinely fails |
 | `src/infrastructure/google/GoogleSheetsRepository.ts` | CRUD against Sheets API v4 — the only `FinanceRepository` implementation today                               |
-| `src/infrastructure/google/SheetsInitializer.ts`      | Creates a brand-new spreadsheet with the 8 required tabs/headers (see schema below) during `/setup`          |
+| `src/infrastructure/google/SheetsInitializer.ts`      | Creates a brand-new spreadsheet with the 9 required tabs/headers (see schema below) during `/setup`          |
 | `src/infrastructure/google/DriveApiClient.ts`         | Finds/creates the user's Sheet and its parent Drive folder during `/setup`                                   |
 | `src/lib/csvParser.ts`, `src/lib/importTemplates.ts`  | CSV parsing (papaparse) and downloadable model CSVs used by the import feature                               |
 | `src/utils/iconRegistry.ts`                           | Lucide icon registry (`ICON_REGISTRY`/`ICON_LIST`/`getIcon`) backing every `icon_id` field                   |
@@ -59,6 +61,8 @@ presentation → hooks → domain ← infrastructure
 | `src/lib/receiptStore.ts`                             | IndexedDB hand-off for a shared receipt image, from `src/sw.ts` to `ShareTargetPage`                          |
 | `src/lib/receiptParser.ts`                            | Regex-based extraction of valor/descrição/competência from OCR text of a Nubank receipt                       |
 | `src/presentation/pages/ShareTargetPage.tsx`          | `/share-target` route: runs OCR (`tesseract.js`) on the shared image and opens `TransactionDialog` pre-filled  |
+| `src/presentation/pages/PlanningPage.tsx`, `PurchasePlanDetailPage.tsx` | `/planning` list and `/planning/:planId` create/edit/simulate — see "Purchase planning" below |
+| `src/hooks/useMonthlyBalanceProjection.ts`            | Hook wrapper around `projectMonthlyBalance` for a rolling horizon of competências                             |
 
 ### Google Sheets schema
 
@@ -66,7 +70,7 @@ presentation → hooks → domain ← infrastructure
 
 | Tab                   | Headers                                                                                              |
 | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| `transactions`        | `transaction_id, template_id, competencia, descricao, categoria_id, valor, status, payment_account_id, tipo_lancamento` |
+| `transactions`        | `transaction_id, template_id, competencia, descricao, categoria_id, valor, status, payment_account_id, tipo_lancamento, plan_id` |
 | `recurrence_templates`| `template_id, nome, categoria_id, payment_account_id, primeira_competencia, ultima_competencia, logo_url, icon_id, recurrence_type` |
 | `accounts`            | `account_id, nome, tipo, icon_id, color`                                                              |
 | `categories`          | `category_id, nome, icon_id`                                                                          |
@@ -74,8 +78,9 @@ presentation → hooks → domain ← infrastructure
 | `invoice_amounts`     | `invoice_id, payment_account_id, competencia, valor_real`                                             |
 | `debtors`             | `debtor_id, nome, telefone, icon_id`                                                                   |
 | `debts`               | `debt_id, debtor_id, competencia, descricao, valor, status, tipo, parent_debt_id`                     |
+| `purchase_plans`      | `plan_id, nome, descricao, valor_compra, taxa_juros, taxa_juros_periodicidade, numero_parcelas, forma_amortizacao, competencia_inicio, margem_minima, categoria_id, payment_account_id, status, created_at, updated_at` |
 
-If you add a field to a domain type, it must be added both here (so `/setup` creates the column on new sheets) and to any spreadsheet Paula already has (manually, via Google Sheets) — `GoogleSheetsRepository` does not migrate existing sheets.
+If you add a field to a domain type, it must be added both here (so `/setup` creates the column on new sheets) and to any spreadsheet Paula already has (manually, via Google Sheets) — `GoogleSheetsRepository` does not migrate existing sheets. In particular, a spreadsheet created before purchase planning shipped needs the `purchase_plans` tab (headers above) and the `plan_id` column (10th, `J`) added manually to its existing `transactions` tab.
 
 ### Routes
 
@@ -89,8 +94,11 @@ If you add a field to a domain type, it must be added both here (so `/setup` cre
 | `/debtors`      | Debtors/debts owed to the user (charge via WhatsApp, `src/utils/whatsapp.ts`) |
 | `/cards`        | Cards & invoices                             |
 | `/recurrences`  | RecurrenceTemplates                          |
+| `/planning`     | Purchase-planning list (saved simulations); `/planning/:planId` is create/edit/simulate, `/planning/novo` for a new one |
 | `/share-target` | Landing page for a shared receipt image (see "Sharing a receipt" below); lazy-loaded, not in the nav |
 | `/settings`     | Categories, data source (Sheet, import), app |
+
+`AppShell`'s mobile bottom nav only pins its 4 most-frequent items (Dashboard, Lançamentos, Receitas, Cartões); the rest (Recorrências, Devedores, Planejamento) live behind a "Mais" overflow `Sheet` so the nav grid doesn't outgrow the screen as sections are added. The desktop sidebar always lists every item.
 
 ### Data conventions
 
@@ -99,12 +107,22 @@ If you add a field to a domain type, it must be added both here (so `/setup` cre
 - `transactions` support both a soft cancel (`status: "IGNORADO"`, excluded from totals but kept for history) and a real hard delete (`deleteTransaction`, row removal via Sheets `deleteDimension`) — the UI (`TransactionDialog`) exposes the hard delete directly. `debts`, `accounts`, `categories` and `debtors` only support hard delete.
 - Entity ids (`category_id`, `account_id`, `debtor_id`, etc.) are generated by the repository from the name/description + timestamp (`src/lib/idgen.ts`) — never supplied by the caller. This matters for CSV import: external files can't know these ids, so relations are resolved by **name**, not by id (see below).
 - `debts` with `tipo: "EMPRESTIMO"` model an accumulating loan without a separate sheet: each abatement is a new row (not an edit) whose `valor` is the *remaining balance*, not the amount abated, linked back to the loan's root row (the one with no `parent_debt_id`) via `parent_debt_id`. `status` is meaningless on these rows — pending/settled is derived by comparing the latest row's `valor` to zero. See the grouping/derivation logic in `DebtorsPage.tsx` (`loanChains`/`loanRepresentatives`) and the abatement flow in `DebtDialog.tsx`.
+- `Transaction.plan_id` links a `PARCELADO` transaction back to the `PurchasePlan` that generated it (via "Confirmar compra"); `null` for every manually-created or recurring-generated transaction. See "Purchase planning" below.
 
 ### Importing data from a CSV
 
 `src/presentation/components/ImportDialog.tsx` (opened from Settings → "Fonte de dados" and from the Dashboard's empty state) lets the user upload a CSV per entity — Categorias, Contas, Receitas, Devedores, Transações or Dívidas — using the friendly column layout defined in `src/domain/importSchemas.ts` (`IMPORT_COLUMNS`/`IMPORT_ROW_SCHEMAS`). A "baixar modelo" button generates a template file via `src/lib/importTemplates.ts`.
 
 Transações/Dívidas reference Categoria/Conta/Devedor **by name** in the CSV. The `useImportRows` mutation (`src/hooks/queries.ts`) resolves each name to an id against the existing entities (case-insensitive), creating the entity on the fly if no match exists, before calling `createTransactionsBatch`/`createDebtsBatch`.
+
+### Purchase planning
+
+`PurchasePlan` (`purchase_plans` sheet) is a saved simulation for a large financed purchase (e.g. a car): principal, interest rate + periodicity, number of installments, amortization method, desired start competência, and a minimum monthly margin the user wants to keep. Its installment schedule is **never persisted** — it is 100% derivable from those fields and recomputed client-side on demand:
+
+1. `src/lib/amortization.ts` builds the raw schedule (`buildPriceTable`/`buildSacTable`/`buildLinearTable`, dispatched by `buildAmortizationTable`) — pure math, no domain types. `PRICE` is a fixed installment with decreasing interest; `SAC` is constant amortization with a decreasing installment; `SEM_JUROS` is the linear no-interest split (same math as `TransactionDialog`'s simple installment flow), kept as a baseline to compare "financiar com juros" vs "parcelar sem juros".
+2. `src/domain/purchasePlanning.ts` layers business rules on top: `projectMonthlyBalance` projects the user's monthly free balance (receitas − despesas) — this is the same rule as the Dashboard's trend chart, extracted so both features share one source of truth (`useMonthlyBalanceProjection` wraps it for components); `evaluatePlanFit` cross-references a schedule against that projection to produce a per-month verdict (`folga`/`apertado`/`nao_cabe`, the worst month "wins" for the plan's overall badge — see `PlanVerdictBadge.tsx`); `suggestBestStartCompetencia` ranks candidate start months by how well they fit.
+3. Confirming a plan (`useConfirmPurchasePlan`) creates the real `PARCELADO` transactions via the existing `createTransactionsBatch`, using the calculated installment values (not a linear split), and stamps each with `plan_id` for traceability. The plan then flips to `status: "CONFIRMADO"` and its simulation-defining fields (value, rate, installments, method, start) become read-only in the UI — only metadata (nome/descrição/categoria/conta) stays editable.
+4. There is **no automatic reconciliation** after confirmation: editing/deleting a generated transaction by hand does not update the plan. `PurchasePlanDetailPage` only does a read-only, on-the-fly diagnostic (comparing the stored plan's schedule against the current `plan_id`-matching transactions) to show a "N parcelas foram alteradas ou removidas" hint — mirrors the EMPRESTIMO note below in spirit (derive, don't persist a second copy of the truth).
 
 ### Sharing a receipt (Android Web Share Target)
 

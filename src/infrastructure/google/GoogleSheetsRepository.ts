@@ -26,11 +26,20 @@ import type {
   Debtor,
   Income,
   InvoiceAmount,
+  PurchasePlan,
   RecurrenceTemplate,
   RecurrenceType,
   Transaction,
 } from "@/domain/types";
-import { accountId, categoryId, debtId, debtorId, incomeId, transactionId } from "@/lib/idgen";
+import {
+  accountId,
+  categoryId,
+  debtId,
+  debtorId,
+  incomeId,
+  planId,
+  transactionId,
+} from "@/lib/idgen";
 import { parseCurrency } from "@/lib/currency";
 
 const API = "https://sheets.googleapis.com/v4/spreadsheets";
@@ -44,6 +53,7 @@ const SHEETS = {
   invoice_amounts: "invoice_amounts",
   debtors: "debtors",
   debts: "debts",
+  purchase_plans: "purchase_plans",
 } as const;
 
 const TX_HEADERS = [
@@ -56,6 +66,7 @@ const TX_HEADERS = [
   "status",
   "payment_account_id",
   "tipo_lancamento",
+  "plan_id",
 ];
 
 /**
@@ -126,6 +137,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
           status: obj.status as Transaction["status"],
           payment_account_id: obj.payment_account_id || null,
           tipo_lancamento: (obj.tipo_lancamento as Transaction["tipo_lancamento"]) ?? "MANUAL",
+          plan_id: obj.plan_id || null,
         };
       })
       .filter((t) => {
@@ -147,6 +159,7 @@ export class GoogleSheetsRepository implements FinanceRepository {
       t.status,
       t.payment_account_id ?? "",
       t.tipo_lancamento,
+      t.plan_id ?? "",
     ];
   }
 
@@ -731,6 +744,114 @@ export class GoogleSheetsRepository implements FinanceRepository {
     }
     const rowIdx = await this.findRowIndex(SHEETS.debts, "debt_id", id);
     const sheetId = await this.getSheetId(SHEETS.debts);
+    await this.request("/:batchUpdate", {
+      method: "POST",
+      body: JSON.stringify({
+        requests: [
+          {
+            deleteDimension: {
+              range: { sheetId, dimension: "ROWS", startIndex: rowIdx - 1, endIndex: rowIdx },
+            },
+          },
+        ],
+      }),
+    });
+  }
+
+  async getPurchasePlans(): Promise<PurchasePlan[]> {
+    try {
+      const rows = await this.getValues(SHEETS.purchase_plans);
+      return this.rowsToObjects<Record<string, string>>(rows).map((r) => ({
+        plan_id: r.plan_id,
+        nome: r.nome,
+        descricao: r.descricao || undefined,
+        valor_compra: parseCurrency(r.valor_compra),
+        taxa_juros: Number(r.taxa_juros) || 0,
+        taxa_juros_periodicidade:
+          (r.taxa_juros_periodicidade as PurchasePlan["taxa_juros_periodicidade"]) || "MENSAL",
+        numero_parcelas: Number(r.numero_parcelas) || 1,
+        forma_amortizacao: (r.forma_amortizacao as PurchasePlan["forma_amortizacao"]) || "PRICE",
+        competencia_inicio: r.competencia_inicio,
+        margem_minima: parseCurrency(r.margem_minima),
+        categoria_id: r.categoria_id || undefined,
+        payment_account_id: r.payment_account_id || undefined,
+        status: (r.status as PurchasePlan["status"]) || "RASCUNHO",
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+      }));
+    } catch (err) {
+      if (isMissingSheetError(err)) return [];
+      throw err;
+    }
+  }
+
+  private purchasePlanToRow(p: PurchasePlan): (string | number)[] {
+    return [
+      p.plan_id,
+      p.nome,
+      p.descricao ?? "",
+      p.valor_compra,
+      p.taxa_juros,
+      p.taxa_juros_periodicidade,
+      p.numero_parcelas,
+      p.forma_amortizacao,
+      p.competencia_inicio,
+      p.margem_minima,
+      p.categoria_id ?? "",
+      p.payment_account_id ?? "",
+      p.status,
+      p.created_at,
+      p.updated_at,
+    ];
+  }
+
+  async createPurchasePlan(
+    data: Omit<PurchasePlan, "plan_id" | "created_at" | "updated_at">,
+  ): Promise<PurchasePlan> {
+    const now = new Date().toISOString();
+    const plan: PurchasePlan = {
+      ...data,
+      plan_id: planId(data.nome),
+      created_at: now,
+      updated_at: now,
+    };
+    try {
+      await this.request(`/values/${SHEETS.purchase_plans}:append?valueInputOption=USER_ENTERED`, {
+        method: "POST",
+        body: JSON.stringify({ values: [this.purchasePlanToRow(plan)] }),
+      });
+    } catch (err) {
+      if (isMissingSheetError(err)) {
+        throw new Error(
+          "Crie a aba 'purchase_plans' no Google Sheets com as colunas: plan_id | nome | descricao | valor_compra | taxa_juros | taxa_juros_periodicidade | numero_parcelas | forma_amortizacao | competencia_inicio | margem_minima | categoria_id | payment_account_id | status | created_at | updated_at",
+        );
+      }
+      throw err;
+    }
+    return plan;
+  }
+
+  async updatePurchasePlan(id: string, patch: Partial<PurchasePlan>): Promise<PurchasePlan> {
+    const all = await this.getPurchasePlans();
+    const current = all.find((p) => p.plan_id === id);
+    if (!current) throw new Error(`Planejamento ${id} não encontrado`);
+    const updated: PurchasePlan = {
+      ...current,
+      ...patch,
+      plan_id: id,
+      updated_at: new Date().toISOString(),
+    };
+    const rowIdx = await this.findRowIndex(SHEETS.purchase_plans, "plan_id", id);
+    await this.request(
+      `/values/${SHEETS.purchase_plans}!A${rowIdx}:O${rowIdx}?valueInputOption=USER_ENTERED`,
+      { method: "PUT", body: JSON.stringify({ values: [this.purchasePlanToRow(updated)] }) },
+    );
+    return updated;
+  }
+
+  async deletePurchasePlan(id: string): Promise<void> {
+    const rowIdx = await this.findRowIndex(SHEETS.purchase_plans, "plan_id", id);
+    const sheetId = await this.getSheetId(SHEETS.purchase_plans);
     await this.request("/:batchUpdate", {
       method: "POST",
       body: JSON.stringify({
