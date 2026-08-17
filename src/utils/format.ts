@@ -39,6 +39,13 @@ export const monthRange = (months: number, from = new Date()): string[] => {
   return out;
 };
 
+/** Number of months from `a` to `b` (both YYYY-MM); positive when `b` is later. */
+export const monthsBetween = (a: string, b: string): number => {
+  const [ay, am] = a.split("-").map(Number);
+  const [by, bm] = b.split("-").map(Number);
+  return (by - ay) * 12 + (bm - am);
+};
+
 export const centeredMonthRange = (competencia: string, radius: number): string[] => {
   const year = Number(competencia.slice(0, 4));
   const month = Number(competencia.slice(5));

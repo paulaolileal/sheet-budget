@@ -30,7 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   A plan's `valor_compra` (full price) and optional `valor_entrada` (down
   payment) are entered separately — the financed principal used in every
   calculation is `valor_compra - valor_entrada` — so the user doesn't have
-  to do that subtraction by hand before simulating.
+  to do that subtraction by hand before simulating. Each row in the
+  installment breakdown now also shows the amortização (how much of that
+  installment pays down principal, net of interest) alongside the
+  installment total and running saldo devedor.
 - Mobile bottom nav: items beyond the four most-frequent ones (Dashboard,
   Lançamentos, Receitas, Cartões) — Recorrências, Devedores and the new
   Planejamento — now collapse into a "Mais" overflow sheet instead of
@@ -54,6 +57,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   from repeating the single latest income month's value to averaging the
   last 3 months that have one — smoother, and less skewed by whichever
   month happened to be the most recent.
+
+### Fixed
+
+- Purchase planning: the projected-balance horizon used to evaluate a
+  plan's fit and its start-month suggestions was fixed at 24 months
+  regardless of the plan's own installment count. Any competência a
+  long-running plan (e.g. 60 parcelas) needed beyond that horizon read as
+  an unknown saldoLivre of 0, which made every candidate month — even
+  genuinely affordable ones — get flagged "não cabe". The horizon is now
+  computed per plan (candidate window + `numero_parcelas`, or the plan's
+  own `competencia_inicio` + `numero_parcelas` if further out) so it
+  always reaches the schedule's last installment.
 
 ## [2026-08-17]
 

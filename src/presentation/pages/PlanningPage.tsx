@@ -17,7 +17,7 @@ import {
 import { usePurchasePlans } from "@/hooks/queries";
 import { useMonthlyBalanceProjection } from "@/hooks/useMonthlyBalanceProjection";
 import { buildPlanAmortization, evaluatePlanFit } from "@/domain/purchasePlanning";
-import { brl } from "@/utils/format";
+import { brl, currentCompetencia, monthsBetween } from "@/utils/format";
 import { PiggyBank, Plus } from "lucide-react";
 import type { PurchasePlan } from "@/domain/types";
 
@@ -41,8 +41,20 @@ type StatusFilter = "all" | "ativos" | "confirmados" | "descartados";
 export function PlanningPage() {
   const navigate = useNavigate();
   const { data: plans, isLoading } = usePurchasePlans();
-  // 24-month horizon covers any plan started soon, even with a long installment count.
-  const projection = useMonthlyBalanceProjection(24);
+  // The projection must reach each plan's last installment month, or evaluatePlanFit reads
+  // the missing months as saldoLivre 0 and flags the whole plan as unaffordable — see the
+  // same guard in PurchasePlanDetailPage.
+  const projectionHorizon = useMemo(() => {
+    if (!plans || plans.length === 0) return 12;
+    const today = currentCompetencia();
+    return Math.max(
+      12,
+      ...plans.map(
+        (p) => Math.max(0, monthsBetween(today, p.competencia_inicio)) + p.numero_parcelas + 1,
+      ),
+    );
+  }, [plans]);
+  const projection = useMonthlyBalanceProjection(projectionHorizon);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");

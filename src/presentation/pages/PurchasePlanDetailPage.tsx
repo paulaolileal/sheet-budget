@@ -58,7 +58,16 @@ import { buildAmortizationTable, toMonthlyRate, totalInterest } from "@/lib/amor
 import { competenciaSchema } from "@/domain/schemas";
 import { AMORTIZATION_METHOD, RATE_PERIODICITY } from "@/domain/types";
 import type { AmortizationMethod, PurchasePlan } from "@/domain/types";
-import { brl, competenciaLabel, currentCompetencia, shiftCompetencia } from "@/utils/format";
+import {
+  brl,
+  competenciaLabel,
+  currentCompetencia,
+  monthsBetween,
+  shiftCompetencia,
+} from "@/utils/format";
+
+/** How many upcoming competências are tested as candidate start months for the suggestion card. */
+const CANDIDATE_WINDOW_MONTHS = 12;
 
 const AMORT_LABEL: Record<AmortizationMethod, string> = {
   PRICE: "Price",
@@ -116,7 +125,6 @@ export function PurchasePlanDetailPage() {
   const { data: categories } = useCategories();
   const { data: accounts } = useAccounts();
   const { data: allTxs } = useTransactions();
-  const projection = useMonthlyBalanceProjection(24);
 
   const plan = isNew ? undefined : plans?.find((p) => p.plan_id === planId);
   const notFound = !isNew && !plansLoading && !plan;
@@ -146,6 +154,18 @@ export function PurchasePlanDetailPage() {
   }, [plan, reset]);
 
   const values = watch();
+
+  // The projection must reach far enough to cover every month a candidate start could need:
+  // the furthest candidate (CANDIDATE_WINDOW_MONTHS out) plus the full installment schedule,
+  // and the user's manually chosen competencia_inicio plus that schedule too. Months beyond
+  // the projection default to saldoLivre 0 in evaluatePlanFit, which reads as "doesn't fit" —
+  // too short a horizon here silently makes every long-installment plan look unaffordable.
+  const monthsToStart = competenciaSchema.safeParse(values.competencia_inicio).success
+    ? Math.max(0, monthsBetween(currentCompetencia(), values.competencia_inicio))
+    : 0;
+  const projectionHorizon =
+    Math.max(CANDIDATE_WINDOW_MONTHS, monthsToStart + 1) + (values.numero_parcelas || 12);
+  const projection = useMonthlyBalanceProjection(projectionHorizon);
 
   const taxaMensal = toMonthlyRate((values.taxa_juros || 0) / 100, values.taxa_juros_periodicidade);
   const principal = financedAmount({
@@ -183,7 +203,7 @@ export function PurchasePlanDetailPage() {
       parcelas: values.numero_parcelas || 1,
       metodo: values.forma_amortizacao,
       margemMinima: values.margem_minima || 0,
-      candidateStarts: nextCompetencias(currentCompetencia(), 12),
+      candidateStarts: nextCompetencias(currentCompetencia(), CANDIDATE_WINDOW_MONTHS),
     });
   }, [
     projection,
