@@ -3,10 +3,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Check, TrendingUp } from "lucide-react";
+import { ArrowLeft, Check, TrendingUp, XCircle } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { MonthYearPicker } from "../components/MonthYearPicker";
-import { PlanVerdictBadge, VERDICT_LABEL } from "../components/PlanVerdictBadge";
+import { PlanVerdictBadge, VERDICT_LABEL, VERDICT_TONE } from "../components/PlanVerdictBadge";
+import { cn } from "@/lib/utils";
 import { AmortizationChart } from "../components/AmortizationChart";
 import { AmortizationTable } from "../components/AmortizationTable";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -574,31 +575,57 @@ export function PurchasePlanDetailPage() {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Melhor competência para começar
+                  {bestSuggestion.veredito === "nao_cabe" ? (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <TrendingUp className="h-4 w-4" />
+                  )}
+                  {bestSuggestion.veredito === "nao_cabe"
+                    ? "Nenhuma competência recomendada"
+                    : "Melhor competência para começar"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-semibold tabular-nums">
-                    {competenciaLabel(bestSuggestion.competencia)}
-                  </span>
-                  <Badge variant="outline" className="font-normal">
-                    {VERDICT_LABEL[bestSuggestion.veredito]}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {bestSuggestion.veredito === "nao_cabe"
-                    ? "Nenhuma das próximas competências cabe com folga — considere reduzir o valor ou aumentar o número de parcelas."
-                    : `Com a parcela calculada, a menor margem livre ao longo do financiamento fica em ${brl(bestSuggestion.piorMargem)}.`}
-                </p>
+                {bestSuggestion.veredito === "nao_cabe" ? (
+                  <p className="text-sm text-muted-foreground">
+                    Em nenhuma das próximas 12 competências a parcela cabe na sua margem — nem em{" "}
+                    <span className="font-medium text-foreground">
+                      {competenciaLabel(bestSuggestion.competencia)}
+                    </span>
+                    , a menos apertada delas (pior mês fica {brl(bestSuggestion.piorMargem)}).
+                    Considere reduzir o valor, aumentar o número de parcelas ou dar mais entrada.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-lg font-semibold tabular-nums">
+                        {competenciaLabel(bestSuggestion.competencia)}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "font-normal border-0",
+                          VERDICT_TONE[bestSuggestion.veredito],
+                        )}
+                      >
+                        {VERDICT_LABEL[bestSuggestion.veredito]}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Com a parcela calculada, a menor margem livre ao longo do financiamento fica
+                      em {brl(bestSuggestion.piorMargem)}.
+                    </p>
+                  </>
+                )}
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
                   onClick={() => setValue("competencia_inicio", bestSuggestion.competencia)}
                 >
-                  Usar esta competência
+                  {bestSuggestion.veredito === "nao_cabe"
+                    ? "Usar esta competência mesmo assim"
+                    : "Usar esta competência"}
                 </Button>
               </CardContent>
             </Card>
