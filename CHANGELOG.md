@@ -46,11 +46,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Extracted the Dashboard's month-over-month projection logic
-  (`trendData`'s "receita projetada = último valor conhecido" +
-  `extraFatura` rule) into `projectMonthlyBalance`
-  (`src/domain/purchasePlanning.ts`), shared with the new purchase-planning
-  feature via `useMonthlyBalanceProjection` so both features read from the
-  same projection instead of duplicating it.
+  (`trendData`'s income-projection + `extraFatura` rule) into
+  `projectMonthlyBalance` (`src/domain/purchasePlanning.ts`), shared with
+  the new purchase-planning feature via `useMonthlyBalanceProjection` so
+  both features read from the same projection instead of duplicating it.
+  Along the way, the fallback for months without a lançada income changed
+  from repeating the single latest income month's value to averaging the
+  last 3 months that have one — smoother, and less skewed by whichever
+  month happened to be the most recent.
 
 ## [2026-08-17]
 

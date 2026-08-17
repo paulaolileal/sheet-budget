@@ -643,7 +643,7 @@ export function DashboardPage() {
                                   marginTop: 6,
                                 }}
                               >
-                                * Baseado no último mês com receita cadastrada
+                                * Baseado na média das últimas receitas cadastradas
                               </p>
                             )}
                           </div>

@@ -33,12 +33,18 @@ export interface MonthlyBalanceProjection {
   isProjected: boolean;
 }
 
+/** How many of the most recent income-bearing months to average for the projection fallback. */
+const RECENT_INCOME_SAMPLE = 3;
+
 /**
  * Projects free monthly balance (receitas - despesas) across `months`. Extracted from
- * `DashboardPage`'s `trendData`: months without a lançada income project the last known
- * income value; despesas sum lançamentos (PAGO/PENDENTE) plus `extraFatura` (the gap
- * between a card's real invoice total in `invoice_amounts` and the transactions lançadas
- * for it that month). Keep this in sync with `trendData` if that logic ever changes.
+ * `DashboardPage`'s `trendData`: months without a lançada income project the average of
+ * the last `RECENT_INCOME_SAMPLE` months that do have one (falls back to a single month,
+ * or to 0, when there isn't enough history) — smoother than pinning the estimate to
+ * whatever the single latest month happened to be. despesas sum lançamentos (PAGO/
+ * PENDENTE) plus `extraFatura` (the gap between a card's real invoice total in
+ * `invoice_amounts` and the transactions lançadas for it that month). Keep this in sync
+ * with `trendData` if that logic ever changes.
  */
 export function projectMonthlyBalance(
   txs: Transaction[],
@@ -50,13 +56,17 @@ export function projectMonthlyBalance(
   const todayMonth = currentCompetencia();
   const cardIds = new Set(accounts.filter((a) => a.tipo === "CARTAO").map((a) => a.account_id));
 
-  const lastIncomeMonth = [...new Set(incomes.map((i) => i.competencia))]
+  const recentIncomeMonths = [...new Set(incomes.map((i) => i.competencia))]
     .filter((m) => m <= todayMonth)
     .sort()
-    .at(-1);
-  const lastIncomeValue = lastIncomeMonth
+    .slice(-RECENT_INCOME_SAMPLE);
+  const estimatedIncomeValue = recentIncomeMonths.length
     ? round2(
-        incomes.filter((i) => i.competencia === lastIncomeMonth).reduce((s, i) => s + i.valor, 0),
+        recentIncomeMonths.reduce(
+          (sum, m) =>
+            sum + incomes.filter((i) => i.competencia === m).reduce((s, i) => s + i.valor, 0),
+          0,
+        ) / recentIncomeMonths.length,
       )
     : 0;
 
@@ -80,7 +90,7 @@ export function projectMonthlyBalance(
     const receitas = hasIncome
       ? round2(monthIncomes.reduce((s, i) => s + i.valor, 0))
       : isProjected
-        ? lastIncomeValue
+        ? estimatedIncomeValue
         : 0;
     const despesas = round2(monthTxs.reduce((s, t) => s + t.valor, 0) + extra);
 
