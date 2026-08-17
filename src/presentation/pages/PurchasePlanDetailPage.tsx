@@ -612,8 +612,15 @@ export function PurchasePlanDetailPage() {
                     <span className="font-medium text-foreground">
                       {competenciaLabel(bestSuggestion.competencia)}
                     </span>
-                    , a menos apertada delas (pior mês fica {brl(bestSuggestion.piorMargem)}).
-                    Considere reduzir o valor, aumentar o número de parcelas ou dar mais entrada.
+                    , a menos apertada delas. O mês mais crítico do financiamento a partir dela
+                    seria{" "}
+                    {bestSuggestion.piorCompetencia && (
+                      <span className="font-medium text-foreground">
+                        {competenciaLabel(bestSuggestion.piorCompetencia)}
+                      </span>
+                    )}{" "}
+                    (margem de {brl(bestSuggestion.piorMargem)}). Considere reduzir o valor,
+                    aumentar o número de parcelas ou dar mais entrada.
                   </p>
                 ) : (
                   <>
@@ -632,8 +639,13 @@ export function PurchasePlanDetailPage() {
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Com a parcela calculada, a menor margem livre ao longo do financiamento fica
-                      em {brl(bestSuggestion.piorMargem)}.
+                      Com a parcela calculada, a menor margem livre ao longo de todo o financiamento
+                      fica em {brl(bestSuggestion.piorMargem)}
+                      {bestSuggestion.piorCompetencia &&
+                        `, em ${competenciaLabel(bestSuggestion.piorCompetencia)}`}
+                      . Essa é a razão de nem sempre o mês com mais folga hoje ser a competência
+                      sugerida — o veredito olha o pior mês dos {values.numero_parcelas || 0} meses
+                      do financiamento, não só o mês de início.
                     </p>
                   </>
                 )}

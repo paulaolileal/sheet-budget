@@ -158,6 +158,8 @@ export function evaluatePlanFit(params: {
 export interface StartSuggestion {
   competencia: Competencia;
   piorMargem: number;
+  /** The specific month, somewhere across the whole schedule, that produced piorMargem. */
+  piorCompetencia: Competencia | null;
   mesesNaoCabe: number;
   veredito: MonthVerdict;
 }
@@ -183,11 +185,17 @@ export function suggestBestStartCompetencia(params: {
       competenciaInicio: competencia,
       margemMinima,
     });
-    const piorMargem = evaluations.length
-      ? round2(Math.min(...evaluations.map((e) => e.margemResultante)))
-      : 0;
+    const pior = evaluations.length
+      ? evaluations.reduce((worst, e) => (e.margemResultante < worst.margemResultante ? e : worst))
+      : null;
     const mesesNaoCabe = evaluations.filter((e) => e.veredito === "nao_cabe").length;
-    return { competencia, piorMargem, mesesNaoCabe, veredito: worstVerdict(evaluations) };
+    return {
+      competencia,
+      piorMargem: pior ? round2(pior.margemResultante) : 0,
+      piorCompetencia: pior?.competencia ?? null,
+      mesesNaoCabe,
+      veredito: worstVerdict(evaluations),
+    };
   });
 
   return suggestions.sort((a, b) => {
