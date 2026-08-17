@@ -10,7 +10,6 @@ import { PlanVerdictBadge, VERDICT_LABEL, VERDICT_TONE } from "../components/Pla
 import { cn } from "@/lib/utils";
 import { AmortizationChart } from "../components/AmortizationChart";
 import { AmortizationTable } from "../components/AmortizationTable";
-import { EarlyPayoffSimulator } from "../components/EarlyPayoffSimulator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -690,21 +689,20 @@ export function PurchasePlanDetailPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Parcelas</CardTitle>
               <CardDescription>
-                Detalhamento mês a mês, com o veredito de cada competência.
+                Escolha quando pretende pagar cada parcela — antecipar dá desconto de juros.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AmortizationTable rows={amortization} evaluations={evaluations} />
+              <AmortizationTable
+                rows={amortization}
+                evaluations={evaluations}
+                competenciaInicio={values.competencia_inicio}
+                taxaMensal={taxaMensal}
+                payoffDates={payoffDates}
+                onChangePayoffDate={handleChangePayoffDate}
+              />
             </CardContent>
           </Card>
-
-          <EarlyPayoffSimulator
-            rows={amortization}
-            competenciaInicio={values.competencia_inicio}
-            taxaMensal={taxaMensal}
-            payoffDates={payoffDates}
-            onChangePayoffDate={handleChangePayoffDate}
-          />
 
           <Card>
             <CardHeader className="pb-2">
